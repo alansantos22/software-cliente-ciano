@@ -1,0 +1,175 @@
+// ========================================
+// CIANO - Main SCSS Entry Point
+// ========================================
+
+// === FOUNDATIONS ===
+@use 'reset';
+@use 'colors';
+@use 'typography';
+@use 'spacing';
+@use 'mixins';
+
+// === ROOT STYLES ===
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: typography.$font-family-base;
+  font-size: typography.$font-size-base;
+  line-height: typography.$line-height-normal;
+  color: colors.$text-primary;
+  background-color: colors.$bg-secondary;
+}
+
+// === UTILITY CLASSES ===
+.container {
+  width: 100%;
+  max-width: spacing.$container-xl;
+  margin: 0 auto;
+  padding: 0 spacing.$spacing-4;
+  
+  @include mixins.md {
+    padding: 0 spacing.$spacing-6;
+  }
+}
+
+.sr-only {
+  @include mixins.visually-hidden;
+}
+
+// === TEXT UTILITIES ===
+.text-center {
+  text-align: center;
+}
+
+.text-left {
+  text-align: left;
+}
+
+.text-right {
+  text-align: right;
+}
+
+.text-primary {
+  color: colors.$primary-500;
+}
+
+.text-secondary {
+  color: colors.$text-secondary;
+}
+
+.text-success {
+  color: colors.$success;
+}
+
+.text-warning {
+  color: colors.$warning;
+}
+
+.text-error {
+  color: colors.$error;
+}
+
+// === SPACING UTILITIES ===
+.mt-auto {
+  margin-top: auto;
+}
+
+.mb-auto {
+  margin-bottom: auto;
+}
+
+.ml-auto {
+  margin-left: auto;
+}
+
+.mr-auto {
+  margin-right: auto;
+}
+
+// === FLEX UTILITIES ===
+.flex {
+  display: flex;
+}
+
+.flex-col {
+  flex-direction: column;
+}
+
+.items-center {
+  align-items: center;
+}
+
+.justify-center {
+  justify-content: center;
+}
+
+.justify-between {
+  justify-content: space-between;
+}
+
+.gap-2 {
+  gap: spacing.$spacing-2;
+}
+
+.gap-4 {
+  gap: spacing.$spacing-4;
+}
+
+.gap-6 {
+  gap: spacing.$spacing-6;
+}
+
+// === GRID UTILITIES ===
+.grid {
+  display: grid;
+}
+
+.grid-cols-1 {
+  grid-template-columns: repeat(1, 1fr);
+}
+
+.grid-cols-2 {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.grid-cols-3 {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.grid-cols-4 {
+  grid-template-columns: repeat(4, 1fr);
+}
+
+// === RESPONSIVE GRID ===
+@include mixins.md {
+  .md\:grid-cols-2 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .md\:grid-cols-3 {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@include mixins.lg {
+  .lg\:grid-cols-3 {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  
+  .lg\:grid-cols-4 {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+// === LINK STYLES ===
+a:not([class]) {
+  color: colors.$text-link;
+  transition: color spacing.$transition-fast;
+  
+  &:hover {
+    color: colors.$text-link-hover;
+    text-decoration: underline;
+  }
+}

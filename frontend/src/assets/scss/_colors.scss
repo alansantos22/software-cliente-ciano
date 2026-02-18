@@ -1,0 +1,145 @@
+// ========================================
+// CIANO - Sistema de Cotas
+// Paleta de Cores - Tema Natureza/Pousada
+// ========================================
+
+// === PRIMARY (Ciano - Azul Esverdeado) ===
+$primary-50: #e0f7fa;
+$primary-100: #b2ebf2;
+$primary-200: #80deea;
+$primary-300: #4dd0e1;
+$primary-400: #26c6da;
+$primary-500: #00bcd4; // Main Primary
+$primary-600: #00acc1;
+$primary-700: #0097a7;
+$primary-800: #00838f;
+$primary-900: #006064;
+
+// === SECONDARY (Verde Natureza) ===
+$secondary-50: #e8f5e9;
+$secondary-100: #c8e6c9;
+$secondary-200: #a5d6a7;
+$secondary-300: #81c784;
+$secondary-400: #66bb6a;
+$secondary-500: #4caf50; // Main Secondary
+$secondary-600: #43a047;
+$secondary-700: #388e3c;
+$secondary-800: #2e7d32;
+$secondary-900: #1b5e20;
+
+// === ACCENT (Âmbar - Destaque) ===
+$accent-50: #fff8e1;
+$accent-100: #ffecb3;
+$accent-200: #ffe082;
+$accent-300: #ffd54f;
+$accent-400: #ffca28;
+$accent-500: #ffc107; // Main Accent
+$accent-600: #ffb300;
+$accent-700: #ffa000;
+$accent-800: #ff8f00;
+$accent-900: #ff6f00;
+
+// === NEUTRALS ===
+$neutral-50: #fafafa;
+$neutral-100: #f5f5f5;
+$neutral-200: #eeeeee;
+$neutral-300: #e0e0e0;
+$neutral-400: #bdbdbd;
+$neutral-500: #9e9e9e;
+$neutral-600: #757575;
+$neutral-700: #616161;
+$neutral-800: #424242;
+$neutral-900: #212121;
+
+// === SEMANTIC ===
+$success: #4caf50;
+$success-light: #81c784;
+$success-dark: #388e3c;
+
+$warning: #ff9800;
+$warning-light: #ffb74d;
+$warning-dark: #f57c00;
+
+$error: #f44336;
+$error-light: #e57373;
+$error-dark: #d32f2f;
+
+$info: #2196f3;
+$info-light: #64b5f6;
+$info-dark: #1976d2;
+
+// === TITLES (Níveis de Patrocinador) ===
+$title-none: $neutral-500;
+$title-bronze: #cd7f32;
+$title-silver: #c0c0c0;
+$title-gold: #ffd700;
+$title-diamond: #b9f2ff;
+
+// === PARTNER LEVELS ===
+$level-socio: $primary-500;
+$level-platinum: #e5e4e2;
+$level-vip: $accent-500;
+$level-imperial: #800080;
+
+// === BACKGROUNDS ===
+$bg-primary: #ffffff;
+$bg-secondary: $neutral-50;
+$bg-tertiary: $neutral-100;
+$bg-dark: $neutral-900;
+
+// === TEXT ===
+$text-primary: $neutral-900;
+$text-secondary: $neutral-600;
+$text-tertiary: $neutral-500;
+$text-inverse: #ffffff;
+$text-link: $primary-600;
+$text-link-hover: $primary-800;
+
+// === BORDERS ===
+$border-light: $neutral-200;
+$border-default: $neutral-300;
+$border-dark: $neutral-400;
+
+// === SHADOWS ===
+$shadow-color: rgba(0, 0, 0, 0.1);
+$shadow-sm: 0 1px 2px $shadow-color;
+$shadow-md: 0 4px 6px $shadow-color;
+$shadow-lg: 0 10px 15px $shadow-color;
+$shadow-xl: 0 20px 25px $shadow-color;
+
+// === CSS CUSTOM PROPERTIES (for runtime theming) ===
+:root {
+  // Primary
+  --color-primary: #{$primary-500};
+  --color-primary-light: #{$primary-300};
+  --color-primary-dark: #{$primary-700};
+
+  // Secondary
+  --color-secondary: #{$secondary-500};
+  --color-secondary-light: #{$secondary-300};
+  --color-secondary-dark: #{$secondary-700};
+
+  // Accent
+  --color-accent: #{$accent-500};
+  --color-accent-light: #{$accent-300};
+  --color-accent-dark: #{$accent-700};
+
+  // Semantic
+  --color-success: #{$success};
+  --color-warning: #{$warning};
+  --color-error: #{$error};
+  --color-info: #{$info};
+
+  // Backgrounds
+  --bg-primary: #{$bg-primary};
+  --bg-secondary: #{$bg-secondary};
+  --bg-tertiary: #{$bg-tertiary};
+
+  // Text
+  --text-primary: #{$text-primary};
+  --text-secondary: #{$text-secondary};
+  --text-tertiary: #{$text-tertiary};
+
+  // Borders
+  --border-color: #{$border-default};
+}
