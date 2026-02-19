@@ -53,7 +53,8 @@
       <NetworkProgressBar
         :current-title="userTitle"
         :active-members="networkStats.activeMembers"
-        :team-count="flatNodes.length"
+        :qualified-bronzes="networkStats.qualifiedBronzes ?? 0"
+        :qualified-lines="networkStats.qualifiedLines ?? 0"
       />
     </section>
 

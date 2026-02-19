@@ -299,10 +299,11 @@ function formatDate(dateStr: string): string {
 
 function activityIcon(type: string): string {
   const map: Record<string, string> = {
-    Comissão: 'handshake',
-    'Bônus de Rede': 'network-wired',
+    'Primeira Compra': 'handshake',
+    'Bônus Recompra': 'rotate',
+    'Bônus Equipe': 'users',
+    'Bônus Liderança': 'trophy',
     Dividendo: 'chart-line',
-    'Bônus de Carreira': 'trophy',
     Compra: 'cart-shopping',
   };
   return map[type] ?? 'money-bill-wave';
@@ -310,10 +311,11 @@ function activityIcon(type: string): string {
 
 function activityVariant(type: string): 'default' | 'success' | 'warning' | 'info' | 'primary' {
   const map: Record<string, 'default' | 'success' | 'warning' | 'info' | 'primary'> = {
-    Comissão: 'success',
-    'Bônus de Rede': 'info',
+    'Primeira Compra': 'success',
+    'Bônus Recompra': 'info',
+    'Bônus Equipe': 'info',
+    'Bônus Liderança': 'success',
     Dividendo: 'primary',
-    'Bônus de Carreira': 'success',
     Compra: 'warning',
   };
   return map[type] ?? 'default';
@@ -324,15 +326,15 @@ function loadEarnings(month: string) {
   const summary = getMonthlySummary(userId, month);
   if (summary) {
     earningsSources.value = buildEarningsSources(
-      summary.direct,
-      summary.indirect,
-      summary.residual,
+      summary.firstPurchase,
+      summary.repurchase,
+      summary.team,
       summary.leadership,
-      summary.fidelity,
+      summary.dividend,
     );
   } else {
     // Default mock fallback
-    earningsSources.value = buildEarningsSources(1500, 2800, 320, 500, 250);
+    earningsSources.value = buildEarningsSources(1500, 500, 1300, 500, 320);
   }
 }
 

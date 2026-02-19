@@ -250,8 +250,8 @@ interface Package {
 
 const packages: Package[] = [
   {
-    id: 'iniciante',
-    name: 'Iniciante',
+    id: 'socio',
+    name: 'Sócio',
     quotas: 1,
     price: mockQuotaConfig.quotaPrice,
     levelName: 'Sócio',
@@ -260,10 +260,10 @@ const packages: Package[] = [
     hotelSubtitle: 'Grupo Ciano',
     monthlyEstimate: netYieldPerQuota,
     benefits: [
-      'Acesso ao painel de cotista',
-      'Dividendos mensais (a partir do 1º mês)',
-      'Comissão direta 10% em indicações',
-      'Suporte via WhatsApp',
+      'Participação nos lucros do Grupo Ciano',
+      'Participação na valorização do grupo',
+      'Pode indicar e ganhar comissões (10% primeira compra)',
+      'Acesso ao grupo geral de investidores',
     ],
     ctaLabel: 'Tornar-se Sócio',
   },
@@ -279,11 +279,11 @@ const packages: Package[] = [
     hotelSubtitle: 'Resort Ciano Prime',
     monthlyEstimate: 10 * netYieldPerQuota,
     benefits: [
-      'Participação nos Lucros (Pool)',
-      'Descontos progressivos em diárias',
-      'Acesso prioritário ao Pool de Locação',
-      'Bônus de Rede (Níveis 1–3)',
-      'Suporte prioritário',
+      'Todos os benefícios do Sócio',
+      '30% de desconto em pousadas Ciano',
+      'Comissão maior nas indicações',
+      'Acesso antecipado a lotes com desconto',
+      'Reunião mensal com Marcos Maziero',
     ],
     ctaLabel: 'Tornar-se Platinum',
   },
@@ -298,13 +298,36 @@ const packages: Package[] = [
     hotelSubtitle: 'Resort Ciano VIP',
     monthlyEstimate: 20 * netYieldPerQuota,
     benefits: [
-      'Tudo do Platinum',
-      'Day-use gratuito nos Resorts',
-      'Bônus de Rede (Níveis 1–5)',
-      'Gerente de Conta dedicado',
-      'Prioridade total em novos lotes',
+      'Todos os benefícios do Platinum',
+      '50% de desconto em pousadas Ciano',
+      '1 final de semana gratuito por ano',
+      'Convites para eventos e inaugurações',
+      'Nome listado como Sócio VIP em todas as pousadas',
+      'Comissão ainda maior nas indicações',
     ],
     ctaLabel: 'Tornar-se VIP',
+  },
+  {
+    id: 'imperial',
+    name: 'Imperial',
+    quotas: 60,
+    price: 60 * mockQuotaConfig.quotaPrice,
+    levelName: 'Imperial',
+    levelEmoji: '🏛️',
+    levelColor: '#7c3aed',
+    hotelSubtitle: 'Resort Ciano Imperial',
+    monthlyEstimate: 60 * netYieldPerQuota,
+    benefits: [
+      'Todos os benefícios do VIP',
+      'Hospedagem gratuita ilimitada (até 3 acompanhantes)',
+      'Máx. 1 quarto simultâneo — pode morar em pousada',
+      '40% de desconto para familiares',
+      'Viagem anual com Marcos Maziero',
+      'Quadro com foto no hall de entrada',
+      'Canal VIP direto com Marcos Maziero',
+      'Acesso ao grupo Imperial exclusivo',
+    ],
+    ctaLabel: 'Tornar-se Imperial',
   },
 ];
 
@@ -342,19 +365,23 @@ onUnmounted(() => {
 const faqItems = [
   {
     title: 'O que são cotas?',
-    content: 'Cotas são participações no Grupo Ciano de Pousadas. Ao adquirir cotas, você se torna sócio do grupo e passa a receber dividendos mensais proporcionais à sua participação.',
+    content: 'Cotas são participações no Grupo Ciano de Pousadas. Ao adquirir cotas, você se torna sócio do grupo e passa a receber dividendos mensais proporcionais à sua participação. O valor atual da cota é R$ 2.500.',
   },
   {
     title: 'Como são calculados os dividendos?',
-    content: 'Os dividendos são calculados mensalmente com base no faturamento do grupo. Cada cota representa uma participação proporcional nos lucros distribuídos.',
+    content: 'Os dividendos são calculados mensalmente: 20% do lucro líquido do grupo é depositado num pool de dividendos, e cada cotista recebe proporcionalmente ao número de cotas que possui (20% lucro ÷ total de cotas × suas cotas).',
   },
   {
     title: 'Como funcionam as comissões de indicação?',
-    content: 'Ao indicar novos cotistas, você recebe comissão direta de 10% sobre a compra de cotas. Além disso, recebe bônus de rede quando seus indicados fazem suas próprias indicações.',
+    content: 'Ao indicar novos cotistas, você recebe 10% sobre a primeira compra de cotas do indicado (Bônus Primeira Compra). Na recompra, recebe 5% no nível 1 e 2% nos níveis 2 a 6, dependendo do seu título de carreira. Além disso, há o Bônus de Equipe (2% do total) e o Bônus de Liderança (1% Ouro / 2% Diamante).',
   },
   {
-    title: 'O pacote Platinum realmente me dá nível Platinum imediatamente?',
-    content: 'Sim! Com 10 cotas (Pacote Platinum), você ultrapassa automaticamente o requisito mínimo do Nível Platinum e desfruta de todos os benefícios — incluindo descontos em diárias e acesso ao Pool de Locação — desde o primeiro dia.',
+    title: 'O que são os títulos (Bronze, Prata, Ouro, Diamante)?',
+    content: 'Os títulos são conquistas baseadas na sua rede de indicados. Bronze: 2 pessoas ativas. Prata: ajudar 1 indicado a virar Bronze. Ouro: 2 Bronzes em linhas diferentes. Diamante: 3 Bronzes em linhas diferentes. Cada título desbloqueia mais níveis de bônus de recompra e equipe.',
+  },
+  {
+    title: 'Qual a diferença entre Sócio, Platinum, VIP e Imperial?',
+    content: 'São os níveis de parceria baseados na quantidade de cotas compradas: Sócio (1-9 cotas), Platinum (10+), VIP (20+) e Imperial (60+). Cada nível oferece benefícios exclusivos como descontos em pousadas, hospedagem gratuita e reuniões com Marcos Maziero.',
   },
   {
     title: 'Posso vender minhas cotas?',
@@ -365,8 +392,8 @@ const faqItems = [
     content: 'Os pagamentos são realizados mensalmente via PIX, diretamente na chave cadastrada em seu perfil. Fechamento todo dia 25 e pagamento até o dia 5 do mês seguinte.',
   },
   {
-    title: "O que é o 'split' e por que o preço muda?",
-    content: 'O split é um mecanismo de ajuste periódico do valor das cotas, baseado nas atualizações do patrimônio imobiliário do grupo. A cada split, o preço reflete melhor o valor de mercado dos ativos.',
+    title: "O que é o 'split' e como funciona?",
+    content: 'O split é um mecanismo de ajuste do valor das cotas. A fórmula é: Preço = Valor atual + R$ 500 × Fator de valorização. O split é acionado quando o Fator de valorização atinge 3. A meta de cotas vendidas por split é 50 × 2^(QS), onde QS é o número de splits já ocorridos. Após o split, o preço base retorna a R$ 2.000.',
   },
 ];
 

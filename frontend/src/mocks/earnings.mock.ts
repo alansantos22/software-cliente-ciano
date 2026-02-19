@@ -3,12 +3,11 @@
 // ========================================
 
 export type BonusType =
-  | 'direct'
-  | 'indirect'
-  | 'residual'
+  | 'firstPurchase'
+  | 'repurchase'
+  | 'team'
   | 'leadership'
-  | 'performance'
-  | 'fidelity';
+  | 'dividend';
 
 export interface EarningEntry {
   id: string;
@@ -28,12 +27,11 @@ export interface EarningEntry {
 export interface MonthlyEarningSummary {
   month: string;
   userId: string;
-  direct: number;
-  indirect: number;
-  residual: number;
+  firstPurchase: number;
+  repurchase: number;
+  team: number;
   leadership: number;
-  performance: number;
-  fidelity: number;
+  dividend: number;
   total: number;
   lossProjection: number; // Amount that would be lost if user doesn't qualify
 }
@@ -54,11 +52,11 @@ export const mockEarnings: EarningEntry[] = [
   {
     id: 'earn-001',
     userId: 'user-002',
-    bonusType: 'direct',
+    bonusType: 'firstPurchase',
     amount: 2500,
     sourceUserId: 'user-005',
     sourceUserName: 'Ana Costa',
-    description: 'Bônus direto - Compra de 25 cotas',
+    description: 'Bônus primeira compra - Compra de 25 cotas',
     level: 1,
     referenceMonth: '2024-02',
     status: 'paid',
@@ -68,11 +66,11 @@ export const mockEarnings: EarningEntry[] = [
   {
     id: 'earn-002',
     userId: 'user-002',
-    bonusType: 'direct',
+    bonusType: 'firstPurchase',
     amount: 1500,
     sourceUserId: 'user-006',
     sourceUserName: 'Pedro Alves',
-    description: 'Bônus direto - Compra de 15 cotas',
+    description: 'Bônus primeira compra - Compra de 15 cotas',
     level: 1,
     referenceMonth: '2024-03',
     status: 'paid',
@@ -82,11 +80,11 @@ export const mockEarnings: EarningEntry[] = [
   {
     id: 'earn-003',
     userId: 'user-002',
-    bonusType: 'indirect',
+    bonusType: 'repurchase',
     amount: 500,
     sourceUserId: 'user-008',
     sourceUserName: 'Roberto Mendes',
-    description: 'Bônus indireto nível 2 - Compra de 5 cotas',
+    description: 'Bônus recompra nível 2 - Compra de 5 cotas',
     level: 2,
     referenceMonth: '2024-03',
     status: 'paid',
@@ -96,11 +94,11 @@ export const mockEarnings: EarningEntry[] = [
   {
     id: 'earn-004',
     userId: 'user-002',
-    bonusType: 'residual',
+    bonusType: 'team',
     amount: 1300,
     sourceUserId: null,
     sourceUserName: null,
-    description: 'Bônus residual mensal - Equipe ativa',
+    description: 'Bônus equipe mensal - 2% do total',
     level: 0,
     referenceMonth: '2024-03',
     status: 'paid',
@@ -114,7 +112,7 @@ export const mockEarnings: EarningEntry[] = [
     amount: 1950,
     sourceUserId: null,
     sourceUserName: null,
-    description: 'Bônus de liderança - Título Gold',
+    description: 'Bônus de liderança - Título Ouro',
     level: 0,
     referenceMonth: '2024-03',
     status: 'paid',
@@ -125,11 +123,11 @@ export const mockEarnings: EarningEntry[] = [
   {
     id: 'earn-006',
     userId: 'user-002',
-    bonusType: 'direct',
+    bonusType: 'repurchase',
     amount: 300,
     sourceUserId: 'user-009',
     sourceUserName: 'Fernanda Rocha',
-    description: 'Bônus direto (indireto da rede)',
+    description: 'Bônus recompra nível 2',
     level: 2,
     referenceMonth: '2024-04',
     status: 'pending',
@@ -140,11 +138,11 @@ export const mockEarnings: EarningEntry[] = [
   {
     id: 'earn-007',
     userId: 'user-003',
-    bonusType: 'direct',
+    bonusType: 'firstPurchase',
     amount: 800,
     sourceUserId: 'user-007',
     sourceUserName: 'Lúcia Ferreira',
-    description: 'Bônus direto - Compra de 8 cotas',
+    description: 'Bônus primeira compra - Compra de 8 cotas',
     level: 1,
     referenceMonth: '2024-03',
     status: 'paid',
@@ -154,11 +152,11 @@ export const mockEarnings: EarningEntry[] = [
   {
     id: 'earn-008',
     userId: 'user-003',
-    bonusType: 'residual',
+    bonusType: 'team',
     amount: 600,
     sourceUserId: null,
     sourceUserName: null,
-    description: 'Bônus residual mensal',
+    description: 'Bônus equipe mensal - 2% do total',
     level: 0,
     referenceMonth: '2024-03',
     status: 'paid',
@@ -169,11 +167,11 @@ export const mockEarnings: EarningEntry[] = [
   {
     id: 'earn-009',
     userId: 'user-001',
-    bonusType: 'direct',
+    bonusType: 'firstPurchase',
     amount: 5000,
     sourceUserId: 'user-002',
     sourceUserName: 'João Silva',
-    description: 'Bônus direto - Compra de 50 cotas',
+    description: 'Bônus primeira compra - Compra de 50 cotas',
     level: 1,
     referenceMonth: '2024-01',
     status: 'paid',
@@ -183,11 +181,11 @@ export const mockEarnings: EarningEntry[] = [
   {
     id: 'earn-010',
     userId: 'user-001',
-    bonusType: 'indirect',
+    bonusType: 'repurchase',
     amount: 2500,
     sourceUserId: 'user-005',
     sourceUserName: 'Ana Costa',
-    description: 'Bônus indireto nível 2',
+    description: 'Bônus recompra nível 2',
     level: 2,
     referenceMonth: '2024-02',
     status: 'paid',
@@ -197,11 +195,11 @@ export const mockEarnings: EarningEntry[] = [
   {
     id: 'earn-011',
     userId: 'user-001',
-    bonusType: 'performance',
+    bonusType: 'dividend',
     amount: 7500,
     sourceUserId: null,
     sourceUserName: null,
-    description: 'Bônus de performance - Top 10 do mês',
+    description: 'Dividendos - 20% lucro ÷ total cotas × suas cotas',
     level: 0,
     referenceMonth: '2024-03',
     status: 'paid',
@@ -211,11 +209,11 @@ export const mockEarnings: EarningEntry[] = [
   {
     id: 'earn-012',
     userId: 'user-001',
-    bonusType: 'fidelity',
+    bonusType: 'team',
     amount: 1000,
     sourceUserId: null,
     sourceUserName: null,
-    description: 'Bônus fidelidade - 3 meses consecutivos',
+    description: 'Bônus equipe mensal - 2% do total',
     level: 0,
     referenceMonth: '2024-03',
     status: 'paid',
@@ -229,49 +227,45 @@ export const mockMonthlySummaries: MonthlyEarningSummary[] = [
   {
     month: '2024-03',
     userId: 'user-002',
-    direct: 1500,
-    indirect: 500,
-    residual: 1300,
+    firstPurchase: 1500,
+    repurchase: 500,
+    team: 1300,
     leadership: 1950,
-    performance: 0,
-    fidelity: 0,
+    dividend: 0,
     total: 5250,
     lossProjection: 1200,
   },
   {
     month: '2024-02',
     userId: 'user-002',
-    direct: 2500,
-    indirect: 0,
-    residual: 1000,
+    firstPurchase: 2500,
+    repurchase: 0,
+    team: 1000,
     leadership: 0,
-    performance: 0,
-    fidelity: 0,
+    dividend: 0,
     total: 3500,
     lossProjection: 0,
   },
   {
     month: '2024-03',
     userId: 'user-003',
-    direct: 800,
-    indirect: 0,
-    residual: 600,
+    firstPurchase: 800,
+    repurchase: 0,
+    team: 600,
     leadership: 0,
-    performance: 0,
-    fidelity: 0,
+    dividend: 0,
     total: 1400,
     lossProjection: 400,
   },
   {
     month: '2024-03',
     userId: 'user-001',
-    direct: 3000,
-    indirect: 1500,
-    residual: 2000,
+    firstPurchase: 3000,
+    repurchase: 1500,
+    team: 1000,
     leadership: 2500,
-    performance: 7500,
-    fidelity: 1000,
-    total: 17500,
+    dividend: 7500,
+    total: 15500,
     lossProjection: 0,
   },
 ];

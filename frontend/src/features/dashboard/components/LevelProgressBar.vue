@@ -33,8 +33,7 @@
     </div>
 
     <p class="level-bar__caption">
-      Falta <strong>{{ formatCurrency(remaining) }}</strong> em vendas para desbloquear
-      <strong>{{ levelLabel(nextLevel) }}</strong>
+      {{ captionText }}
     </p>
   </div>
 </template>
@@ -48,8 +47,8 @@ const props = withDefaults(
   defineProps<{
     currentLevel: LevelKey;
     nextLevel: LevelKey;
-    currentValue: number;  // R$ already accumulated toward next
-    targetValue: number;   // R$ required for next level
+    currentValue: number;  // progress toward next (e.g. qualified bronzes or actives)
+    targetValue: number;   // required for next level
     bonusPercent?: number;
   }>(),
   {
@@ -62,6 +61,13 @@ const LABELS: Record<LevelKey, string> = {
   prata: 'Prata',
   ouro: 'Ouro',
   diamante: 'Diamante',
+};
+
+const REQUIREMENTS: Record<LevelKey, string> = {
+  bronze: '2 pessoas ativas na rede',
+  prata: '1 indicado Bronze',
+  ouro: '2 Bronzes em linhas diferentes',
+  diamante: '3 Bronzes em linhas diferentes',
 };
 
 const ICONS: Record<LevelKey, string> = {
@@ -78,16 +84,10 @@ const progressPercent = computed(() =>
   Math.min(100, Math.round((props.currentValue / props.targetValue) * 100))
 );
 
-const remaining = computed(() => Math.max(0, props.targetValue - props.currentValue));
-
-function formatCurrency(value: number): string {
-  return new Intl.NumberFormat('pt-BR', {
-    style: 'currency',
-    currency: 'BRL',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(value);
-}
+const captionText = computed(() => {
+  if (props.currentLevel === 'diamante') return 'Parabéns! Você atingiu o título máximo.';
+  return `Requisito para ${LABELS[props.nextLevel]}: ${REQUIREMENTS[props.nextLevel]}`;
+});
 </script>
 
 <style lang="scss" scoped>

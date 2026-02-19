@@ -113,21 +113,21 @@ const activeFilter = ref('all');
 
 // ─── Mock Data ────────────────────────────────────────
 const allRows = ref<ActivityRow[]>([
-  { id: 1,  type: 'Comissão',  rawType: 'direct_commission', description: 'Indicação direta — João Silva',          amount:  150.00, date: '2025-01-15' },
-  { id: 2,  type: 'Bônus',     rawType: 'network_bonus',     description: 'Bônus de rede — Nível 2',                amount:   75.50, date: '2025-01-14' },
-  { id: 3,  type: 'Dividendo', rawType: 'dividend',          description: 'Dividendo mensal — Janeiro 2025',        amount:  320.00, date: '2025-01-10' },
-  { id: 4,  type: 'Compra',    rawType: 'purchase',          description: 'Aquisição de cotas',                     amount: -1000.00, date: '2025-01-08' },
-  { id: 5,  type: 'Comissão',  rawType: 'direct_commission', description: 'Indicação direta — Maria Fernanda',      amount:  150.00, date: '2025-01-07' },
-  { id: 6,  type: 'Bônus',     rawType: 'career_bonus',      description: 'Bônus de carreira — Nível Prata',        amount:  500.00, date: '2025-01-05' },
-  { id: 7,  type: 'Bônus',     rawType: 'retention_bonus',   description: 'Bônus de retenção',                      amount:   90.00, date: '2025-01-03' },
-  { id: 8,  type: 'Dividendo', rawType: 'dividend',          description: 'Dividendo mensal — Dezembro 2024',       amount:  310.00, date: '2024-12-10' },
-  { id: 9,  type: 'Compra',    rawType: 'purchase',          description: 'Aquisição de cotas',                     amount: -500.00, date: '2024-12-05' },
-  { id: 10, type: 'Comissão',  rawType: 'direct_commission', description: 'Indicação direta — Carlos Eduardo',      amount:  150.00, date: '2024-12-03' },
-  { id: 11, type: 'Bônus',     rawType: 'special_bonus',     description: 'Bônus especial — Campanha Dezembro',     amount:  200.00, date: '2024-12-01' },
-  { id: 12, type: 'Dividendo', rawType: 'dividend',          description: 'Dividendo mensal — Novembro 2024',       amount:  295.00, date: '2024-11-10' },
-  { id: 13, type: 'Comissão',  rawType: 'direct_commission', description: 'Indicação direta — Ana Paula',           amount:  150.00, date: '2024-11-08' },
-  { id: 14, type: 'Bônus',     rawType: 'network_bonus',     description: 'Bônus de rede — Nível 3',                amount:  120.00, date: '2024-11-05' },
-  { id: 15, type: 'Compra',    rawType: 'purchase',          description: 'Aquisição de cotas',                     amount: -2000.00, date: '2024-11-01' },
+  { id: 1,  type: 'Comissão',  rawType: 'first_purchase',    description: 'Bônus primeira compra — João Silva',       amount:  150.00, date: '2025-01-15' },
+  { id: 2,  type: 'Bônus',     rawType: 'repurchase',        description: 'Bônus recompra — Nível 2',                 amount:   75.50, date: '2025-01-14' },
+  { id: 3,  type: 'Dividendo', rawType: 'dividend',          description: 'Dividendo mensal — Janeiro 2025',          amount:  320.00, date: '2025-01-10' },
+  { id: 4,  type: 'Compra',    rawType: 'purchase',          description: 'Aquisição de cotas',                       amount: -2500.00, date: '2025-01-08' },
+  { id: 5,  type: 'Comissão',  rawType: 'first_purchase',    description: 'Bônus primeira compra — Maria Fernanda',   amount:  150.00, date: '2025-01-07' },
+  { id: 6,  type: 'Bônus',     rawType: 'leadership',        description: 'Bônus de liderança — Nível Ouro',          amount:  500.00, date: '2025-01-05' },
+  { id: 7,  type: 'Bônus',     rawType: 'team_bonus',        description: 'Bônus de equipe — 2% do total',            amount:   90.00, date: '2025-01-03' },
+  { id: 8,  type: 'Dividendo', rawType: 'dividend',          description: 'Dividendo mensal — Dezembro 2024',         amount:  310.00, date: '2024-12-10' },
+  { id: 9,  type: 'Compra',    rawType: 'purchase',          description: 'Aquisição de cotas',                       amount: -2500.00, date: '2024-12-05' },
+  { id: 10, type: 'Comissão',  rawType: 'first_purchase',    description: 'Bônus primeira compra — Carlos Eduardo',   amount:  150.00, date: '2024-12-03' },
+  { id: 11, type: 'Bônus',     rawType: 'repurchase',        description: 'Bônus recompra — Nível 3',                 amount:  200.00, date: '2024-12-01' },
+  { id: 12, type: 'Dividendo', rawType: 'dividend',          description: 'Dividendo mensal — Novembro 2024',         amount:  295.00, date: '2024-11-10' },
+  { id: 13, type: 'Comissão',  rawType: 'first_purchase',    description: 'Bônus primeira compra — Ana Paula',        amount:  150.00, date: '2024-11-08' },
+  { id: 14, type: 'Bônus',     rawType: 'repurchase',        description: 'Bônus recompra — Nível 2',                 amount:  120.00, date: '2024-11-05' },
+  { id: 15, type: 'Compra',    rawType: 'purchase',          description: 'Aquisição de cotas',                       amount: -5000.00, date: '2024-11-01' },
 ]);
 
 // ─── Filters config ───────────────────────────────────
@@ -186,13 +186,12 @@ function getVariant(type: string): 'default' | 'success' | 'warning' | 'info' | 
 
 function getTypeIcon(rawType: string): string {
   const map: Record<string, string> = {
-    direct_commission: 'handshake',
-    network_bonus:     'network-wired',
-    dividend:          'chart-line',
-    career_bonus:      'trophy',
-    retention_bonus:   'rotate',
-    special_bonus:     'star',
-    purchase:          'cart-shopping',
+    first_purchase: 'handshake',
+    repurchase:     'rotate',
+    team_bonus:     'users',
+    leadership:     'trophy',
+    dividend:       'chart-line',
+    purchase:       'cart-shopping',
   };
   return map[rawType] || 'money-bill-wave';
 }

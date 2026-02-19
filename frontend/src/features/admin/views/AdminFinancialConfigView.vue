@@ -29,86 +29,98 @@
 
         <div class="config-grid">
           <div class="config-item">
-            <label>Comissão Direta (%)</label>
+            <label>Bônus Primeira Compra (%)</label>
             <DsInput
-              v-model.number="config.directCommission"
+              v-model.number="config.firstPurchaseBonus"
               type="number"
               min="0"
               max="100"
               step="0.5"
             />
-            <span class="config-item__help">Percentual pago sobre vendas de indicados diretos</span>
+            <span class="config-item__help">Percentual pago sobre a primeira compra de cotas do indicado</span>
           </div>
 
           <div class="config-item">
-            <label>Bônus de Rede Nível 1 (%)</label>
+            <label>Bônus Recompra Nível 1 (%)</label>
             <DsInput
-              v-model.number="config.networkBonus1"
+              v-model.number="config.repurchaseBonusL1"
               type="number"
               min="0"
               max="100"
               step="0.5"
             />
-            <span class="config-item__help">Percentual do 1º nível da rede</span>
+            <span class="config-item__help">Percentual de recompra do 1º nível da rede</span>
           </div>
 
           <div class="config-item">
-            <label>Bônus de Rede Nível 2 (%)</label>
+            <label>Bônus Recompra Níveis 2-6 (%)</label>
             <DsInput
-              v-model.number="config.networkBonus2"
+              v-model.number="config.repurchaseBonusL2to6"
               type="number"
               min="0"
               max="100"
               step="0.5"
             />
-            <span class="config-item__help">Percentual do 2º nível da rede</span>
+            <span class="config-item__help">Percentual de recompra dos níveis 2 a 6 da rede</span>
           </div>
 
           <div class="config-item">
-            <label>Bônus de Rede Nível 3 (%)</label>
+            <label>Bônus de Equipe (%)</label>
             <DsInput
-              v-model.number="config.networkBonus3"
+              v-model.number="config.teamBonus"
               type="number"
               min="0"
               max="100"
               step="0.5"
             />
-            <span class="config-item__help">Percentual do 3º nível da rede</span>
+            <span class="config-item__help">Percentual sobre o total da equipe ativa</span>
           </div>
         </div>
       </DsCard>
     </section>
 
-    <!-- Dividend Settings -->
+    <!-- Dividend & Leadership Settings -->
     <section class="config-section">
       <DsCard>
         <template #header>
-          <h2>📊 Dividendos</h2>
+          <h2>📊 Dividendos e Liderança</h2>
         </template>
 
         <div class="config-grid">
           <div class="config-item">
-            <label>Dividendo Base (%)</label>
+            <label>Pool de Dividendos (%)</label>
             <DsInput
-              v-model.number="config.dividendBase"
+              v-model.number="config.dividendPool"
               type="number"
               min="0"
               max="100"
               step="0.1"
             />
-            <span class="config-item__help">Percentual base mensal por cota</span>
+            <span class="config-item__help">Percentual do lucro líquido distribuído como dividendos</span>
           </div>
 
           <div class="config-item">
-            <label>Bônus de Retenção (%)</label>
+            <label>Bônus Liderança Ouro (%)</label>
             <DsInput
-              v-model.number="config.retentionBonus"
+              v-model.number="config.leadershipBonusOuro"
               type="number"
               min="0"
               max="100"
               step="0.5"
             />
-            <span class="config-item__help">Bônus adicional para cotas mantidas há mais de 1 ano</span>
+            <span class="config-item__help">Percentual sobre 5 níveis qualificados para título Ouro</span>
+          </div>
+
+          <div class="config-item">
+            <label>Bônus Liderança Diamante (%)</label>
+            <DsInput
+              v-model.number="config.leadershipBonusDiamante"
+              type="number"
+              min="0"
+              max="100"
+              step="0.5"
+            />
+            <span class="config-item__help">Percentual sobre 5 níveis qualificados para título Diamante</span>
           </div>
 
           <div class="config-item">
@@ -151,23 +163,26 @@
                 <strong :style="{ color: row.color }">{{ row.title }}</strong>
               </div>
             </template>
-            <template #directRequired="{ index }">
+            <template #requirement="{ index }">
+              {{ config.careerLevels[index]!.requirement }}
+            </template>
+            <template #repurchaseLevels="{ index }">
               <DsInput
-                v-model.number="config.careerLevels[index]!.directRequired"
+                v-model.number="config.careerLevels[index]!.repurchaseLevels"
                 type="number"
                 min="0"
               />
             </template>
-            <template #networkRequired="{ index }">
+            <template #teamLevels="{ index }">
               <DsInput
-                v-model.number="config.careerLevels[index]!.networkRequired"
+                v-model.number="config.careerLevels[index]!.teamLevels"
                 type="number"
                 min="0"
               />
             </template>
-            <template #careerBonus="{ index }">
+            <template #leadershipPercent="{ index }">
               <DsInput
-                v-model.number="config.careerLevels[index]!.careerBonus"
+                v-model.number="config.careerLevels[index]!.leadershipPercent"
                 type="number"
                 min="0"
                 max="100"
@@ -301,28 +316,29 @@ const saveSuccess = ref(false);
 
 const config = reactive({
   // Commissions
-  directCommission: 10,
-  networkBonus1: 5,
-  networkBonus2: 3,
-  networkBonus3: 2,
+  firstPurchaseBonus: 10,
+  repurchaseBonusL1: 5,
+  repurchaseBonusL2to6: 2,
+  teamBonus: 2,
 
-  // Dividends
-  dividendBase: 2,
-  retentionBonus: 0.5,
+  // Dividends & Leadership
+  dividendPool: 20,
+  leadershipBonusOuro: 1,
+  leadershipBonusDiamante: 2,
   closingDay: 25,
   paymentDay: 5,
 
-  // Career Levels
+  // Career Levels (network-based)
   careerLevels: [
-    { title: 'Bronze', directRequired: 0, networkRequired: 0, careerBonus: 0 },
-    { title: 'Prata', directRequired: 10, networkRequired: 50, careerBonus: 2 },
-    { title: 'Ouro', directRequired: 25, networkRequired: 100, careerBonus: 5 },
-    { title: 'Diamante', directRequired: 50, networkRequired: 500, careerBonus: 10 },
+    { title: 'Bronze', requirement: '2 pessoas ativas', repurchaseLevels: 1, teamLevels: 2, leadershipPercent: 0 },
+    { title: 'Prata', requirement: '1 indicado Bronze', repurchaseLevels: 2, teamLevels: 3, leadershipPercent: 0 },
+    { title: 'Ouro', requirement: '2 Bronzes linhas diferentes', repurchaseLevels: 4, teamLevels: 4, leadershipPercent: 1 },
+    { title: 'Diamante', requirement: '3 Bronzes linhas diferentes', repurchaseLevels: 6, teamLevels: 5, leadershipPercent: 2 },
   ],
 
   // Quotas
-  quotaValue: 200,
-  minQuotas: 5,
+  quotaValue: 2500,
+  minQuotas: 1,
   maxQuotasPerUser: 1000,
   totalQuotasAvailable: 100000,
 
@@ -334,9 +350,10 @@ const config = reactive({
 
 const careerColumns = [
   { key: 'title', label: 'Título', width: '150px' },
-  { key: 'directRequired', label: 'Indicados Diretos', width: '150px' },
-  { key: 'networkRequired', label: 'Total na Rede', width: '150px' },
-  { key: 'careerBonus', label: 'Bônus Carreira (%)', width: '150px' },
+  { key: 'requirement', label: 'Requisito', width: '250px' },
+  { key: 'repurchaseLevels', label: 'Níveis Recompra', width: '150px' },
+  { key: 'teamLevels', label: 'Níveis Equipe', width: '150px' },
+  { key: 'leadershipPercent', label: 'Liderança (%)', width: '150px' },
 ];
 
 const careerData = [
@@ -357,14 +374,15 @@ async function saveConfig() {
 function resetDefaults() {
   if (confirm('Tem certeza que deseja restaurar as configurações padrão?')) {
     // Reset to hardcoded defaults
-    config.directCommission = 10;
-    config.networkBonus1 = 5;
-    config.networkBonus2 = 3;
-    config.networkBonus3 = 2;
-    config.dividendBase = 2;
-    config.retentionBonus = 0.5;
-    config.quotaValue = 200;
-    config.minQuotas = 5;
+    config.firstPurchaseBonus = 10;
+    config.repurchaseBonusL1 = 5;
+    config.repurchaseBonusL2to6 = 2;
+    config.teamBonus = 2;
+    config.dividendPool = 20;
+    config.leadershipBonusOuro = 1;
+    config.leadershipBonusDiamante = 2;
+    config.quotaValue = 2500;
+    config.minQuotas = 1;
     config.maxQuotasPerUser = 1000;
   }
 }

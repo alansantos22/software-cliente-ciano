@@ -8,12 +8,13 @@ export interface QuotaConfig {
   quotaPrice: number;
   currency: string;
   // Bonus percentages
-  directBonus: number;
-  indirectBonus: number[];
-  residualBonus: number;
-  leadershipBonus: number;
-  performanceBonus: number;
-  fidelityBonus: number;
+  firstPurchaseBonus: number; // 10% sobre primeira compra do indicado
+  repurchaseBonusL1: number; // 5% nível 1
+  repurchaseBonusL2to6: number; // 2% níveis 2-6
+  teamBonusPercent: number; // 2% do total da equipe
+  leadershipBonusOuro: number; // 1%
+  leadershipBonusDiamante: number; // 2%
+  dividendPoolPercent: number; // 20% do lucro
 }
 
 export interface QuotaTransaction {
@@ -46,12 +47,13 @@ export const mockQuotaConfig: QuotaConfig = {
   quotaPrice: 2500, // R$ 2.500,00 per quota
   currency: 'BRL',
   // Bonus structure
-  directBonus: 10, // 10%
-  indirectBonus: [5, 3, 2, 1, 1], // 5 levels: 5%, 3%, 2%, 1%, 1%
-  residualBonus: 2, // 2% monthly residual
-  leadershipBonus: 3, // 3% for qualified leaders
-  performanceBonus: 5, // 5% for top performers
-  fidelityBonus: 1, // 1% extra for 12+ months active
+  firstPurchaseBonus: 10, // 10% sobre primeira compra do indicado
+  repurchaseBonusL1: 5, // 5% nível 1
+  repurchaseBonusL2to6: 2, // 2% níveis 2-6
+  teamBonusPercent: 2, // 2% do total da equipe
+  leadershipBonusOuro: 1, // 1% Ouro
+  leadershipBonusDiamante: 2, // 2% Diamante
+  dividendPoolPercent: 20, // 20% do lucro ÷ total cotas × suas cotas
 };
 
 // Sample transactions
@@ -61,7 +63,7 @@ export const mockQuotaTransactions: QuotaTransaction[] = [
     id: 'txn-001',
     userId: 'user-002',
     type: 'purchase',
-    amount: 50000,
+    amount: 125000,
     quotasAffected: 50,
     description: 'Compra inicial de cotas',
     status: 'completed',
@@ -110,7 +112,7 @@ export const mockQuotaTransactions: QuotaTransaction[] = [
     id: 'txn-005',
     userId: 'user-003',
     type: 'purchase',
-    amount: 30000,
+    amount: 75000,
     quotasAffected: 30,
     description: 'Compra inicial de cotas',
     status: 'completed',
@@ -135,7 +137,7 @@ export const mockQuotaTransactions: QuotaTransaction[] = [
     id: 'txn-007',
     userId: 'user-005',
     type: 'purchase',
-    amount: 25000,
+    amount: 62500,
     quotasAffected: 25,
     description: 'Compra inicial de cotas',
     status: 'completed',
@@ -160,7 +162,7 @@ export const mockQuotaTransactions: QuotaTransaction[] = [
     id: 'txn-009',
     userId: 'user-006',
     type: 'purchase',
-    amount: 5000,
+    amount: 12500,
     quotasAffected: 5,
     description: 'Compra adicional de cotas',
     status: 'pending',
@@ -177,8 +179,8 @@ export const mockUserBalances: UserQuotaBalance[] = [
     totalQuotas: 100,
     activeQuotas: 100,
     pendingQuotas: 0,
-    totalInvested: 100000,
-    currentValue: 150000,
+    totalInvested: 250000,
+    currentValue: 375000,
     lastPurchaseDate: '2024-01-01T00:00:00Z',
   },
   {
@@ -186,8 +188,8 @@ export const mockUserBalances: UserQuotaBalance[] = [
     totalQuotas: 50,
     activeQuotas: 50,
     pendingQuotas: 0,
-    totalInvested: 50000,
-    currentValue: 65000,
+    totalInvested: 125000,
+    currentValue: 162500,
     lastPurchaseDate: '2024-01-15T10:35:00Z',
   },
   {
@@ -195,8 +197,8 @@ export const mockUserBalances: UserQuotaBalance[] = [
     totalQuotas: 30,
     activeQuotas: 30,
     pendingQuotas: 0,
-    totalInvested: 30000,
-    currentValue: 38500,
+    totalInvested: 75000,
+    currentValue: 96250,
     lastPurchaseDate: '2024-02-01T08:05:00Z',
   },
   {
@@ -204,8 +206,8 @@ export const mockUserBalances: UserQuotaBalance[] = [
     totalQuotas: 10,
     activeQuotas: 10,
     pendingQuotas: 0,
-    totalInvested: 10000,
-    currentValue: 12000,
+    totalInvested: 25000,
+    currentValue: 30000,
     lastPurchaseDate: '2024-02-10T14:25:00Z',
   },
   {
@@ -213,8 +215,8 @@ export const mockUserBalances: UserQuotaBalance[] = [
     totalQuotas: 25,
     activeQuotas: 25,
     pendingQuotas: 0,
-    totalInvested: 25000,
-    currentValue: 31200,
+    totalInvested: 62500,
+    currentValue: 78000,
     lastPurchaseDate: '2024-02-20T09:20:00Z',
   },
 ];

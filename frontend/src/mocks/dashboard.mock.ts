@@ -68,8 +68,8 @@ export const mockSplitTicker: SplitTickerData = {
 export const mockCareerProgress: CareerProgressData = {
   currentLevel: 'ouro',
   nextLevel: 'diamante',
-  currentValue: 45000,
-  targetValue: 50000,
+  currentValue: 2,   // 2 Bronzes in different lines achieved
+  targetValue: 3,    // 3 Bronzes in different lines needed for Diamante
   bonusPercentUnlock: 2,
 };
 
@@ -90,26 +90,26 @@ export const mockDashboardKpi: DashboardKpiData = {
 };
 
 export const DONUT_COLORS = {
-  direct:     '#00bcd4',
-  network:    '#4caf50',
-  dividend:   '#7c3aed',
-  career:     '#ffc107',
-  retention:  '#ff9800',
+  firstPurchase: '#00bcd4',
+  repurchase:    '#4caf50',
+  team:          '#ff9800',
+  leadership:    '#ffc107',
+  dividend:      '#7c3aed',
 };
 
 export function buildEarningsSources(
-  direct: number,
-  network: number,
-  dividend: number,
-  career: number,
-  retention: number
+  firstPurchase: number,
+  repurchase: number,
+  team: number,
+  leadership: number,
+  dividend: number
 ): EarningSourceData[] {
   return [
-    { label: 'Comissão Direta',  value: direct,    color: DONUT_COLORS.direct,    type: 'direct' },
-    { label: 'Bônus de Rede',    value: network,   color: DONUT_COLORS.network,   type: 'network' },
-    { label: 'Dividendos',       value: dividend,  color: DONUT_COLORS.dividend,  type: 'dividend' },
-    { label: 'Bônus de Carreira',value: career,    color: DONUT_COLORS.career,    type: 'career' },
-    { label: 'Bônus de Retenção',value: retention, color: DONUT_COLORS.retention, type: 'retention' },
+    { label: 'Bônus Primeira Compra', value: firstPurchase, color: DONUT_COLORS.firstPurchase, type: 'firstPurchase' },
+    { label: 'Bônus Recompra',        value: repurchase,    color: DONUT_COLORS.repurchase,    type: 'repurchase' },
+    { label: 'Bônus Equipe',          value: team,          color: DONUT_COLORS.team,          type: 'team' },
+    { label: 'Bônus Liderança',       value: leadership,    color: DONUT_COLORS.leadership,    type: 'leadership' },
+    { label: 'Dividendos',            value: dividend,      color: DONUT_COLORS.dividend,      type: 'dividend' },
   ];
 }
 
@@ -135,7 +135,7 @@ function avatarColor(name: string): string {
 export const mockRecentActivity: RecentActivityItem[] = [
   {
     id: 'act-001',
-    type: 'Comissão',
+    type: 'Primeira Compra',
     description: 'Indicação direta',
     sourceUserName: 'João Silva',
     sourceAvatarInitials: initials('João Silva'),
@@ -145,7 +145,7 @@ export const mockRecentActivity: RecentActivityItem[] = [
   },
   {
     id: 'act-002',
-    type: 'Bônus de Rede',
+    type: 'Bônus Recompra',
     description: 'Nível 2 - rede de João',
     sourceUserName: 'Ana Costa',
     sourceAvatarInitials: initials('Ana Costa'),
@@ -165,8 +165,8 @@ export const mockRecentActivity: RecentActivityItem[] = [
   },
   {
     id: 'act-004',
-    type: 'Bônus de Carreira',
-    description: 'Meta de liderança Ouro',
+    type: 'Bônus Liderança',
+    description: 'Bônus de liderança Ouro',
     sourceUserName: null,
     sourceAvatarInitials: null,
     sourceAvatarColor: null,

@@ -27,6 +27,10 @@ export interface NetworkStats {
   totalVolume: number;
   activeMembers: number;
   inactiveMembers: number;
+  /** Number of direct/indirect members who achieved Bronze title */
+  qualifiedBronzes: number;
+  /** Number of distinct network lines that contain at least one Bronze */
+  qualifiedLines: number;
   titleDistribution: Record<UserTitle, number>;
   levelDistribution: Record<number, number>;
 }
@@ -117,7 +121,7 @@ export const mockNetworkTree: NetworkNode = {
           email: 'pedro.alves@email.com',
           phone: '(11) 99999-0006',
           title: 'bronze',
-          partnerLevel: 'socio',
+          partnerLevel: 'platinum',
           quotaCount: 15,
           directCount: 2,
           teamCount: 5,
@@ -184,7 +188,7 @@ export const mockNetworkTree: NetworkNode = {
       email: 'carlos.lima@email.com',
       phone: '(11) 99999-0003',
       title: 'bronze',
-      partnerLevel: 'socio',
+      partnerLevel: 'platinum',
       quotaCount: 10,
       directCount: 3,
       teamCount: 8,
@@ -215,7 +219,7 @@ export const mockNetworkTree: NetworkNode = {
           email: 'julia.martins@email.com',
           phone: '(11) 99999-0012',
           title: 'silver',
-          partnerLevel: 'platinum',
+          partnerLevel: 'vip',
           quotaCount: 20,
           directCount: 3,
           teamCount: 10,
@@ -237,6 +241,8 @@ export const mockNetworkStats: NetworkStats = {
   totalVolume: 500000,
   activeMembers: 11,
   inactiveMembers: 1,
+  qualifiedBronzes: 3,
+  qualifiedLines: 3,
   titleDistribution: {
     none: 3,
     bronze: 3,
@@ -282,12 +288,27 @@ export function getSubtree(rootId: string): NetworkNode | null {
 export function calculateNetworkStats(tree: NetworkNode): NetworkStats {
   const flat = flattenNetwork(tree).slice(1); // Exclude root
   
+  // Count Bronzes per direct line
+  const bronzesByLine = new Map<string, number>();
+  for (const child of tree.children) {
+    const lineId = child.id;
+    const lineFlat = flattenNetwork(child);
+    const bronzesInLine = lineFlat.filter(
+      (n) => n.title === 'bronze' || n.title === 'silver' || n.title === 'gold' || n.title === 'diamond',
+    ).length;
+    if (bronzesInLine > 0) bronzesByLine.set(lineId, bronzesInLine);
+  }
+
   const stats: NetworkStats = {
     totalDirect: tree.children.length,
     totalTeam: flat.length,
     totalVolume: flat.reduce((sum, n) => sum + n.totalVolume, 0),
     activeMembers: flat.filter((n) => n.isActive).length,
     inactiveMembers: flat.filter((n) => !n.isActive).length,
+    qualifiedBronzes: flat.filter(
+      (n) => n.title === 'bronze' || n.title === 'silver' || n.title === 'gold' || n.title === 'diamond',
+    ).length,
+    qualifiedLines: bronzesByLine.size,
     titleDistribution: { none: 0, bronze: 0, silver: 0, gold: 0, diamond: 0 },
     levelDistribution: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
   };

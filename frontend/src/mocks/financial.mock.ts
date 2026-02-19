@@ -9,16 +9,13 @@ export interface MonthlyFinancialConfig {
   maxWithdrawal: number;
   withdrawalFee: number; // Percentage
   // Bonus percentages for this month
-  directBonusPercent: number;
-  indirectBonusLevels: number[]; // 5 levels
-  residualBonusPercent: number;
-  leadershipBonusPercent: number;
-  performanceBonusPercent: number;
-  fidelityBonusPercent: number;
-  // Qualification requirements
-  minQuotasForBonus: number;
-  minActiveDirectsForLeadership: number;
-  minTeamVolumeForPerformance: number;
+  firstPurchaseBonusPercent: number; // 10% sobre primeira compra do indicado
+  repurchaseBonusL1Percent: number; // 5% nível 1 recompra
+  repurchaseBonusL2to6Percent: number; // 2% níveis 2-6 recompra
+  teamBonusPercent: number; // 2% do total da equipe
+  leadershipBonusOuroPercent: number; // 1% Ouro
+  leadershipBonusDiamantePercent: number; // 2% Diamante
+  dividendPoolPercent: number; // 20% do lucro distribuído
   // Status
   isLocked: boolean; // True if month is closed
   closedAt: string | null;
@@ -48,19 +45,17 @@ export interface GlobalFinancialSettings {
 export const mockMonthlyConfigs: MonthlyFinancialConfig[] = [
   {
     month: '2024-04',
-    quotaPrice: 1000,
+    quotaPrice: 2500,
     minWithdrawal: 100,
     maxWithdrawal: 50000,
     withdrawalFee: 2.5,
-    directBonusPercent: 10,
-    indirectBonusLevels: [5, 3, 2, 1, 1],
-    residualBonusPercent: 2,
-    leadershipBonusPercent: 3,
-    performanceBonusPercent: 5,
-    fidelityBonusPercent: 1,
-    minQuotasForBonus: 1,
-    minActiveDirectsForLeadership: 5,
-    minTeamVolumeForPerformance: 100000,
+    firstPurchaseBonusPercent: 10,
+    repurchaseBonusL1Percent: 5,
+    repurchaseBonusL2to6Percent: 2,
+    teamBonusPercent: 2,
+    leadershipBonusOuroPercent: 1,
+    leadershipBonusDiamantePercent: 2,
+    dividendPoolPercent: 20,
     isLocked: false,
     closedAt: null,
     totalPayout: 0,
@@ -68,19 +63,17 @@ export const mockMonthlyConfigs: MonthlyFinancialConfig[] = [
   },
   {
     month: '2024-03',
-    quotaPrice: 1000,
+    quotaPrice: 2500,
     minWithdrawal: 100,
     maxWithdrawal: 50000,
     withdrawalFee: 2.5,
-    directBonusPercent: 10,
-    indirectBonusLevels: [5, 3, 2, 1, 1],
-    residualBonusPercent: 2,
-    leadershipBonusPercent: 3,
-    performanceBonusPercent: 5,
-    fidelityBonusPercent: 1,
-    minQuotasForBonus: 1,
-    minActiveDirectsForLeadership: 5,
-    minTeamVolumeForPerformance: 100000,
+    firstPurchaseBonusPercent: 10,
+    repurchaseBonusL1Percent: 5,
+    repurchaseBonusL2to6Percent: 2,
+    teamBonusPercent: 2,
+    leadershipBonusOuroPercent: 1,
+    leadershipBonusDiamantePercent: 2,
+    dividendPoolPercent: 20,
     isLocked: true,
     closedAt: '2024-04-05T23:59:59Z',
     totalPayout: 43000,
@@ -88,19 +81,17 @@ export const mockMonthlyConfigs: MonthlyFinancialConfig[] = [
   },
   {
     month: '2024-02',
-    quotaPrice: 1000,
+    quotaPrice: 2500,
     minWithdrawal: 100,
     maxWithdrawal: 50000,
-    withdrawalFee: 2.0, // Lower fee in Feb
-    directBonusPercent: 10,
-    indirectBonusLevels: [5, 3, 2, 1, 1],
-    residualBonusPercent: 2,
-    leadershipBonusPercent: 3,
-    performanceBonusPercent: 5,
-    fidelityBonusPercent: 1,
-    minQuotasForBonus: 1,
-    minActiveDirectsForLeadership: 5,
-    minTeamVolumeForPerformance: 100000,
+    withdrawalFee: 2.0,
+    firstPurchaseBonusPercent: 10,
+    repurchaseBonusL1Percent: 5,
+    repurchaseBonusL2to6Percent: 2,
+    teamBonusPercent: 2,
+    leadershipBonusOuroPercent: 1,
+    leadershipBonusDiamantePercent: 2,
+    dividendPoolPercent: 20,
     isLocked: true,
     closedAt: '2024-03-05T23:59:59Z',
     totalPayout: 7500,
@@ -108,19 +99,17 @@ export const mockMonthlyConfigs: MonthlyFinancialConfig[] = [
   },
   {
     month: '2024-01',
-    quotaPrice: 1000,
+    quotaPrice: 2500,
     minWithdrawal: 100,
     maxWithdrawal: 50000,
     withdrawalFee: 2.0,
-    directBonusPercent: 10,
-    indirectBonusLevels: [5, 3, 2, 1, 1],
-    residualBonusPercent: 2,
-    leadershipBonusPercent: 3,
-    performanceBonusPercent: 5,
-    fidelityBonusPercent: 1,
-    minQuotasForBonus: 1,
-    minActiveDirectsForLeadership: 5,
-    minTeamVolumeForPerformance: 100000,
+    firstPurchaseBonusPercent: 10,
+    repurchaseBonusL1Percent: 5,
+    repurchaseBonusL2to6Percent: 2,
+    teamBonusPercent: 2,
+    leadershipBonusOuroPercent: 1,
+    leadershipBonusDiamantePercent: 2,
+    dividendPoolPercent: 20,
     isLocked: true,
     closedAt: '2024-02-05T23:59:59Z',
     totalPayout: 5000,
@@ -144,21 +133,21 @@ export const mockGlobalSettings: GlobalFinancialSettings = {
   taxRate: 0,
 };
 
-// Title qualification thresholds
+// Title qualification thresholds (network-based, NOT purchase-based)
 export interface TitleRequirements {
   title: string;
-  minQuotas: number;
-  minDirects: number;
-  minTeamVolume: number;
-  bonusMultiplier: number;
+  requirement: string; // Human-readable description
+  repurchaseLevels: number; // Quantos níveis de recompra desbloqueia
+  teamLevels: number; // Quantos níveis de bônus equipe desbloqueia
+  leadershipPercent: number; // % de liderança (0 para bronze/prata)
 }
 
 export const mockTitleRequirements: TitleRequirements[] = [
-  { title: 'none', minQuotas: 0, minDirects: 0, minTeamVolume: 0, bonusMultiplier: 1.0 },
-  { title: 'bronze', minQuotas: 5, minDirects: 2, minTeamVolume: 10000, bonusMultiplier: 1.1 },
-  { title: 'silver', minQuotas: 15, minDirects: 4, minTeamVolume: 30000, bonusMultiplier: 1.25 },
-  { title: 'gold', minQuotas: 30, minDirects: 6, minTeamVolume: 75000, bonusMultiplier: 1.5 },
-  { title: 'diamond', minQuotas: 50, minDirects: 10, minTeamVolume: 150000, bonusMultiplier: 2.0 },
+  { title: 'none', requirement: 'Sem título', repurchaseLevels: 0, teamLevels: 0, leadershipPercent: 0 },
+  { title: 'bronze', requirement: '2 pessoas ativas na rede', repurchaseLevels: 1, teamLevels: 2, leadershipPercent: 0 },
+  { title: 'silver', requirement: 'Ajudar 1 indicado a virar Bronze', repurchaseLevels: 2, teamLevels: 3, leadershipPercent: 0 },
+  { title: 'gold', requirement: '2 Bronzes em linhas diferentes', repurchaseLevels: 4, teamLevels: 4, leadershipPercent: 1 },
+  { title: 'diamond', requirement: '3 Bronzes em linhas diferentes', repurchaseLevels: 6, teamLevels: 5, leadershipPercent: 2 },
 ];
 
 // Partner level requirements
@@ -174,25 +163,53 @@ export const mockPartnerLevels: PartnerLevelRequirements[] = [
     level: 'socio',
     minQuotas: 1,
     monthlyFee: 0,
-    benefits: ['Acesso ao sistema', 'Bônus direto', 'Suporte básico'],
+    benefits: [
+      'Participação nos lucros do Grupo Ciano',
+      'Participação na valorização do grupo',
+      'Pode indicar e ganhar comissões',
+      'Acesso ao grupo geral de investidores',
+    ],
   },
   {
     level: 'platinum',
     minQuotas: 10,
     monthlyFee: 0,
-    benefits: ['Tudo do Sócio', 'Bônus indireto 3 níveis', 'Suporte prioritário', 'Relatórios avançados'],
+    benefits: [
+      'Todos os benefícios do Sócio',
+      '30% de desconto em pousadas Ciano',
+      'Comissão maior nas indicações',
+      'Acesso antecipado a lotes com desconto',
+      'Reunião mensal com Marcos Maziero',
+    ],
   },
   {
     level: 'vip',
-    minQuotas: 25,
+    minQuotas: 20,
     monthlyFee: 0,
-    benefits: ['Tudo do Platinum', 'Bônus indireto 5 níveis', 'Bônus de liderança', 'Eventos exclusivos'],
+    benefits: [
+      'Todos os benefícios do Platinum',
+      '50% de desconto em pousadas Ciano',
+      '1 final de semana gratuito por ano',
+      'Convites para eventos e inaugurações',
+      'Nome listado como Sócio VIP em todas as pousadas',
+      'Comissão ainda maior nas indicações',
+    ],
   },
   {
     level: 'imperial',
-    minQuotas: 50,
+    minQuotas: 60,
     monthlyFee: 0,
-    benefits: ['Tudo do VIP', 'Bônus de performance', 'Assessoria dedicada', 'Participação nos lucros'],
+    benefits: [
+      'Todos os benefícios do VIP',
+      'Hospedagem gratuita ilimitada (até 3 acompanhantes)',
+      'Máx. 1 quarto simultâneo',
+      'Pode morar em pousada',
+      '40% de desconto para familiares',
+      'Viagem anual com Marcos Maziero',
+      'Quadro com foto no hall de entrada',
+      'Canal VIP direto com Marcos Maziero',
+      'Acesso ao grupo Imperial exclusivo',
+    ],
   },
 ];
 
@@ -227,10 +244,9 @@ export function calculateBonusForLevel(
   level: number,
   config: MonthlyFinancialConfig
 ): number {
-  if (level === 1) return baseAmount * (config.directBonusPercent / 100);
+  if (level === 1) return baseAmount * (config.firstPurchaseBonusPercent / 100);
   if (level >= 2 && level <= 6) {
-    const indirectPercent = config.indirectBonusLevels[level - 2] || 0;
-    return baseAmount * (indirectPercent / 100);
+    return baseAmount * (config.repurchaseBonusL2to6Percent / 100);
   }
   return 0;
 }
