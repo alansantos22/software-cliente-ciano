@@ -1,295 +1,344 @@
 <template>
-  <div class="quota-info-view">
-    <!-- Header -->
-    <header class="quota-info-view__header">
-      <h1>Informações sobre Cotas</h1>
-      <p class="quota-info-view__subtitle">
-        Entenda como funciona o sistema de cotas e rendimentos do Grupo Ciano
-      </p>
-    </header>
+  <div class="quotas-lp">
 
-    <!-- How It Works -->
-    <section class="quota-info-view__section">
-      <h2>Como Funciona</h2>
-      <div class="how-it-works">
-        <div class="step-card">
-          <div class="step-card__number">1</div>
-          <h3>Adquira Cotas</h3>
-          <p>Escolha um pacote de cotas e realize seu investimento</p>
+    <!-- ============================================================
+         1. HERO
+    ============================================================ -->
+    <section class="hero">
+      <div class="hero__backdrop" aria-hidden="true">
+        <div class="hero__orb hero__orb--1" />
+        <div class="hero__orb hero__orb--2" />
+      </div>
+      <div class="hero__content">
+        <span class="hero__eyebrow">Grupo Ciano de Pousadas &amp; Resorts</span>
+        <h1 class="hero__headline">
+          Não compre apenas<br />
+          <span class="hero__headline-highlight">uma cota.</span><br />
+          Seja dono de um<br />
+          <span class="hero__headline-highlight">império hoteleiro.</span>
+        </h1>
+        <p class="hero__sub">
+          Torne-se sócio de um grupo hoteleiro em expansão. Receba dividendos mensais,
+          ganhe por indicações e evolua sua carreira enquanto o seu patrimônio cresce.
+        </p>
+        <div class="hero__actions">
+          <DsButton variant="primary" size="lg" @click="scrollTo('pricing')">
+            Ver Planos e Preços
+          </DsButton>
+          <DsButton variant="outline" size="lg" @click="scrollTo('simulator')">
+            Simular meus Ganhos
+          </DsButton>
         </div>
-        <div class="step-card">
-          <div class="step-card__number">2</div>
-          <h3>Receba Dividendos</h3>
-          <p>Ganhe dividendos mensais proporcionais às suas cotas</p>
-        </div>
-        <div class="step-card">
-          <div class="step-card__number">3</div>
-          <h3>Indique Amigos</h3>
-          <p>Ganhe comissões por indicações diretas e da rede</p>
-        </div>
-        <div class="step-card">
-          <div class="step-card__number">4</div>
-          <h3>Evolua na Carreira</h3>
-          <p>Suba de título e desbloqueie novos benefícios</p>
+        <div class="hero__social-trust">
+          <span v-for="m in heroMetrics" :key="m.label" class="hero__metric">
+            <strong>{{ m.value }}</strong>
+            <span>{{ m.label }}</span>
+          </span>
         </div>
       </div>
     </section>
 
-    <!-- Available Packages -->
-    <section class="quota-info-view__section">
-      <h2>Pacotes Disponíveis</h2>
+    <!-- ============================================================
+         2. HOW IT WORKS
+    ============================================================ -->
+    <section class="lp-section how-it-works">
+      <div class="section-header">
+        <span class="section-eyebrow">Como Funciona</span>
+        <h2>De zero a sócio em 4 passos</h2>
+      </div>
+      <div class="steps-track">
+        <div
+          v-for="(step, idx) in steps"
+          :key="step.title"
+          class="step-item"
+        >
+          <div class="step-item__connector" v-if="idx < steps.length - 1" aria-hidden="true" />
+          <div class="step-item__circle">
+            <span class="step-item__icon">{{ step.icon }}</span>
+            <span class="step-item__num">{{ idx + 1 }}</span>
+          </div>
+          <h3 class="step-item__title">{{ step.title }}</h3>
+          <p class="step-item__desc">{{ step.desc }}</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         3. PRICING
+    ============================================================ -->
+    <section id="pricing" class="lp-section pricing-section">
+
+      <!-- Split countdown banner -->
+      <div class="split-alert">
+        <span class="split-alert__icon">⏳</span>
+        <span>
+          O preço da cota vai subir no próximo split em:
+          <strong class="split-alert__timer">{{ countdownDisplay }}</strong>
+        </span>
+        <span class="split-alert__tag">Preço atual garantido por tempo limitado</span>
+      </div>
+
+      <div class="section-header">
+        <span class="section-eyebrow">Pacotes de Investimento</span>
+        <h2>Escolha sua posição no grupo</h2>
+        <p class="section-sub">Cada pacote já te posiciona em um nível da carreira imediatamente</p>
+        <p class="section-sub section-sub--note">*Estimativa com margem de segurança conservadora. Rentabilidade passada não garante retornos futuros.</p>
+      </div>
+
       <div class="packages-grid">
-        <DsCard
+        <div
           v-for="pkg in packages"
           :key="pkg.id"
-          class="package-card"
-          :class="{ 'package-card--popular': pkg.popular }"
+          class="pkg-card"
+          :class="{ 'pkg-card--featured': pkg.popular }"
         >
-          <div v-if="pkg.popular" class="package-card__badge">
-            <font-awesome-icon icon="star" />
-            Mais Popular
-          </div>
-          <h3 class="package-card__title">{{ pkg.name }}</h3>
-          <div class="package-card__quotas">
-            <strong>{{ pkg.quotas }}</strong> cotas
-          </div>
-          <div class="package-card__price">
-            {{ formatCurrency(pkg.price) }}
-          </div>
-          <ul class="package-card__benefits">
-            <li v-for="benefit in pkg.benefits" :key="benefit">
-              <font-awesome-icon icon="check" class="benefit-check" />
-              {{ benefit }}
-            </li>
-          </ul>
-          <DsButton variant="primary" @click="goToCheckout(pkg.id)">
-            Adquirir
-          </DsButton>
-        </DsCard>
-      </div>
-    </section>
+          <div v-if="pkg.popular" class="pkg-card__ribbon">⭐ Mais Popular</div>
 
-    <!-- Earnings Types -->
-    <section class="quota-info-view__section">
-      <h2>Tipos de Ganhos</h2>
-      <div class="earnings-grid">
-        <DsCard
-          v-for="earning in earningTypes"
-          :key="earning.type"
-          class="earning-card"
-        >
-          <span class="earning-card__icon">
-            <font-awesome-icon :icon="earning.faIcon" />
-          </span>
-          <h3>{{ earning.label }}</h3>
-          <p>{{ earning.description }}</p>
-          <DsBadge :variant="earning.variant">
-            {{ earning.percentage }}
-          </DsBadge>
-        </DsCard>
-      </div>
-    </section>
+          <div class="pkg-card__level-badge" :style="{ background: pkg.levelColor }">
+            {{ pkg.levelEmoji }} Você inicia como <strong>{{ pkg.levelName }}</strong>
+          </div>
 
-    <!-- Career Titles -->
-    <section class="quota-info-view__section">
-      <h2>Plano de Carreira</h2>
-      <p class="quota-info-view__section-desc">Evolua seu título e desbloqueie novos benefícios conforme cresce sua rede</p>
-      <div class="career-grid">
-        <div
-          v-for="(tier, idx) in careerData"
-          :key="tier.title"
-          class="career-card"
-          :style="{ '--tier-color': tier.color }"
-        >
-          <div class="career-card__header">
-            <div class="career-card__icon-wrap">
-              <font-awesome-icon :icon="tier.faIcon" class="career-card__fa-icon" />
+          <h3 class="pkg-card__name">{{ pkg.name }}</h3>
+          <div class="pkg-card__subtitle">Seja sócio do {{ pkg.hotelSubtitle }}</div>
+
+          <div class="pkg-card__price-block">
+            <div class="pkg-card__quotas">
+              <span class="pkg-card__quotas-num">{{ pkg.quotas }}</span>
+              <span class="pkg-card__quotas-label">cotas</span>
             </div>
-            <div class="career-card__tier-badge">Nível {{ idx + 1 }}</div>
+            <div class="pkg-card__price">{{ formatCurrency(pkg.price) }}</div>
+            <div class="pkg-card__per-quota">
+              {{ formatCurrency(mockQuotaConfig.quotaPrice) }} / cota
+            </div>
           </div>
-          <h3 class="career-card__title" :style="{ color: tier.color }">{{ tier.title }}</h3>
-          <p class="career-card__requirement">
-            <font-awesome-icon icon="shield-halved" class="career-card__req-icon" />
-            {{ tier.requirement }}
-          </p>
-          <ul class="career-card__benefits">
-            <li v-for="benefit in tier.benefits" :key="benefit">
-              <font-awesome-icon icon="check" class="career-card__check" />
-              {{ benefit }}
+
+          <div class="pkg-card__estimate">
+            <span class="pkg-card__estimate-icon">📊</span>
+            <span>Estimativa: <strong>{{ formatCurrency(pkg.monthlyEstimate) }}/mês*</strong></span>
+          </div>
+
+          <ul class="pkg-card__benefits">
+            <li v-for="b in pkg.benefits" :key="b">
+              <span class="pkg-card__check">✓</span>
+              {{ b }}
             </li>
           </ul>
-          <DsButton variant="outline" size="sm" class="career-card__cta" @click="goToCheckout()">
-            Alcançar este nível
+
+          <DsButton
+            :variant="pkg.popular ? 'primary' : 'outline'"
+            size="lg"
+            class="pkg-card__cta"
+            @click="goToCheckout(pkg.id)"
+          >
+            {{ pkg.ctaLabel }}
           </DsButton>
         </div>
       </div>
     </section>
 
-    <!-- FAQ -->
-    <section class="quota-info-view__section">
-      <h2>Perguntas Frequentes</h2>
+    <!-- ============================================================
+         4. PROFIT SIMULATOR
+    ============================================================ -->
+    <section id="simulator" class="lp-section">
+      <ProfitSimulator />
+    </section>
+
+    <!-- ============================================================
+         5. CAREER TIMELINE
+    ============================================================ -->
+    <section class="lp-section career-section">
+      <div class="section-header">
+        <span class="section-eyebrow">Plano de Carreira</span>
+        <h2>Sua jornada do Bronze ao Diamante</h2>
+        <p class="section-sub">Passe o mouse sobre cada nível para ver o que você desbloqueia</p>
+      </div>
+      <CareerTimeline />
+    </section>
+
+    <!-- ============================================================
+         6. SOCIAL PROOF
+    ============================================================ -->
+    <section class="lp-section">
+      <SocialProof />
+    </section>
+
+    <!-- ============================================================
+         7. FAQ
+    ============================================================ -->
+    <section class="lp-section faq-section">
+      <div class="section-header section-header--left">
+        <span class="section-eyebrow">Tire suas Dúvidas</span>
+        <h2>Perguntas Frequentes</h2>
+      </div>
       <DsAccordion :items="faqItems" />
     </section>
 
-    <!-- CTA -->
-    <section class="quota-info-view__cta">
-      <DsCard class="cta-card">
-        <h2>Pronto para Começar?</h2>
-        <p>Adquira suas cotas agora e comece a receber seus dividendos!</p>
+    <!-- ============================================================
+         8. FOOTER CTA
+    ============================================================ -->
+    <section class="footer-cta">
+      <div class="footer-cta__backdrop" aria-hidden="true" />
+      <div class="footer-cta__content">
+        <h2 class="footer-cta__headline">
+          Pronto para lucrar com o Grupo Ciano?
+        </h2>
+        <p class="footer-cta__sub">
+          Vagas limitadas por período de split. Quanto antes você entrar, mais barata é sua cota.
+        </p>
         <DsButton variant="primary" size="lg" @click="goToCheckout()">
-          Adquirir Cotas
+          Garantir minha posição agora
         </DsButton>
-      </DsCard>
+        <p class="footer-cta__disclaimer">
+          Pagamentos via PIX todo dia 5 • Suporte dedicado • Contrato registrado
+        </p>
+      </div>
     </section>
+
   </div>
 </template>
 
+
 <script setup lang="ts">
-import { computed } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useRouter } from 'vue-router';
-import {
-  DsCard,
-  DsButton,
-  DsBadge,
-  DsAccordion,
-} from '@/design-system';
+import { DsButton, DsAccordion } from '@/design-system';
 import { mockQuotaConfig } from '@/mocks';
+import ProfitSimulator from '../components/ProfitSimulator.vue';
+import CareerTimeline from '../components/CareerTimeline.vue';
+import SocialProof from '../components/SocialProof.vue';
 
 const router = useRouter();
 
-// Local mock data for quota packages
-interface QuotaPackage {
+// ─── Hero metrics ──────────────────────────────────────────
+const heroMetrics = [
+  { value: '1.200+', label: 'sócios ativos' },
+  { value: 'R$ 3M+', label: 'distribuídos sem atrasos' },
+  { value: '4 hotéis', label: 'no portfólio' },
+  { value: '100%', label: 'dividendos em dia, sempre' },
+];
+
+// ─── How it works ──────────────────────────────────────────
+const steps = [
+  { icon: '🏨', title: 'Torne-se Sócio', desc: 'Escolha seu pacote e adquira cotas do grupo hoteleiro' },
+  { icon: '💰', title: 'Receba Dividendos', desc: 'Lucros mensais proporcionais à sua participação' },
+  { icon: '🤝', title: 'Indique e Ganhe', desc: 'Comissões diretas e bônus de rede ilimitados' },
+  { icon: '🏆', title: 'Evolua na Carreira', desc: 'Suba de nível e desbloqueie benefícios exclusivos' },
+];
+
+// ─── Packages ──────────────────────────────────────────────
+// Safety margin: estimates are shown 10% below last-period yield
+// so clients are pleasantly surprised rather than disappointed.
+const SAFETY_MARGIN = 0.10;
+// Last-period gross yield per cota (R$) — will come from API in production
+const GROSS_YIELD_PER_QUOTA = 200;
+const netYieldPerQuota = Math.round(GROSS_YIELD_PER_QUOTA * (1 - SAFETY_MARGIN));
+
+interface Package {
   id: string;
   name: string;
   quotas: number;
   price: number;
   popular?: boolean;
+  levelName: string;
+  levelEmoji: string;
+  levelColor: string;
+  hotelSubtitle: string;
+  monthlyEstimate: number;
   benefits: string[];
+  ctaLabel: string;
 }
 
-interface EarningType {
-  type: string;
-  label: string;
-  icon: string;
-  faIcon: string;
-  description: string;
-  percentage: string;
-  variant?: 'default' | 'success' | 'warning' | 'info' | 'primary';
-}
-
-const localQuotaPackages: QuotaPackage[] = [
+const packages: Package[] = [
   {
-    id: 'basic',
-    name: 'Básico',
-    quotas: 5,
-    price: 5 * mockQuotaConfig.quotaPrice,
-    benefits: ['Acesso ao sistema', 'Dividendos mensais', 'Indicação direta 10%'],
+    id: 'iniciante',
+    name: 'Iniciante',
+    quotas: 1,
+    price: mockQuotaConfig.quotaPrice,
+    levelName: 'Sócio',
+    levelEmoji: '🤝',
+    levelColor: '#0097a7',
+    hotelSubtitle: 'Grupo Ciano',
+    monthlyEstimate: netYieldPerQuota,
+    benefits: [
+      'Acesso ao painel de cotista',
+      'Dividendos mensais (a partir do 1º mês)',
+      'Comissão direta 10% em indicações',
+      'Suporte via WhatsApp',
+    ],
+    ctaLabel: 'Tornar-se Sócio',
   },
   {
-    id: 'standard',
-    name: 'Padrão',
-    quotas: 15,
-    price: 15 * mockQuotaConfig.quotaPrice,
+    id: 'platinum',
+    name: 'Platinum',
+    quotas: 10,
+    price: 10 * mockQuotaConfig.quotaPrice,
     popular: true,
-    benefits: ['Todos do Básico', 'Bônus de rede nível 1-2', 'Suporte prioritário'],
+    levelName: 'Platinum',
+    levelEmoji: '🚀',
+    levelColor: '#6B7280',
+    hotelSubtitle: 'Resort Ciano Prime',
+    monthlyEstimate: 10 * netYieldPerQuota,
+    benefits: [
+      'Participação nos Lucros (Pool)',
+      'Descontos progressivos em diárias',
+      'Acesso prioritário ao Pool de Locação',
+      'Bônus de Rede (Níveis 1–3)',
+      'Suporte prioritário',
+    ],
+    ctaLabel: 'Tornar-se Platinum',
   },
   {
-    id: 'premium',
-    name: 'Premium',
-    quotas: 50,
-    price: 50 * mockQuotaConfig.quotaPrice,
-    benefits: ['Todos do Padrão', 'Bônus de rede nível 1-5', 'Acesso VIP', 'Consultor dedicado'],
+    id: 'vip',
+    name: 'VIP',
+    quotas: 20,
+    price: 20 * mockQuotaConfig.quotaPrice,
+    levelName: 'VIP',
+    levelEmoji: '👑',
+    levelColor: '#D97706',
+    hotelSubtitle: 'Resort Ciano VIP',
+    monthlyEstimate: 20 * netYieldPerQuota,
+    benefits: [
+      'Tudo do Platinum',
+      'Day-use gratuito nos Resorts',
+      'Bônus de Rede (Níveis 1–5)',
+      'Gerente de Conta dedicado',
+      'Prioridade total em novos lotes',
+    ],
+    ctaLabel: 'Tornar-se VIP',
   },
 ];
 
-const localEarningTypes: EarningType[] = [
-  {
-    type: 'direct_commission',
-    label: 'Comissão Direta',
-    icon: '💵',
-    faIcon: 'handshake',
-    description: 'Ganhe comissão sobre vendas de seus indicados diretos',
-    percentage: '10-20%',
-  },
-  {
-    type: 'network_bonus',
-    label: 'Bônus de Rede',
-    icon: '🌐',
-    faIcon: 'network-wired',
-    description: 'Receba bônus sobre vendas de toda sua rede',
-    percentage: '2-8%',
-  },
-  {
-    type: 'dividend',
-    label: 'Dividendos',
-    icon: '📊',
-    faIcon: 'chart-line',
-    description: 'Dividendos mensais proporcionais às suas cotas',
-    percentage: 'Variável',
-  },
-  {
-    type: 'career_bonus',
-    label: 'Bônus de Carreira',
-    icon: '🏆',
-    faIcon: 'trophy',
-    description: 'Bônus extras ao atingir novos títulos',
-    percentage: '2-10%',
-  },
-  {
-    type: 'retention_bonus',
-    label: 'Bônus de Retenção',
-    icon: '🔁',
-    faIcon: 'rotate',
-    description: 'Ganhos recorrentes por manter cotistas ativos',
-    percentage: '1-5%',
-  },
-];
+// ─── Split countdown ──────────────────────────────────────
+const splitDate = new Date();
+splitDate.setDate(splitDate.getDate() + 4);
 
-// Data
-const packages = computed(() => localQuotaPackages);
+const remaining = ref(computeRemaining());
+let countdownTimer: ReturnType<typeof setInterval> | null = null;
 
-const earningTypes = computed(() =>
-  localEarningTypes.map(e => ({
-    ...e,
-    variant: getEarningVariant(e.type),
-  }))
-);
+function computeRemaining() {
+  const diff = Math.max(0, splitDate.getTime() - Date.now());
+  const d = Math.floor(diff / 86_400_000);
+  const h = Math.floor((diff % 86_400_000) / 3_600_000);
+  const m = Math.floor((diff % 3_600_000) / 60_000);
+  const s = Math.floor((diff % 60_000) / 1_000);
+  return { d, h, m, s };
+}
 
-const careerData = [
-  {
-    title: 'Bronze',
-    icon: '🥉',
-    faIcon: 'medal',
-    color: '#CD7F32',
-    requirement: 'Compra inicial de cotas',
-    benefits: ['Comissão direta 10%', 'Bônus de rede nível 1'],
-  },
-  {
-    title: 'Prata',
-    icon: '🥈',
-    faIcon: 'medal',
-    color: '#9BA3AF',
-    requirement: '10 indicados diretos ativos',
-    benefits: ['Comissão direta 12%', 'Bônus de rede nível 1-2', 'Bônus carreira 2%'],
-  },
-  {
-    title: 'Ouro',
-    icon: '🥇',
-    faIcon: 'trophy',
-    color: '#D97706',
-    requirement: '25 indicados diretos + 100 na rede',
-    benefits: ['Comissão direta 15%', 'Bônus de rede nível 1-3', 'Bônus carreira 5%'],
-  },
-  {
-    title: 'Diamante',
-    icon: '💎',
-    faIcon: 'gem',
-    color: '#0891B2',
-    requirement: '50 indicados diretos + 500 na rede',
-    benefits: ['Comissão direta 20%', 'Bônus de rede nível 1-5', 'Bônus carreira 10%', 'Participação especial'],
-  },
-];
+const countdownDisplay = computed(() => {
+  const { d, h, m, s } = remaining.value;
+  if (d > 0) return `${d}d ${String(h).padStart(2,'0')}h ${String(m).padStart(2,'0')}m`;
+  return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+});
 
+onMounted(() => {
+  countdownTimer = setInterval(() => { remaining.value = computeRemaining(); }, 1000);
+});
+
+onUnmounted(() => {
+  if (countdownTimer) clearInterval(countdownTimer);
+});
+
+// ─── FAQ ───────────────────────────────────────────────────
 const faqItems = [
   {
     title: 'O que são cotas?',
@@ -297,11 +346,15 @@ const faqItems = [
   },
   {
     title: 'Como são calculados os dividendos?',
-    content: 'Os dividendos são calculados mensalmente com base no faturamento do grupo de pousadas. Cada cota representa uma participação proporcional nos lucros distribuídos.',
+    content: 'Os dividendos são calculados mensalmente com base no faturamento do grupo. Cada cota representa uma participação proporcional nos lucros distribuídos.',
   },
   {
     title: 'Como funcionam as comissões de indicação?',
-    content: 'Ao indicar novos cotistas, você recebe comissão direta sobre a compra de cotas deles. Além disso, você também recebe bônus de rede quando seus indicados fazem suas próprias indicações.',
+    content: 'Ao indicar novos cotistas, você recebe comissão direta de 10% sobre a compra de cotas. Além disso, recebe bônus de rede quando seus indicados fazem suas próprias indicações.',
+  },
+  {
+    title: 'O pacote Platinum realmente me dá nível Platinum imediatamente?',
+    content: 'Sim! Com 10 cotas (Pacote Platinum), você ultrapassa automaticamente o requisito mínimo do Nível Platinum e desfruta de todos os benefícios — incluindo descontos em diárias e acesso ao Pool de Locação — desde o primeiro dia.',
   },
   {
     title: 'Posso vender minhas cotas?',
@@ -309,32 +362,22 @@ const faqItems = [
   },
   {
     title: 'Como recebo meus pagamentos?',
-    content: 'Os pagamentos são realizados mensalmente via PIX, diretamente na chave cadastrada em seu perfil. O fechamento acontece todo dia 25 e o pagamento até o dia 5 do mês seguinte.',
+    content: 'Os pagamentos são realizados mensalmente via PIX, diretamente na chave cadastrada em seu perfil. Fechamento todo dia 25 e pagamento até o dia 5 do mês seguinte.',
   },
   {
-    title: 'Qual o valor mínimo para investir?',
-    content: `O investimento mínimo é de ${formatCurrency(localQuotaPackages[0]?.price || 500)}, correspondente ao pacote inicial de ${localQuotaPackages[0]?.quotas || 5} cotas.`,
+    title: "O que é o 'split' e por que o preço muda?",
+    content: 'O split é um mecanismo de ajuste periódico do valor das cotas, baseado nas atualizações do patrimônio imobiliário do grupo. A cada split, o preço reflete melhor o valor de mercado dos ativos.',
   },
 ];
 
-// Methods
+// ─── Helpers ───────────────────────────────────────────────
 function formatCurrency(value: number): string {
   return new Intl.NumberFormat('pt-BR', {
     style: 'currency',
     currency: 'BRL',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
   }).format(value);
-}
-
-function getEarningVariant(type: string): 'default' | 'success' | 'warning' | 'info' | 'primary' {
-  const variants: Record<string, 'default' | 'success' | 'warning' | 'info' | 'primary'> = {
-    direct_commission: 'success',
-    network_bonus: 'info',
-    dividend: 'primary',
-    career_bonus: 'warning',
-    retention_bonus: 'success',
-    special_bonus: 'primary',
-  };
-  return variants[type] || 'default';
 }
 
 function goToCheckout(packageId?: string) {
@@ -344,6 +387,11 @@ function goToCheckout(packageId?: string) {
     router.push('/checkout');
   }
 }
+
+function scrollTo(id: string) {
+  const el = document.getElementById(id);
+  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
 </script>
 
 <style lang="scss" scoped>
@@ -351,323 +399,455 @@ function goToCheckout(packageId?: string) {
 @use '@/assets/scss/spacing' as *;
 @use '@/assets/scss/mixins' as *;
 
-.quota-info-view {
-  padding: $spacing-6;
+// ─── Global page shell ─────────────────────────────────────
+.quotas-lp {
   max-width: 1200px;
   margin: 0 auto;
+  padding: 0 $spacing-6 $spacing-12;
 
   @media (max-width: 768px) {
-    padding: $spacing-4;
-  }
-
-  &__header {
-    text-align: center;
-    margin-bottom: $spacing-8;
-
-    h1 {
-      font-size: 2rem;
-      font-weight: 700;
-      margin-bottom: $spacing-2;
-    }
-  }
-
-  &__subtitle {
-    color: $text-secondary;
-    font-size: 1.125rem;
-    margin: 0;
-  }
-
-  &__section {
-    margin-bottom: $spacing-8;
-
-    h2 {
-      font-size: 1.5rem;
-      font-weight: 600;
-      margin-bottom: $spacing-2;
-      text-align: center;
-    }
-  }
-
-  &__section-desc {
-    text-align: center;
-    color: $text-secondary;
-    font-size: 0.9375rem;
-    margin-bottom: $spacing-6;
-    margin-top: 0;
-  }
-
-  &__cta {
-    margin-top: $spacing-8;
+    padding: 0 $spacing-4 $spacing-10;
   }
 }
 
-.how-it-works {
+.lp-section {
+  padding: $spacing-16 0;
+
+  @media (max-width: 768px) {
+    padding: $spacing-10 0;
+  }
+}
+
+// ─── Shared Section Header ─────────────────────────────────
+.section-header {
+  text-align: center;
+  margin-bottom: $spacing-10;
+
+  h2 {
+    font-size: clamp(1.5rem, 3vw, 2.25rem);
+    font-weight: 800;
+    margin: 0 0 $spacing-3;
+    line-height: 1.2;
+  }
+
+  &--left {
+    text-align: left;
+  }
+}
+
+.section-eyebrow {
+  display: inline-block;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: $primary-600;
+  margin-bottom: $spacing-3;
+}
+
+.section-sub {
+  font-size: 0.9375rem;
+  color: $text-secondary;
+  margin: 0;
+
+  &--note {
+    font-size: 0.75rem;
+    margin-top: $spacing-2;
+    opacity: 0.7;
+  }
+}
+
+// ────────────────────────────────────────────────────────────
+// 1. HERO
+// ────────────────────────────────────────────────────────────
+.hero {
+  position: relative;
+  min-height: 90vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  margin-left: -$spacing-6;
+  margin-right: -$spacing-6;
+  padding: $spacing-20 $spacing-8;
+  overflow: hidden;
+  background: linear-gradient(135deg, #051a1f 0%, #083344 50%, #0a4a5a 100%);
+  border-radius: 0 0 32px 32px;
+
+  @media (max-width: 768px) {
+    margin-left: -$spacing-4;
+    margin-right: -$spacing-4;
+    padding: $spacing-16 $spacing-5;
+    min-height: 80vh;
+  }
+
+  &__backdrop {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+
+  &__orb {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(100px);
+    opacity: 0.25;
+
+    &--1 {
+      width: 600px;
+      height: 600px;
+      background: $primary-500;
+      top: -200px;
+      right: -100px;
+    }
+
+    &--2 {
+      width: 400px;
+      height: 400px;
+      background: $secondary-500;
+      bottom: -100px;
+      left: -80px;
+    }
+  }
+
+  &__content {
+    position: relative;
+    z-index: 1;
+    text-align: center;
+    max-width: 800px;
+  }
+
+  &__eyebrow {
+    display: inline-block;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: $primary-300;
+    margin-bottom: $spacing-4;
+    padding: 4px 14px;
+    border: 1px solid rgba($primary-300, 0.3);
+    border-radius: 999px;
+  }
+
+  &__headline {
+    font-size: clamp(2rem, 5vw, 3.5rem);
+    font-weight: 900;
+    color: #fff;
+    line-height: 1.15;
+    margin: 0 0 $spacing-5;
+  }
+
+  &__headline-highlight {
+    color: $primary-300;
+    display: inline-block;
+  }
+
+  &__sub {
+    font-size: clamp(0.9375rem, 2vw, 1.125rem);
+    color: rgba(255,255,255,0.65);
+    line-height: 1.7;
+    margin: 0 auto $spacing-8;
+    max-width: 600px;
+  }
+
+  &__actions {
+    display: flex;
+    gap: $spacing-4;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-bottom: $spacing-10;
+  }
+
+  &__social-trust {
+    display: flex;
+    justify-content: center;
+    gap: $spacing-8;
+    flex-wrap: wrap;
+  }
+
+  &__metric {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    align-items: center;
+
+    strong {
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: #fff;
+    }
+
+    span {
+      font-size: 0.75rem;
+      color: rgba(255,255,255,0.5);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+  }
+}
+
+// ────────────────────────────────────────────────────────────
+// 2. HOW IT WORKS
+// ────────────────────────────────────────────────────────────
+.steps-track {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: $spacing-4;
+  position: relative;
 
-  @media (max-width: 1024px) {
-    grid-template-columns: repeat(2, 1fr);
+  @media (max-width: 900px) { grid-template-columns: repeat(2, 1fr); }
+  @media (max-width: 480px) { grid-template-columns: 1fr; }
+}
+
+.step-item {
+  position: relative;
+  text-align: center;
+  padding: $spacing-6;
+  background: $bg-primary;
+  border: 1px solid $border-light;
+  border-radius: 18px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 16px 40px rgba(0,0,0,0.08);
   }
 
-  @media (max-width: 576px) {
-    grid-template-columns: 1fr;
+  &__connector {
+    display: none;
+
+    @media (min-width: 900px) {
+      display: block;
+      position: absolute;
+      right: -16px;
+      top: 40%;
+      width: 0;
+      height: 0;
+      border-top: 8px solid transparent;
+      border-bottom: 8px solid transparent;
+      border-left: 12px solid $border-light;
+      z-index: 2;
+    }
+  }
+
+  &__circle {
+    position: relative;
+    width: 64px;
+    height: 64px;
+    margin: 0 auto $spacing-4;
+    background: linear-gradient(135deg, rgba($primary-500,0.12), rgba($secondary-500,0.08));
+    border-radius: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.75rem;
+  }
+
+  &__num {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    width: 22px;
+    height: 22px;
+    background: $primary-500;
+    color: #fff;
+    border-radius: 50%;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid $bg-primary;
+  }
+
+  &__title {
+    font-size: 1.0625rem;
+    font-weight: 700;
+    margin: 0 0 $spacing-2;
+  }
+
+  &__desc {
+    font-size: 0.875rem;
+    color: $text-secondary;
+    line-height: 1.6;
+    margin: 0;
   }
 }
 
-.step-card {
-  @include card;
-  text-align: center;
-  padding: $spacing-6;
+// ────────────────────────────────────────────────────────────
+// 3. PRICING
+// ────────────────────────────────────────────────────────────
+.pricing-section {
+  padding-top: $spacing-12;
+}
 
-  &__number {
-    width: 48px;
-    height: 48px;
-    margin: 0 auto $spacing-4;
-    background: linear-gradient(135deg, $primary-500, $secondary-500);
-    color: white;
-    border-radius: 50%;
-    @include flex-center;
-    font-size: 1.5rem;
-    font-weight: 700;
-  }
+.split-alert {
+  display: flex;
+  align-items: center;
+  gap: $spacing-3;
+  background: linear-gradient(90deg, rgba($warning,0.12), rgba($accent-500,0.08));
+  border: 1px solid rgba($warning, 0.35);
+  border-radius: 12px;
+  padding: $spacing-3 $spacing-5;
+  margin-bottom: $spacing-8;
+  font-size: 0.9375rem;
+  flex-wrap: wrap;
 
-  h3 {
+  &__icon {
     font-size: 1.125rem;
-    margin-bottom: $spacing-2;
+    flex-shrink: 0;
   }
 
-  p {
-    color: $text-secondary;
-    font-size: 0.875rem;
-    margin: 0;
+  &__timer {
+    color: $warning-dark;
+    font-variant-numeric: tabular-nums;
+    font-family: monospace;
+    font-size: 1.0625rem;
+    margin-left: 2px;
+  }
+
+  &__tag {
+    margin-left: auto;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: $warning-dark;
+    background: rgba($warning, 0.15);
+    padding: 2px 10px;
+    border-radius: 999px;
+
+    @media (max-width: 600px) { margin-left: 0; }
   }
 }
 
 .packages-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: $spacing-4;
+  gap: $spacing-5;
+  align-items: start;
 
-  @media (max-width: 768px) {
-    grid-template-columns: 1fr;
-  }
+  @media (max-width: 900px) { grid-template-columns: 1fr; max-width: 440px; margin: 0 auto; }
 }
 
-.package-card {
+.pkg-card {
   position: relative;
-  text-align: center;
-  padding: $spacing-6 !important;
+  background: $bg-primary;
+  border: 1px solid $border-light;
+  border-radius: 20px;
+  padding: $spacing-6;
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-4;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 
-  &--popular {
-    border: 2px solid $primary-500;
-    transform: scale(1.05);
-
-    @media (max-width: 768px) {
-      transform: none;
-    }
+  &:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 20px 50px rgba(0,0,0,0.1);
   }
 
-  &__badge {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 4px;
+  &--featured {
+    border: 2px solid $primary-500;
+    box-shadow: 0 8px 30px rgba($primary-500, 0.15);
+  }
+
+  &__ribbon {
     position: absolute;
     top: -14px;
     left: 50%;
     transform: translateX(-50%);
     background: linear-gradient(135deg, $warning, #c49a00);
     color: white;
-    padding: 5px 14px;
-    border-radius: $radius-full;
+    padding: 5px 16px;
+    border-radius: 999px;
     font-size: 0.75rem;
-    font-weight: 600;
+    font-weight: 700;
     white-space: nowrap;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    box-shadow: 0 2px 10px rgba(0,0,0,0.15);
   }
 
-  &__title {
-    font-size: 1.25rem;
-    margin-bottom: $spacing-2;
+  &__level-badge {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    justify-content: center;
+    color: white;
+    font-size: 0.8125rem;
+    padding: $spacing-2 $spacing-3;
+    border-radius: 10px;
+    font-weight: 500;
+    margin-top: $spacing-3;
+
+    strong { font-weight: 800; }
+  }
+
+  &__name {
+    font-size: 1.375rem;
+    font-weight: 800;
+    margin: 0;
+    text-align: center;
+  }
+
+  &__subtitle {
+    font-size: 0.8125rem;
+    color: $text-secondary;
+    text-align: center;
+    margin: -$spacing-2 0 0;
+  }
+
+  &__price-block {
+    text-align: center;
+    padding: $spacing-4 0;
+    border-top: 1px solid $border-light;
+    border-bottom: 1px solid $border-light;
   }
 
   &__quotas {
+    display: flex;
+    align-items: baseline;
+    justify-content: center;
+    gap: 4px;
+    margin-bottom: 4px;
     color: $text-secondary;
-    margin-bottom: $spacing-3;
+    font-size: 0.875rem;
+  }
 
-    strong {
-      color: $primary-600;
-      font-size: 1.5rem;
-    }
+  &__quotas-num {
+    font-size: 2rem;
+    font-weight: 800;
+    color: $primary-600;
   }
 
   &__price {
-    font-size: 1.75rem;
-    font-weight: 700;
-    color: $primary-600;
-    margin-bottom: $spacing-4;
+    font-size: 1.875rem;
+    font-weight: 800;
+    color: $neutral-900;
   }
 
-  &__benefits {
-    list-style: none;
-    padding: 0;
-    margin: 0 0 $spacing-4;
-    text-align: left;
-    font-size: 0.875rem;
-    color: $text-secondary;
-
-    li {
-      display: flex;
-      align-items: flex-start;
-      gap: $spacing-2;
-      padding: 5px 0;
-    }
-  }
-}
-
-.benefit-check {
-  color: $success;
-  margin-top: 2px;
-  flex-shrink: 0;
-  font-size: 0.75rem;
-}
-
-.earnings-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: $spacing-4;
-
-  @media (max-width: 768px) {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
-  @media (max-width: 576px) {
-    grid-template-columns: 1fr;
-  }
-}
-
-.earning-card {
-  text-align: center;
-  padding: $spacing-5 !important;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-
-  &:hover {
-    transform: translateY(-3px);
-    box-shadow: $shadow-md;
-  }
-
-  &__icon {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 52px;
-    height: 52px;
-    margin: 0 auto $spacing-4;
-    background: linear-gradient(135deg, rgba($primary-500, 0.15), rgba($secondary-500, 0.1));
-    border-radius: 14px;
-    font-size: 1.25rem;
-    color: $primary-600;
-  }
-
-  h3 {
-    font-size: 1rem;
-    margin-bottom: $spacing-2;
-  }
-
-  p {
-    color: $text-secondary;
-    font-size: 0.875rem;
-    margin-bottom: $spacing-3;
-  }
-}
-
-// ============================================================
-// CAREER GRID
-// ============================================================
-.career-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: $spacing-5;
-
-  @media (max-width: 1024px) { grid-template-columns: repeat(2, 1fr); }
-  @media (max-width: 576px)  { grid-template-columns: 1fr; }
-}
-
-.career-card {
-  position: relative;
-  background: $bg-primary;
-  border: 1px solid $border-light;
-  border-radius: 16px;
-  padding: $spacing-5;
-  border-top: 4px solid var(--tier-color);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-
-  &:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.1);
-  }
-
-  &__header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: $spacing-4;
-  }
-
-  &__icon-wrap {
-    width: 48px;
-    height: 48px;
-    border-radius: 12px;
-    background: rgba(0, 0, 0, 0.04);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--tier-color);
-    font-size: 1.375rem;
-  }
-
-  &__tier-badge {
-    font-size: 0.6875rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    color: $text-tertiary;
-    background: $neutral-100;
-    padding: 3px 10px;
-    border-radius: 999px;
-  }
-
-  &__title {
-    font-size: 1.375rem;
-    font-weight: 700;
-    margin: 0 0 $spacing-3;
-  }
-
-  &__requirement {
-    display: flex;
-    align-items: flex-start;
-    gap: $spacing-2;
-    font-size: 0.8125rem;
-    color: $text-secondary;
-    margin-bottom: $spacing-4;
-    line-height: 1.4;
-  }
-
-  &__req-icon {
-    color: $info;
-    margin-top: 2px;
+  &__per-quota {
     font-size: 0.75rem;
-    flex-shrink: 0;
+    color: $text-tertiary;
+    margin-top: 2px;
+  }
+
+  &__estimate {
+    display: flex;
+    align-items: center;
+    gap: $spacing-2;
+    background: rgba($secondary-500, 0.07);
+    border: 1px solid rgba($secondary-500, 0.2);
+    border-radius: 8px;
+    padding: $spacing-2 $spacing-3;
+    font-size: 0.8125rem;
+    color: $secondary-800;
   }
 
   &__benefits {
     list-style: none;
     padding: 0;
-    margin: 0 0 $spacing-5;
+    margin: 0;
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 8px;
 
     li {
       display: flex;
@@ -675,47 +855,93 @@ function goToCheckout(packageId?: string) {
       gap: $spacing-2;
       font-size: 0.875rem;
       color: $text-secondary;
-      line-height: 1.4;
+      line-height: 1.5;
     }
   }
 
   &__check {
     color: $success;
-    font-size: 0.6875rem;
-    margin-top: 3px;
+    font-size: 0.8125rem;
     flex-shrink: 0;
+    margin-top: 1px;
   }
 
   &__cta {
     width: 100%;
-    border-color: var(--tier-color) !important;
-    color: var(--tier-color) !important;
-
-    &:hover {
-      background: var(--tier-color) !important;
-      color: #fff !important;
-    }
+    margin-top: auto;
   }
 }
 
-// remove old career-table since it's no longer used
-.career-table {
-  overflow-x: auto;
+// ────────────────────────────────────────────────────────────
+// 7. FAQ
+// ────────────────────────────────────────────────────────────
+.faq-section {
+  max-width: 760px;
+  margin: 0 auto;
 }
 
-.cta-card {
+// ────────────────────────────────────────────────────────────
+// 8. FOOTER CTA
+// ────────────────────────────────────────────────────────────
+.footer-cta {
+  position: relative;
+  margin: 0;
+  margin-left: -$spacing-6;
+  margin-right: -$spacing-6;
+  padding: $spacing-16 $spacing-8;
   text-align: center;
-  padding: $spacing-8 !important;
-  background: linear-gradient(135deg, $primary-50, $secondary-50);
+  overflow: hidden;
+  background: linear-gradient(135deg, #051a1f 0%, #083344 50%, #0a4a5a 100%);
+  border-radius: 24px;
 
-  h2 {
-    font-size: 1.5rem;
-    margin-bottom: $spacing-2;
+  @media (max-width: 768px) {
+    margin-left: -$spacing-4;
+    margin-right: -$spacing-4;
+    padding: $spacing-12 $spacing-5;
   }
 
-  p {
-    color: $text-secondary;
-    margin-bottom: $spacing-4;
+  &__backdrop {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at 70% 30%, rgba($primary-500,0.25), transparent 60%);
+    pointer-events: none;
+  }
+
+  &__content {
+    position: relative;
+    z-index: 1;
+    max-width: 600px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: $spacing-5;
+  }
+
+  &__headline {
+    font-size: clamp(1.5rem, 3.5vw, 2.5rem);
+    font-weight: 900;
+    color: #fff;
+    line-height: 1.2;
+    margin: 0;
+  }
+
+  &__sub {
+    font-size: 1rem;
+    color: rgba(255,255,255,0.6);
+    margin: 0;
+    line-height: 1.7;
+  }
+
+  &__disclaimer {
+    font-size: 0.75rem;
+    color: rgba(255,255,255,0.35);
+    margin: 0;
   }
 }
+
+
+
+
+
 </style>

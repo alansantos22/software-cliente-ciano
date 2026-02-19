@@ -74,10 +74,40 @@
 
         <div class="topbar__right">
           <!-- Notifications -->
-          <button class="topbar__icon-btn" title="Notificações">
-            <font-awesome-icon icon="bell" />
-            <span v-if="notificationCount" class="topbar__badge">{{ notificationCount }}</span>
-          </button>
+          <div class="notif-wrapper">
+            <button class="topbar__icon-btn" @click="toggleNotifications" title="Notificações">
+              <font-awesome-icon icon="bell" />
+              <span v-if="unreadCount" class="topbar__badge">{{ unreadCount }}</span>
+            </button>
+
+            <div v-if="notificationOpen" class="notif-overlay" @click="notificationOpen = false" />
+
+            <div v-if="notificationOpen" class="notif-panel">
+              <div class="notif-panel__header">
+                <span class="notif-panel__title">Notificações</span>
+                <button class="notif-panel__mark-all" @click="markAllRead">Marcar todas como lidas</button>
+              </div>
+              <div class="notif-panel__list">
+                <div
+                  v-for="n in notifications"
+                  :key="n.id"
+                  class="notif-item"
+                  :class="[`notif-item--${n.type}`, { 'notif-item--read': n.read }]"
+                  @click="readNotification(n.id)"
+                >
+                  <span class="notif-item__icon">
+                    <font-awesome-icon :icon="n.icon" />
+                  </span>
+                  <div class="notif-item__body">
+                    <p class="notif-item__title">{{ n.title }}</p>
+                    <p class="notif-item__desc">{{ n.desc }}</p>
+                    <span class="notif-item__time">{{ n.time }}</span>
+                  </div>
+                  <span v-if="!n.read" class="notif-item__dot" />
+                </div>
+              </div>
+            </div>
+          </div>
 
           <!-- User Menu -->
           <DsDropdown align="right">
@@ -144,7 +174,62 @@ const userRoleLabel = computed(() =>
   authStore.isAdmin ? 'Administrador' : 'Sócio'
 );
 
-const notificationCount = computed(() => 3);
+interface Notification {
+  id: number;
+  type: 'payment' | 'network' | 'warning';
+  icon: string;
+  title: string;
+  desc: string;
+  time: string;
+  read: boolean;
+}
+
+const notificationOpen = ref(false);
+
+const notifications = ref<Notification[]>([
+  {
+    id: 1,
+    type: 'payment',
+    icon: 'money-bill-wave',
+    title: 'Pagamento de Janeiro processado',
+    desc: 'R$ 5.200,00 será creditado no dia 5 do mês.',
+    time: 'Há 2 horas',
+    read: false,
+  },
+  {
+    id: 2,
+    type: 'network',
+    icon: 'users',
+    title: 'Nova indicação na sua rede',
+    desc: 'Carlos Alves acabou de entrar como seu indicado direto.',
+    time: 'Há 1 dia',
+    read: false,
+  },
+  {
+    id: 3,
+    type: 'warning',
+    icon: 'triangle-exclamation',
+    title: 'Conta vence em breve',
+    desc: 'Sua conta vence em 8 dias. Renove para não perder seus benefícios.',
+    time: 'Há 2 dias',
+    read: false,
+  },
+]);
+
+const unreadCount = computed(() => notifications.value.filter(n => !n.read).length);
+
+function toggleNotifications() {
+  notificationOpen.value = !notificationOpen.value;
+}
+
+function markAllRead() {
+  notifications.value.forEach(n => (n.read = true));
+}
+
+function readNotification(id: number) {
+  const n = notifications.value.find(n => n.id === id);
+  if (n) n.read = true;
+}
 
 const pageTitle = computed(() => {
   const meta = route.meta as { title?: string };
@@ -600,6 +685,150 @@ function logout() {
     color: $text-tertiary;
 
     @media (max-width: 640px) { display: none; }
+  }
+}
+
+// ============================================================
+// NOTIFICATIONS
+// ============================================================
+.notif-wrapper {
+  position: relative;
+}
+
+.notif-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 99;
+}
+
+.notif-panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 360px;
+  background: $bg-primary;
+  border: 1px solid $border-light;
+  border-radius: 14px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.14);
+  z-index: 100;
+  overflow: hidden;
+
+  @media (max-width: 480px) {
+    width: calc(100vw - $spacing-8);
+    right: -$spacing-4;
+  }
+
+  &__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: $spacing-4 $spacing-5;
+    border-bottom: 1px solid $border-light;
+  }
+
+  &__title {
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: $text-primary;
+  }
+
+  &__mark-all {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 0.8125rem;
+    color: $primary-500;
+    padding: 0;
+    font-weight: 500;
+
+    &:hover { text-decoration: underline; }
+  }
+
+  &__list {
+    display: flex;
+    flex-direction: column;
+  }
+}
+
+.notif-item {
+  display: flex;
+  align-items: flex-start;
+  gap: $spacing-3;
+  padding: $spacing-4 $spacing-5;
+  cursor: pointer;
+  transition: background 0.15s ease;
+  position: relative;
+  border-bottom: 1px solid $border-light;
+
+  &:last-child { border-bottom: none; }
+
+  &:hover { background: $neutral-50; }
+
+  &--read {
+    opacity: 0.6;
+  }
+
+  &__icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    font-size: 0.875rem;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  &--payment &__icon {
+    background: rgba($success, 0.12);
+    color: $success;
+  }
+
+  &--network &__icon {
+    background: rgba($primary-500, 0.12);
+    color: $primary-500;
+  }
+
+  &--warning &__icon {
+    background: rgba($warning, 0.14);
+    color: $warning;
+  }
+
+  &__body {
+    flex: 1;
+    min-width: 0;
+  }
+
+  &__title {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: $text-primary;
+    margin: 0 0 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  &__desc {
+    font-size: 0.8125rem;
+    color: $text-secondary;
+    margin: 0 0 4px;
+    line-height: 1.4;
+  }
+
+  &__time {
+    font-size: 0.75rem;
+    color: $text-tertiary;
+  }
+
+  &__dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: $primary-500;
+    flex-shrink: 0;
+    margin-top: 6px;
   }
 }
 

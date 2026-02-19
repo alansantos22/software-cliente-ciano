@@ -20,6 +20,8 @@ import {
   // Network screen additions
   faUserPlus, faBolt, faCircleCheck, faCircleXmark, faClock,
   faPhone, faChevronUp,
+  // Dashboard additions
+  faTriangleExclamation, faCalendarDay,
 } from '@fortawesome/free-solid-svg-icons'
 
 library.add(
@@ -35,6 +37,8 @@ library.add(
   // Network screen additions
   faUserPlus, faBolt, faCircleCheck, faCircleXmark, faClock,
   faPhone, faChevronUp,
+  // Dashboard additions
+  faTriangleExclamation, faCalendarDay,
 )
 
 // Styles

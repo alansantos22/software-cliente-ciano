@@ -10,6 +10,7 @@ export * from './earnings.mock';
 export * from './network.mock';
 export * from './payouts.mock';
 export * from './financial.mock';
+export * from './dashboard.mock';
 
 // === MOCK UTILITIES ===
 

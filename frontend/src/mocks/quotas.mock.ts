@@ -43,7 +43,7 @@ export interface UserQuotaBalance {
 export const mockQuotaConfig: QuotaConfig = {
   minPurchase: 1,
   maxPurchase: 100,
-  quotaPrice: 1000, // R$ 1.000,00 per quota
+  quotaPrice: 2500, // R$ 2.500,00 per quota
   currency: 'BRL',
   // Bonus structure
   directBonus: 10, // 10%
