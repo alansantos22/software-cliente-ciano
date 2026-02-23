@@ -17,6 +17,12 @@ const routes: RouteRecordRaw[] = [
     meta: { guestOnly: true, title: 'Login' },
   },
   {
+    path: '/register',
+    name: 'register',
+    component: () => import('@/features/auth/views/RegisterView.vue'),
+    meta: { guestOnly: true, title: 'Criar Conta' },
+  },
+  {
     path: '/forgot-password',
     name: 'forgot-password',
     component: () => import('@/features/auth/views/ForgotPasswordView.vue'),
@@ -31,8 +37,7 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/invite/:referralCode',
     name: 'invite',
-    component: () => import('@/features/landing/views/LandingView.vue'),
-    meta: { title: 'Convite - Ciano' },
+    redirect: (to) => ({ path: '/register', query: { ref: to.params.referralCode } }),
   },
 
   // ========== PROTECTED ROUTES (com AppLayout) ==========
