@@ -21,6 +21,17 @@ export interface MockUser {
   isActive: boolean;
   createdAt: string;
   // Financial
+  /**
+   * Cotas compradas diretamente.
+   * ⚠️ REGRA DO SISTEMA: apenas estas definem o nível (partnerLevel).
+   */
+  purchasedQuotas: number;
+  /**
+   * Cotas recebidas via split (bônus em cotas).
+   * ⚠️ REGRA DO SISTEMA: não sobem de nível, apenas contribuem para dividendos.
+   */
+  splitQuotas: number;
+  /** Total para dividendos = purchasedQuotas + splitQuotas. NÃO usar para nível. */
   quotaBalance: number;
   availableWithdraw: number;
   totalEarnings: number;
@@ -46,7 +57,9 @@ export const mockUsers: MockUser[] = [
     avatarUrl: null,
     isActive: true,
     createdAt: '2024-01-01T00:00:00Z',
-    quotaBalance: 100,
+    purchasedQuotas: 100, // Imperial (≥60 compradas)
+    splitQuotas: 15,
+    quotaBalance: 115,    // purchased + split (dividendos)
     availableWithdraw: 50000,
     totalEarnings: 250000,
     directCount: 10,
@@ -67,7 +80,9 @@ export const mockUsers: MockUser[] = [
     avatarUrl: null,
     isActive: true,
     createdAt: '2024-01-15T10:30:00Z',
-    quotaBalance: 50,
+    purchasedQuotas: 50, // VIP (≥20 compradas)
+    splitQuotas: 7,
+    quotaBalance: 57,
     availableWithdraw: 15000,
     totalEarnings: 85000,
     directCount: 8,
@@ -87,7 +102,9 @@ export const mockUsers: MockUser[] = [
     avatarUrl: null,
     isActive: true,
     createdAt: '2024-02-01T08:00:00Z',
-    quotaBalance: 30,
+    purchasedQuotas: 30, // Platinum (≥10 compradas)
+    splitQuotas: 4,
+    quotaBalance: 34,
     availableWithdraw: 8500,
     totalEarnings: 42000,
     directCount: 5,
@@ -107,7 +124,9 @@ export const mockUsers: MockUser[] = [
     avatarUrl: null,
     isActive: true,
     createdAt: '2024-02-10T14:20:00Z',
-    quotaBalance: 10,
+    purchasedQuotas: 10, // Platinum (≥10 compradas)
+    splitQuotas: 2,
+    quotaBalance: 12,
     availableWithdraw: 2500,
     totalEarnings: 12000,
     directCount: 3,
@@ -128,7 +147,9 @@ export const mockUsers: MockUser[] = [
     avatarUrl: null,
     isActive: true,
     createdAt: '2024-02-20T09:15:00Z',
-    quotaBalance: 25,
+    purchasedQuotas: 25, // VIP (≥20 compradas)
+    splitQuotas: 3,
+    quotaBalance: 28,
     availableWithdraw: 6200,
     totalEarnings: 28500,
     directCount: 4,
@@ -148,7 +169,9 @@ export const mockUsers: MockUser[] = [
     avatarUrl: null,
     isActive: true,
     createdAt: '2024-03-01T11:45:00Z',
-    quotaBalance: 15,
+    purchasedQuotas: 15, // Platinum (≥10 compradas)
+    splitQuotas: 2,
+    quotaBalance: 17,
     availableWithdraw: 3800,
     totalEarnings: 15600,
     directCount: 2,
@@ -169,7 +192,9 @@ export const mockUsers: MockUser[] = [
     avatarUrl: null,
     isActive: true,
     createdAt: '2024-03-05T16:30:00Z',
-    quotaBalance: 8,
+    purchasedQuotas: 8, // Sócio (≥1 comprada)
+    splitQuotas: 1,
+    quotaBalance: 9,
     availableWithdraw: 1800,
     totalEarnings: 8200,
     directCount: 1,
@@ -190,6 +215,8 @@ export const mockUsers: MockUser[] = [
     avatarUrl: null,
     isActive: true,
     createdAt: '2024-03-15T10:00:00Z',
+    purchasedQuotas: 5, // Sócio (≥1 comprada)
+    splitQuotas: 0,
     quotaBalance: 5,
     availableWithdraw: 950,
     totalEarnings: 4200,
@@ -210,6 +237,8 @@ export const mockUsers: MockUser[] = [
     avatarUrl: null,
     isActive: true,
     createdAt: '2024-03-20T13:25:00Z',
+    purchasedQuotas: 3, // Sócio (≥1 comprada)
+    splitQuotas: 0,
     quotaBalance: 3,
     availableWithdraw: 620,
     totalEarnings: 2800,
@@ -231,6 +260,8 @@ export const mockUsers: MockUser[] = [
     avatarUrl: null,
     isActive: false,
     createdAt: '2024-02-25T08:30:00Z',
+    purchasedQuotas: 0,
+    splitQuotas: 0,
     quotaBalance: 0,
     availableWithdraw: 0,
     totalEarnings: 500,
@@ -252,7 +283,9 @@ export const mockUsers: MockUser[] = [
     avatarUrl: null,
     isActive: true,
     createdAt: '2024-01-20T10:00:00Z',
-    quotaBalance: 40,
+    purchasedQuotas: 40, // VIP (≥20 compradas)
+    splitQuotas: 6,
+    quotaBalance: 46,
     availableWithdraw: 12000,
     totalEarnings: 65000,
     directCount: 6,
@@ -272,7 +305,9 @@ export const mockUsers: MockUser[] = [
     avatarUrl: null,
     isActive: true,
     createdAt: '2024-02-15T14:30:00Z',
-    quotaBalance: 20,
+    purchasedQuotas: 20, // VIP (≥20 compradas)
+    splitQuotas: 3,
+    quotaBalance: 23,
     availableWithdraw: 5500,
     totalEarnings: 24000,
     directCount: 3,

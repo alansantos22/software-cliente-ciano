@@ -42,7 +42,7 @@
         <!-- Step 0: Calculadora de cotas -->
         <section v-if="currentStep === 0" key="step-0" class="checkout-view__step">
           <QuotaCalculator
-            :current-user-quotas="currentUserQuotas"
+            :purchased-quotas="currentUserQuotas"
             :quota-price="quotaPrice"
             @update:quotas="selectedQuotas = $event"
             @next="goToStep(1)"
@@ -53,7 +53,7 @@
         <section v-else-if="currentStep === 1" key="step-1" class="checkout-view__step">
           <PaymentSelector
             :quotas="selectedQuotas"
-            :current-user-quotas="currentUserQuotas"
+            :purchased-quotas="currentUserQuotas"
             :quota-price="quotaPrice"
             @next="onPaymentSelected"
             @back="goToStep(0)"
@@ -64,7 +64,7 @@
         <section v-else-if="currentStep === 2" key="step-2" class="checkout-view__step">
           <OrderConfirmation
             :quotas="selectedQuotas"
-            :current-user-quotas="currentUserQuotas"
+            :purchased-quotas="currentUserQuotas"
             :quota-price="quotaPrice"
             :payment-method="selectedPaymentMethod"
             :is-processing="isProcessing"
@@ -127,14 +127,6 @@ const authStore = useAuthStore();
 // ─── Constants ────────────────────────────────────────────────────────────────
 const quotaPrice = mockQuotaConfig.quotaPrice; // R$ 2.500
 
-/** Map partnerLevel → current quota count (mock until quotas API is integrated) */
-const partnerLevelToQuotas: Record<string, number> = {
-  socio: 5,
-  platinum: 12,
-  vip: 25,
-  imperial: 65,
-};
-
 const stepLabels = ['Suas Cotas', 'Pagamento', 'Confirmar', 'Finalizar'];
 
 // ─── State ────────────────────────────────────────────────────────────────────
@@ -153,8 +145,8 @@ const orderData = ref({
 
 // ─── Computed ─────────────────────────────────────────────────────────────────
 const currentUserQuotas = computed<number>(() => {
-  const level = authStore.user?.partnerLevel ?? 'socio';
-  return partnerLevelToQuotas[level] ?? 5;
+  // ⚠️ REGRA DO SISTEMA: apenas cotas COMPRADAS definem o nível
+  return authStore.user?.purchasedQuotas ?? 0;
 });
 
 const userReferralCode = computed(() => authStore.user?.referralCode ?? 'CIANO');

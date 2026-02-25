@@ -11,7 +11,7 @@
       <Transition name="microcopy-fade" mode="out-in">
         <div v-if="selectedQuotas > 0" class="quota-calc__microcopy" :key="microcopyKey">
           <span class="microcopy__base">
-            Você já possui <strong>{{ currentUserQuotas }} cotas</strong>. Adicionando
+            Você já comprou <strong>{{ purchasedQuotas }} cotas</strong>. Adicionando
             <strong>{{ selectedQuotas }}</strong>, você totaliza
           </span>
           <span class="microcopy__total" :style="{ color: targetLevel.color }">
@@ -38,8 +38,26 @@
         </button>
 
         <div class="counter-display">
-          <Transition name="counter-flip" mode="out-in">
-            <span class="counter-value" :key="selectedQuotas">{{ selectedQuotas }}</span>
+          <input
+            v-if="isEditing"
+            ref="counterInputRef"
+            class="counter-input"
+            type="number"
+            min="1"
+            max="100"
+            :value="selectedQuotas"
+            @blur="commitInput"
+            @keydown.enter="commitInput"
+            @keydown.escape="isEditing = false"
+            @input="onRawInput"
+          />
+          <Transition v-else name="counter-flip" mode="out-in">
+            <span
+              class="counter-value"
+              :key="selectedQuotas"
+              title="Clique para digitar"
+              @click="startEditing"
+            >{{ selectedQuotas }}</span>
           </Transition>
           <span class="counter-label">{{ selectedQuotas === 1 ? 'cota' : 'cotas' }}</span>
         </div>
@@ -134,12 +152,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch, nextTick } from 'vue';
 import { DsButton } from '@/design-system';
 
 // ─── Props & Emits ─────────────────────────────────────────────────────────────
 const props = defineProps<{
-  currentUserQuotas: number;
+  purchasedQuotas: number;
   quotaPrice: number;
 }>();
 
@@ -151,7 +169,9 @@ const emit = defineEmits<{
 // ─── State ────────────────────────────────────────────────────────────────────
 const selectedQuotas = ref(1);
 const justUnlockedLevel = ref<string | null>(null);
-const previousTotalQuotas = ref(props.currentUserQuotas + 1);
+const previousTotalQuotas = ref(props.purchasedQuotas + 1);
+const isEditing = ref(false);
+const counterInputRef = ref<HTMLInputElement | null>(null);
 
 // ─── Level definitions ────────────────────────────────────────────────────────
 const levels = [
@@ -212,7 +232,7 @@ const levels = [
 ];
 
 // ─── Computed ─────────────────────────────────────────────────────────────────
-const totalQuotas = computed(() => props.currentUserQuotas + selectedQuotas.value);
+const totalQuotas = computed(() => props.purchasedQuotas + selectedQuotas.value);
 const totalPrice = computed(() => selectedQuotas.value * props.quotaPrice);
 
 const targetLevel = computed(() => {
@@ -220,7 +240,7 @@ const targetLevel = computed(() => {
 });
 
 const currentLevelFromUser = computed(() => {
-  return [...levels].reverse().find((l) => props.currentUserQuotas >= l.min) ?? levels[0];
+  return [...levels].reverse().find((l) => props.purchasedQuotas >= l.min) ?? levels[0];
 });
 
 const isUpgrading = computed(() => targetLevel.value.key !== currentLevelFromUser.value.key);
@@ -230,13 +250,13 @@ const microcopyKey = computed(() => `${selectedQuotas.value}-${targetLevel.value
 // Smart presets: quantas cotas comprar para chegar em cada nível
 const smartPresets = computed(() => {
   return levels
-    .filter((l) => l.min > props.currentUserQuotas)
+    .filter((l) => l.min > props.purchasedQuotas)
     .map((l) => ({
       key: l.key,
       label: l.label,
       icon: l.icon,
       color: l.color,
-      quotas: l.min - props.currentUserQuotas,
+      quotas: l.min - props.purchasedQuotas,
     }));
 });
 
@@ -274,6 +294,29 @@ function setPreset(quotas: number) {
 
 function formatCurrency(value: number): string {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
+}
+
+async function startEditing() {
+  isEditing.value = true;
+  await nextTick();
+  counterInputRef.value?.select();
+}
+
+function onRawInput(e: Event) {
+  const raw = parseInt((e.target as HTMLInputElement).value, 10);
+  if (!isNaN(raw)) {
+    selectedQuotas.value = Math.min(100, Math.max(1, raw));
+  }
+}
+
+function commitInput() {
+  if (counterInputRef.value) {
+    const raw = parseInt(counterInputRef.value.value, 10);
+    if (!isNaN(raw) && raw >= 1) {
+      selectedQuotas.value = Math.min(100, raw);
+    }
+  }
+  isEditing.value = false;
 }
 
 // Expose selected quotas so parent can read
@@ -396,6 +439,33 @@ defineExpose({ selectedQuotas });
     font-weight: 800;
     color: $primary-600;
     line-height: 1;
+    cursor: text;
+    border-bottom: 2px dashed transparent;
+    transition: border-color 0.15s ease;
+
+    &:hover {
+      border-bottom-color: $primary-300;
+    }
+  }
+
+  .counter-input {
+    font-size: 3.5rem;
+    font-weight: 800;
+    color: $primary-600;
+    line-height: 1;
+    width: 90px;
+    text-align: center;
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid $primary-500;
+    outline: none;
+    padding: 0;
+    appearance: textfield;
+
+    &::-webkit-inner-spin-button,
+    &::-webkit-outer-spin-button {
+      appearance: none;
+    }
   }
 
   .counter-label {

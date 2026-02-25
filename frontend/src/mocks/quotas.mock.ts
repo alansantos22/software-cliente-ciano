@@ -32,6 +32,20 @@ export interface QuotaTransaction {
 
 export interface UserQuotaBalance {
   userId: string;
+  /**
+   * Cotas compradas diretamente pelo usuário.
+   * ⚠️ REGRA DO SISTEMA: apenas estas contam para subir de nível.
+   */
+  purchasedQuotas: number;
+  /**
+   * Cotas recebidas via split (bônus em cotas).
+   * ⚠️ REGRA DO SISTEMA: não contam para nível, apenas para dividendos.
+   */
+  splitQuotas: number;
+  /**
+   * Total de cotas para cálculo de dividendos (purchasedQuotas + splitQuotas).
+   * NÃO usar este campo para determinar nível do usuário.
+   */
   totalQuotas: number;
   activeQuotas: number;
   pendingQuotas: number;
@@ -173,11 +187,17 @@ export const mockQuotaTransactions: QuotaTransaction[] = [
 ];
 
 // User balances
+// ⚠️ REGRA DO SISTEMA:
+//   purchasedQuotas → contam para NÍVEL do usuário
+//   splitQuotas     → contam apenas para DIVIDENDOS (não sobem de nível)
+//   totalQuotas     → purchasedQuotas + splitQuotas (base de cálculo de dividendos)
 export const mockUserBalances: UserQuotaBalance[] = [
   {
     userId: 'user-001',
-    totalQuotas: 100,
-    activeQuotas: 100,
+    purchasedQuotas: 100, // Imperial (≥60 compradas)
+    splitQuotas: 15,
+    totalQuotas: 115,
+    activeQuotas: 115,
     pendingQuotas: 0,
     totalInvested: 250000,
     currentValue: 375000,
@@ -185,8 +205,10 @@ export const mockUserBalances: UserQuotaBalance[] = [
   },
   {
     userId: 'user-002',
-    totalQuotas: 50,
-    activeQuotas: 50,
+    purchasedQuotas: 50, // VIP (≥20 compradas)
+    splitQuotas: 7,
+    totalQuotas: 57,
+    activeQuotas: 57,
     pendingQuotas: 0,
     totalInvested: 125000,
     currentValue: 162500,
@@ -194,8 +216,10 @@ export const mockUserBalances: UserQuotaBalance[] = [
   },
   {
     userId: 'user-003',
-    totalQuotas: 30,
-    activeQuotas: 30,
+    purchasedQuotas: 30, // Platinum (≥10 compradas)
+    splitQuotas: 4,
+    totalQuotas: 34,
+    activeQuotas: 34,
     pendingQuotas: 0,
     totalInvested: 75000,
     currentValue: 96250,
@@ -203,8 +227,10 @@ export const mockUserBalances: UserQuotaBalance[] = [
   },
   {
     userId: 'user-004',
-    totalQuotas: 10,
-    activeQuotas: 10,
+    purchasedQuotas: 10, // Platinum (≥10 compradas)
+    splitQuotas: 2,
+    totalQuotas: 12,
+    activeQuotas: 12,
     pendingQuotas: 0,
     totalInvested: 25000,
     currentValue: 30000,
@@ -212,8 +238,10 @@ export const mockUserBalances: UserQuotaBalance[] = [
   },
   {
     userId: 'user-005',
-    totalQuotas: 25,
-    activeQuotas: 25,
+    purchasedQuotas: 25, // VIP (≥20 compradas)
+    splitQuotas: 3,
+    totalQuotas: 28,
+    activeQuotas: 28,
     pendingQuotas: 0,
     totalInvested: 62500,
     currentValue: 78000,
@@ -242,6 +270,17 @@ export function calculateTotalInvested(): number {
   return mockUserBalances.reduce((sum, b) => sum + b.totalInvested, 0);
 }
 
-export function calculateTotalQuotas(): number {
+/** Total de cotas compradas — base para cálculo de nível de todos os usuários. */
+export function calculateTotalPurchasedQuotas(): number {
+  return mockUserBalances.reduce((sum, b) => sum + b.purchasedQuotas, 0);
+}
+
+/** Total de cotas (compradas + split) — base para distribuição de dividendos. */
+export function calculateTotalQuotasForDividends(): number {
   return mockUserBalances.reduce((sum, b) => sum + b.totalQuotas, 0);
+}
+
+/** @deprecated Use calculateTotalPurchasedQuotas() or calculateTotalQuotasForDividends() */
+export function calculateTotalQuotas(): number {
+  return calculateTotalQuotasForDividends();
 }

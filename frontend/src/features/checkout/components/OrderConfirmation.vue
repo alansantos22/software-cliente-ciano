@@ -53,9 +53,9 @@
         </span>
       </div>
       <div class="summary-item">
-        <span class="summary-item__label">Total de cotas após compra</span>
+        <span class="summary-item__label">Cotas compradas após esta compra</span>
         <span class="summary-item__value" :style="{ color: targetLevel.color }">
-          {{ totalQuotas }} cotas
+          {{ totalQuotas }} cotas compradas
         </span>
       </div>
       <div class="summary-item summary-item--total">
@@ -99,7 +99,7 @@ import { DsButton } from '@/design-system';
 // ─── Props & Emits ─────────────────────────────────────────────────────────────
 const props = defineProps<{
   quotas: number;
-  currentUserQuotas: number;
+  purchasedQuotas: number;
   quotaPrice: number;
   paymentMethod: string;
   isProcessing: boolean;
@@ -125,7 +125,7 @@ const methodLabels: Record<string, string> = {
 };
 
 // ─── Computed ─────────────────────────────────────────────────────────────────
-const totalQuotas = computed(() => props.currentUserQuotas + props.quotas);
+const totalQuotas = computed(() => props.purchasedQuotas + props.quotas);
 const totalAmount = computed(() => props.quotas * props.quotaPrice);
 
 const targetLevel = computed(() => {

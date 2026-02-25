@@ -15,6 +15,16 @@ export interface User {
   isActive: boolean;
   title: 'none' | 'bronze' | 'silver' | 'gold' | 'diamond';
   partnerLevel: 'socio' | 'platinum' | 'vip' | 'imperial';
+  /**
+   * Cotas compradas diretamente (DEFINEM O NÍVEL do usuário).
+   * ⚠️ Usar este campo para verificar/exibir nível e progresso de nível.
+   */
+  purchasedQuotas: number;
+  /**
+   * Cotas recebidas via split.
+   * ⚠️ NÃO contam para nível — apenas para cálculo de dividendos.
+   */
+  splitQuotas: number;
 }
 
 export const useAuthStore = defineStore('auth', () => {
