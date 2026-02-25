@@ -1,203 +1,109 @@
 <template>
   <div class="checkout-view">
-    <!-- Header -->
-    <header class="checkout-view__header">
-      <h1>Adquirir Cotas</h1>
-      <p class="checkout-view__subtitle">
-        Escolha o pacote de cotas e realize seu investimento
-      </p>
-    </header>
-
-    <!-- Steps Indicator -->
-    <div class="checkout-view__steps">
-      <div
-        v-for="(stepItem, index) in steps"
-        :key="stepItem.id"
-        class="step"
-        :class="{
-          'step--active': currentStep === index,
-          'step--completed': currentStep > index,
-        }"
-      >
-        <div class="step__number">
-          {{ currentStep > index ? '✓' : index + 1 }}
+    <!-- Progress bar header -->
+    <div class="checkout-view__header">
+      <div class="checkout-header__top">
+        <div class="checkout-header__brand">
+          <span class="brand-icon">🏦</span>
+          <span>Ciano Investimentos</span>
         </div>
-        <span class="step__label">{{ stepItem.label }}</span>
+        <div class="checkout-header__secure">
+          <span>🔒</span>
+          <span>Ambiente seguro</span>
+        </div>
+      </div>
+
+      <div class="checkout-view__progress">
+        <div
+          class="progress-bar"
+          :style="{ width: `${progressPercent}%` }"
+        ></div>
+      </div>
+
+      <div class="checkout-view__steps-labels">
+        <span
+          v-for="(step, idx) in stepLabels"
+          :key="step"
+          class="step-label"
+          :class="{
+            'step-label--active': currentStep === idx,
+            'step-label--done': currentStep > idx,
+          }"
+        >
+          <span class="step-label__num">{{ currentStep > idx ? '✓' : idx + 1 }}</span>
+          <span class="step-label__text">{{ step }}</span>
+        </span>
       </div>
     </div>
 
-    <!-- Step Content -->
-    <div class="checkout-view__content">
-      <!-- Step 1: Select Package -->
-      <section v-if="currentStep === 0" class="checkout-step">
-        <h2>Selecione um Pacote</h2>
+    <!-- Step content with slide transitions -->
+    <div class="checkout-view__body">
+      <Transition :name="transitionName" mode="out-in">
+        <!-- Step 0: Calculadora de cotas -->
+        <section v-if="currentStep === 0" key="step-0" class="checkout-view__step">
+          <QuotaCalculator
+            :current-user-quotas="currentUserQuotas"
+            :quota-price="quotaPrice"
+            @update:quotas="selectedQuotas = $event"
+            @next="goToStep(1)"
+          />
+        </section>
 
-        <div class="packages-grid">
-          <DsCard
-            v-for="pkg in packages"
-            :key="pkg.id"
-            class="package-card"
-            :class="{ 'package-card--selected': selectedPackage?.id === pkg.id }"
-            @click="selectPackage(pkg)"
-          >
-            <div class="package-card__badge" v-if="pkg.popular">
-              ⭐ Mais Popular
-            </div>
-            <h3 class="package-card__title">{{ pkg.name }}</h3>
-            <div class="package-card__quotas">
-              <strong>{{ pkg.quotas }}</strong> cotas
-            </div>
-            <div class="package-card__price">
-              {{ formatCurrency(pkg.price) }}
-            </div>
-            <ul class="package-card__benefits">
-              <li v-for="benefit in pkg.benefits" :key="benefit">
-                ✓ {{ benefit }}
-              </li>
-            </ul>
-            <DsButton
-              :variant="selectedPackage?.id === pkg.id ? 'primary' : 'outline'"
-              style="width: 100%"
-            >
-              {{ selectedPackage?.id === pkg.id ? 'Selecionado' : 'Selecionar' }}
-            </DsButton>
-          </DsCard>
-        </div>
+        <!-- Step 1: Seleção de pagamento -->
+        <section v-else-if="currentStep === 1" key="step-1" class="checkout-view__step">
+          <PaymentSelector
+            :quotas="selectedQuotas"
+            :current-user-quotas="currentUserQuotas"
+            :quota-price="quotaPrice"
+            @next="onPaymentSelected"
+            @back="goToStep(0)"
+          />
+        </section>
 
-        <div class="checkout-step__actions">
-          <DsButton
-            variant="primary"
-            size="lg"
-            :disabled="!selectedPackage"
-            @click="nextStep"
-          >
-            Continuar
-          </DsButton>
-        </div>
-      </section>
+        <!-- Step 2: Confirmação emocional -->
+        <section v-else-if="currentStep === 2" key="step-2" class="checkout-view__step">
+          <OrderConfirmation
+            :quotas="selectedQuotas"
+            :current-user-quotas="currentUserQuotas"
+            :quota-price="quotaPrice"
+            :payment-method="selectedPaymentMethod"
+            :is-processing="isProcessing"
+            @confirm="processOrder"
+            @back="goToStep(1)"
+          />
+        </section>
 
-      <!-- Step 2: Payment Method -->
-      <section v-if="currentStep === 1" class="checkout-step">
-        <h2>Método de Pagamento</h2>
+        <!-- Step 3: Processamento / pagamento -->
+        <section v-else-if="currentStep === 3" key="step-3" class="checkout-view__step">
+          <!-- PIX -->
+          <PixPayment
+            v-if="selectedPaymentMethod === 'pix'"
+            :order-number="orderData.orderNumber"
+            :pix-code="orderData.pixCode"
+            :amount="totalAmount"
+            :referral-code="userReferralCode"
+            @paid="onPixPaid"
+          />
 
-        <div class="payment-methods">
-          <DsCard
-            v-for="method in paymentMethods"
-            :key="method.id"
-            class="payment-card"
-            :class="{ 'payment-card--selected': selectedPaymentMethod?.id === method.id }"
-            @click="selectPaymentMethod(method)"
-          >
-            <span class="payment-card__icon">{{ method.icon }}</span>
-            <div class="payment-card__info">
-              <strong>{{ method.name }}</strong>
-              <span>{{ method.description }}</span>
-            </div>
-            <div class="payment-card__check">
-              {{ selectedPaymentMethod?.id === method.id ? '✓' : '' }}
-            </div>
-          </DsCard>
-        </div>
+          <!-- Boleto -->
+          <BoletoPayment
+            v-else-if="selectedPaymentMethod === 'boleto'"
+            :order-number="orderData.orderNumber"
+            :boleto-code="orderData.boletoCode"
+            :amount="totalAmount"
+            :referral-code="userReferralCode"
+            @go-to-dashboard="goToDashboard"
+          />
 
-        <div class="checkout-step__actions">
-          <DsButton variant="ghost" @click="prevStep">
-            Voltar
-          </DsButton>
-          <DsButton
-            variant="primary"
-            size="lg"
-            :disabled="!selectedPaymentMethod"
-            @click="nextStep"
-          >
-            Continuar
-          </DsButton>
-        </div>
-      </section>
-
-      <!-- Step 3: Confirmation -->
-      <section v-if="currentStep === 2" class="checkout-step">
-        <h2>Confirmar Pedido</h2>
-
-        <DsCard class="order-summary">
-          <h3>Resumo do Pedido</h3>
-
-          <div class="summary-row">
-            <span>Pacote:</span>
-            <strong>{{ selectedPackage?.name }}</strong>
-          </div>
-          <div class="summary-row">
-            <span>Quantidade de Cotas:</span>
-            <strong>{{ selectedPackage?.quotas }} cotas</strong>
-          </div>
-          <div class="summary-row">
-            <span>Pagamento:</span>
-            <strong>{{ selectedPaymentMethod?.name }}</strong>
-          </div>
-
-          <hr />
-
-          <div class="summary-row summary-row--total">
-            <span>Total:</span>
-            <strong>{{ formatCurrency(selectedPackage?.price || 0) }}</strong>
-          </div>
-        </DsCard>
-
-        <DsAlert type="info">
-          Ao confirmar, você será redirecionado para finalizar o pagamento.
-        </DsAlert>
-
-        <div class="checkout-step__actions">
-          <DsButton variant="ghost" @click="prevStep">
-            Voltar
-          </DsButton>
-          <DsButton
-            variant="primary"
-            size="lg"
-            :loading="isProcessing"
-            @click="confirmOrder"
-          >
-            Confirmar Compra
-          </DsButton>
-        </div>
-      </section>
-
-      <!-- Step 4: Success -->
-      <section v-if="currentStep === 3" class="checkout-step checkout-step--success">
-        <div class="success-content">
-          <div class="success-icon">✅</div>
-          <h2>Pedido Realizado!</h2>
-          <p>Seu pedido foi processado com sucesso.</p>
-
-          <DsCard class="success-details">
-            <div class="summary-row">
-              <span>Número do Pedido:</span>
-              <strong>#{{ orderNumber }}</strong>
-            </div>
-            <div class="summary-row">
-              <span>Status:</span>
-              <DsBadge variant="warning">Aguardando Pagamento</DsBadge>
-            </div>
-          </DsCard>
-
-          <div v-if="selectedPaymentMethod?.id === 'pix'" class="pix-section">
-            <h3>Pague com PIX</h3>
-            <div class="pix-qr">
-              <div class="qr-placeholder">📱 QR Code PIX</div>
-            </div>
-            <div class="pix-code">
-              <code>{{ pixCode }}</code>
-              <DsCopyButton :text="pixCode" />
-            </div>
-            <p class="pix-expiry">Código válido por 30 minutos</p>
-          </div>
-
-          <div class="checkout-step__actions">
-            <DsButton variant="primary" size="lg" @click="goToDashboard">
-              Voltar ao Dashboard
-            </DsButton>
-          </div>
-        </div>
-      </section>
+          <!-- Cartão -->
+          <CardRedirect
+            v-else-if="selectedPaymentMethod === 'credit'"
+            :order-number="orderData.orderNumber"
+            :amount="totalAmount"
+            :payment-url="orderData.paymentUrl"
+          />
+        </section>
+      </Transition>
     </div>
   </div>
 </template>
@@ -205,158 +111,119 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
-import {
-  DsCard,
-  DsButton,
-  DsAlert,
-  DsBadge,
-  DsCopyButton,
-} from '@/design-system';
+import { useAuthStore } from '@/shared/stores';
 import { mockQuotaConfig, mockDelay } from '@/mocks';
+import QuotaCalculator from '../components/QuotaCalculator.vue';
+import PaymentSelector from '../components/PaymentSelector.vue';
+import OrderConfirmation from '../components/OrderConfirmation.vue';
+import PixPayment from '../components/PixPayment.vue';
+import BoletoPayment from '../components/BoletoPayment.vue';
+import CardRedirect from '../components/CardRedirect.vue';
 
-interface QuotaPackage {
-  id: string;
-  name: string;
-  quotas: number;
-  price: number;
-  popular?: boolean;
-  benefits: string[];
-}
-
+// ─── Router & Stores ──────────────────────────────────────────────────────────
 const router = useRouter();
+const authStore = useAuthStore();
 
-// State
+// ─── Constants ────────────────────────────────────────────────────────────────
+const quotaPrice = mockQuotaConfig.quotaPrice; // R$ 2.500
+
+/** Map partnerLevel → current quota count (mock until quotas API is integrated) */
+const partnerLevelToQuotas: Record<string, number> = {
+  socio: 5,
+  platinum: 12,
+  vip: 25,
+  imperial: 65,
+};
+
+const stepLabels = ['Suas Cotas', 'Pagamento', 'Confirmar', 'Finalizar'];
+
+// ─── State ────────────────────────────────────────────────────────────────────
 const currentStep = ref(0);
-const selectedPackage = ref<QuotaPackage | null>(null);
-const selectedPaymentMethod = ref<PaymentMethod | null>(null);
+const stepDirection = ref<'forward' | 'back'>('forward');
+const selectedQuotas = ref(1);
+const selectedPaymentMethod = ref('');
 const isProcessing = ref(false);
-const orderNumber = ref('');
-const pixCode = ref('');
 
-// Data
-const steps = [
-  { id: 'package', label: 'Pacote' },
-  { id: 'payment', label: 'Pagamento' },
-  { id: 'confirm', label: 'Confirmar' },
-  { id: 'success', label: 'Sucesso' },
-];
+const orderData = ref({
+  orderNumber: '',
+  pixCode: '',
+  boletoCode: '',
+  paymentUrl: '',
+});
 
-interface PaymentMethod {
-  id: string;
-  name: string;
-  icon: string;
-  description: string;
+// ─── Computed ─────────────────────────────────────────────────────────────────
+const currentUserQuotas = computed<number>(() => {
+  const level = authStore.user?.partnerLevel ?? 'socio';
+  return partnerLevelToQuotas[level] ?? 5;
+});
+
+const userReferralCode = computed(() => authStore.user?.referralCode ?? 'CIANO');
+
+const totalAmount = computed(() => selectedQuotas.value * quotaPrice);
+
+const progressPercent = computed(() => {
+  return Math.round((currentStep.value / (stepLabels.length - 1)) * 100);
+});
+
+const transitionName = computed(() =>
+  stepDirection.value === 'forward' ? 'step-forward' : 'step-back',
+);
+
+// ─── Navigation ───────────────────────────────────────────────────────────────
+function goToStep(step: number) {
+  stepDirection.value = step > currentStep.value ? 'forward' : 'back';
+  currentStep.value = step;
 }
 
-const paymentMethods: PaymentMethod[] = [
-  { id: 'pix', name: 'PIX', icon: '💲', description: 'Pagamento instantâneo' },
-  { id: 'boleto', name: 'Boleto Bancário', icon: '📄', description: 'Até 3 dias úteis' },
-  { id: 'credit', name: 'Cartão de Crédito', icon: '💳', description: 'Até 12x sem juros' },
-];
-
-// Computed - Generate packages from config
-const packages = computed<QuotaPackage[]>(() => [
-  {
-    id: 'socio',
-    name: 'Sócio',
-    quotas: 1,
-    price: 1 * mockQuotaConfig.quotaPrice,
-    benefits: [
-      'Participação nos lucros do Grupo Ciano',
-      'Participação na valorização do grupo',
-      'Pode indicar e ganhar comissões',
-      'Acesso ao grupo geral de investidores',
-    ],
-  },
-  {
-    id: 'platinum',
-    name: 'Platinum',
-    quotas: 10,
-    price: 10 * mockQuotaConfig.quotaPrice,
-    popular: true,
-    benefits: [
-      'Todos os benefícios do Sócio',
-      '30% desconto em pousadas Ciano',
-      'Comissão maior nas indicações',
-      'Acesso antecipado a lotes com desconto',
-      'Reunião mensal com Marcos Maziero',
-    ],
-  },
-  {
-    id: 'vip',
-    name: 'VIP',
-    quotas: 20,
-    price: 20 * mockQuotaConfig.quotaPrice,
-    benefits: [
-      'Todos os benefícios do Platinum',
-      '50% desconto em pousadas Ciano',
-      '1 final de semana gratuito por ano',
-      'Convites para eventos e inaugurações',
-      'Nome listado como Sócio VIP nas pousadas',
-      'Comissão ainda maior nas indicações',
-    ],
-  },
-  {
-    id: 'imperial',
-    name: 'Imperial',
-    quotas: 60,
-    price: 60 * mockQuotaConfig.quotaPrice,
-    benefits: [
-      'Todos os benefícios do VIP',
-      'Hospedagem gratuita ilimitada (até 3 acompanhantes)',
-      'Pode morar em pousada',
-      '40% desconto para familiares',
-      'Viagem anual com Marcos Maziero',
-      'Quadro com foto no hall da pousada',
-      'Canal VIP direto com Marcos',
-      'Acesso ao grupo Imperial exclusivo',
-    ],
-  },
-]);
-
-// Methods
-function formatCurrency(value: number): string {
-  return new Intl.NumberFormat('pt-BR', {
-    style: 'currency',
-    currency: 'BRL',
-  }).format(value);
-}
-
-function selectPackage(pkg: QuotaPackage) {
-  selectedPackage.value = pkg;
-}
-
-function selectPaymentMethod(method: PaymentMethod) {
+function onPaymentSelected(method: string) {
   selectedPaymentMethod.value = method;
+  goToStep(2);
 }
 
-function nextStep() {
-  if (currentStep.value < steps.length - 1) {
-    currentStep.value++;
-  }
-}
-
-function prevStep() {
-  if (currentStep.value > 0) {
-    currentStep.value--;
-  }
-}
-
-async function confirmOrder() {
+// ─── Order processing ─────────────────────────────────────────────────────────
+async function processOrder() {
   isProcessing.value = true;
 
-  await mockDelay(1500);
+  await mockDelay(1800);
 
-  // Generate mock order data
-  orderNumber.value = `CQ${Date.now().toString().slice(-8)}`;
-  pixCode.value = `00020126580014BR.GOV.BCB.PIX0136${crypto.randomUUID()}5204000053039865802BR5925CIANO COTAS POUSADAS6009SAO PAULO62070503***63041234`;
+  const id = `CQ${Date.now().toString().slice(-8)}`;
+  orderData.value = {
+    orderNumber: id,
+    pixCode:
+      `00020126580014BR.GOV.BCB.PIX0136${id}-${crypto.randomUUID()}` +
+      `5204000053039865802BR5925CIANO COTAS POUSADAS6009SAO PAULO62070503***63041234`,
+    boletoCode: `34191.09026 01903.140001 41000.020001 3 99700000${String(totalAmount.value).padStart(10, '0')}`,
+    // In production: comes from Pagar.me API; base URL for mock
+    paymentUrl: '',
+  };
 
   isProcessing.value = false;
-  currentStep.value = 3;
+  goToStep(3);
+}
+
+// ─── Post-payment ─────────────────────────────────────────────────────────────
+function onPixPaid() {
+  router.push({
+    name: 'checkout-confirmation',
+    params: { transactionId: orderData.value.orderNumber },
+    query: {
+      quotas: selectedQuotas.value,
+      method: 'pix',
+      level: getTargetLevel(currentUserQuotas.value + selectedQuotas.value),
+    },
+  });
 }
 
 function goToDashboard() {
   router.push('/dashboard');
+}
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+function getTargetLevel(total: number): string {
+  if (total >= 60) return 'imperial';
+  if (total >= 20) return 'vip';
+  if (total >= 10) return 'platinum';
+  return 'socio';
 }
 </script>
 
@@ -365,336 +232,192 @@ function goToDashboard() {
 @use '@/assets/scss/spacing' as *;
 @use '@/assets/scss/mixins' as *;
 
+// ─── Layout ───────────────────────────────────────────────────────────────────
 .checkout-view {
-  padding: $spacing-6;
-  max-width: 1000px;
-  margin: 0 auto;
-
-  @media (max-width: 768px) {
-    padding: $spacing-4;
-  }
+  min-height: 100vh;
+  background: linear-gradient(160deg, #f0f9ff 0%, #fafafa 60%, #f0fdf4 100%);
+  @include flex-column;
 
   &__header {
-    text-align: center;
-    margin-bottom: $spacing-6;
+    background: white;
+    border-bottom: 1px solid $neutral-200;
+    box-shadow: 0 1px 8px rgba(0, 0, 0, 0.04);
+    position: sticky;
+    top: 0;
+    z-index: $z-sticky;
+  }
 
-    h1 {
-      font-size: 1.75rem;
-      font-weight: 600;
-      margin-bottom: $spacing-2;
+  &__body {
+    flex: 1;
+    padding: $spacing-8 $spacing-6;
+    max-width: 1100px;
+    width: 100%;
+    margin: 0 auto;
+
+    @media (max-width: 768px) {
+      padding: $spacing-5 $spacing-4;
     }
   }
 
-  &__subtitle {
-    color: $text-secondary;
-    margin: 0;
-  }
-
-  &__steps {
-    display: flex;
-    justify-content: center;
-    gap: $spacing-2;
-    margin-bottom: $spacing-6;
-    flex-wrap: wrap;
-  }
-
-  &__content {
-    margin-top: $spacing-6;
+  &__step {
+    animation: none; // handled by Transition
   }
 }
 
-.step {
+// ─── Header top bar ───────────────────────────────────────────────────────────
+.checkout-header__top {
+  @include flex-between;
+  padding: $spacing-3 $spacing-6;
+  border-bottom: 1px solid $neutral-100;
+
+  @media (max-width: 576px) {
+    padding: $spacing-3 $spacing-4;
+  }
+}
+
+.checkout-header__brand {
   display: flex;
   align-items: center;
   gap: $spacing-2;
-  padding: $spacing-2 $spacing-4;
-  background: $neutral-100;
-  border-radius: $radius-full;
-  transition: all 0.2s;
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: $primary-700;
+
+  .brand-icon {
+    font-size: 1.1rem;
+  }
+}
+
+.checkout-header__secure {
+  display: flex;
+  align-items: center;
+  gap: $spacing-1;
+  font-size: 0.775rem;
+  color: $success-dark;
+  font-weight: 600;
+}
+
+// ─── Progress bar ─────────────────────────────────────────────────────────────
+.checkout-view__progress {
+  height: 4px;
+  background: $neutral-200;
+  position: relative;
+  overflow: hidden;
+}
+
+.progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, $primary-500 0%, $secondary-400 100%);
+  transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+
+  &::after {
+    content: '';
+    position: absolute;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    width: 24px;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.5));
+    animation: shimmer 1.5s infinite;
+  }
+}
+
+// ─── Step labels ──────────────────────────────────────────────────────────────
+.checkout-view__steps-labels {
+  display: flex;
+  justify-content: space-between;
+  padding: $spacing-3 $spacing-6;
+
+  @media (max-width: 576px) {
+    padding: $spacing-3 $spacing-4;
+  }
+}
+
+.step-label {
+  display: flex;
+  align-items: center;
+  gap: $spacing-2;
+  font-size: 0.8rem;
+  color: $text-tertiary;
+  font-weight: 500;
+  transition: color 0.3s ease;
 
   &--active {
-    background: $primary-500;
-    color: white;
+    color: $primary-600;
 
-    .step__number {
-      background: white;
-      color: $primary-500;
+    .step-label__num {
+      background: $primary-500;
+      color: white;
+      border-color: $primary-500;
+    }
+
+    .step-label__text {
+      font-weight: 700;
     }
   }
 
-  &--completed {
-    background: $success-light;
+  &--done {
     color: $success-dark;
 
-    .step__number {
+    .step-label__num {
       background: $success;
       color: white;
+      border-color: $success;
     }
   }
 
-  &__number {
-    width: 24px;
-    height: 24px;
+  &__num {
+    width: 22px;
+    height: 22px;
     border-radius: 50%;
-    background: $neutral-300;
-    color: $text-secondary;
+    border: 2px solid $neutral-300;
     @include flex-center;
-    font-size: 0.75rem;
-    font-weight: 600;
+    font-size: 0.7rem;
+    font-weight: 700;
+    transition: all 0.3s ease;
+    flex-shrink: 0;
   }
 
-  &__label {
-    font-size: 0.875rem;
-    font-weight: 500;
-
-    @media (max-width: 576px) {
+  &__text {
+    @media (max-width: 640px) {
       display: none;
     }
   }
 }
 
-.checkout-step {
-  h2 {
-    font-size: 1.25rem;
-    margin-bottom: $spacing-6;
-    text-align: center;
-  }
-
-  &__actions {
-    display: flex;
-    justify-content: center;
-    gap: $spacing-4;
-    margin-top: $spacing-6;
-  }
-
-  &--success {
-    text-align: center;
-  }
+// ─── Step transitions ─────────────────────────────────────────────────────────
+.step-forward-enter-active,
+.step-forward-leave-active,
+.step-back-enter-active,
+.step-back-leave-active {
+  transition: opacity 0.3s ease, transform 0.3s ease;
 }
 
-.packages-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: $spacing-4;
-
-  @media (max-width: 768px) {
-    grid-template-columns: 1fr;
-  }
+// Forward: new step enters from right, old step exits to left
+.step-forward-enter-from {
+  opacity: 0;
+  transform: translateX(40px);
+}
+.step-forward-leave-to {
+  opacity: 0;
+  transform: translateX(-40px);
 }
 
-.package-card {
-  position: relative;
-  cursor: pointer;
-  text-align: center;
-  padding: $spacing-6 !important;
-  transition: all 0.2s;
-  border: 2px solid transparent;
-
-  &:hover {
-    transform: translateY(-4px);
-    box-shadow: $shadow-lg;
-  }
-
-  &--selected {
-    border-color: $primary-500;
-    background: $primary-50;
-  }
-
-  &__badge {
-    position: absolute;
-    top: -12px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: $warning;
-    color: white;
-    padding: 4px 12px;
-    border-radius: $radius-full;
-    font-size: 0.75rem;
-    font-weight: 600;
-    white-space: nowrap;
-  }
-
-  &__title {
-    font-size: 1.25rem;
-    color: $text-primary;
-    margin-bottom: $spacing-2;
-  }
-
-  &__quotas {
-    font-size: 0.875rem;
-    color: $text-secondary;
-    margin-bottom: $spacing-3;
-
-    strong {
-      color: $primary-600;
-      font-size: 1.5rem;
-    }
-  }
-
-  &__price {
-    font-size: 1.75rem;
-    font-weight: 700;
-    color: $primary-600;
-    margin-bottom: $spacing-4;
-  }
-
-  &__benefits {
-    list-style: none;
-    padding: 0;
-    margin: 0 0 $spacing-4;
-    text-align: left;
-    font-size: 0.875rem;
-    color: $text-secondary;
-
-    li {
-      padding: $spacing-1 0;
-    }
-  }
+// Back: new step enters from left, old step exits to right
+.step-back-enter-from {
+  opacity: 0;
+  transform: translateX(-40px);
+}
+.step-back-leave-to {
+  opacity: 0;
+  transform: translateX(40px);
 }
 
-.payment-methods {
-  display: flex;
-  flex-direction: column;
-  gap: $spacing-3;
-  max-width: 500px;
-  margin: 0 auto;
-}
-
-.payment-card {
-  display: flex;
-  align-items: center;
-  gap: $spacing-3;
-  padding: $spacing-4 !important;
-  cursor: pointer;
-  border: 2px solid transparent;
-  transition: all 0.2s;
-
-  &:hover {
-    border-color: $primary-300;
-  }
-
-  &--selected {
-    border-color: $primary-500;
-    background: $primary-50;
-  }
-
-  &__icon {
-    font-size: 2rem;
-  }
-
-  &__info {
-    flex: 1;
-    @include flex-column;
-    gap: 2px;
-
-    span {
-      font-size: 0.875rem;
-      color: $text-secondary;
-    }
-  }
-
-  &__check {
-    width: 24px;
-    height: 24px;
-    border-radius: 50%;
-    background: $primary-500;
-    color: white;
-    @include flex-center;
-    font-size: 0.875rem;
-  }
-}
-
-.order-summary {
-  max-width: 500px;
-  margin: 0 auto $spacing-4;
-
-  h3 {
-    margin-bottom: $spacing-4;
-  }
-
-  hr {
-    border: none;
-    border-top: 1px solid $neutral-200;
-    margin: $spacing-4 0;
-  }
-}
-
-.summary-row {
-  @include flex-between;
-  padding: $spacing-2 0;
-  color: $text-secondary;
-
-  strong {
-    color: $text-primary;
-  }
-
-  &--total {
-    font-size: 1.25rem;
-
-    strong {
-      color: $primary-600;
-    }
-  }
-}
-
-.success-content {
-  max-width: 500px;
-  margin: 0 auto;
-}
-
-.success-icon {
-  font-size: 4rem;
-  margin-bottom: $spacing-4;
-}
-
-.success-details {
-  margin: $spacing-4 0;
-}
-
-.pix-section {
-  margin-top: $spacing-6;
-
-  h3 {
-    margin-bottom: $spacing-4;
-  }
-}
-
-.pix-qr {
-  margin-bottom: $spacing-4;
-}
-
-.qr-placeholder {
-  width: 200px;
-  height: 200px;
-  margin: 0 auto;
-  background: $neutral-100;
-  border-radius: $radius-md;
-  @include flex-center;
-  font-size: 2rem;
-  color: $text-tertiary;
-}
-
-.pix-code {
-  display: flex;
-  align-items: center;
-  gap: $spacing-2;
-  padding: $spacing-3;
-  background: $neutral-100;
-  border-radius: $radius-md;
-  margin-bottom: $spacing-2;
-
-  code {
-    flex: 1;
-    font-size: 0.75rem;
-    word-break: break-all;
-    text-align: left;
-    max-height: 60px;
-    overflow: hidden;
-  }
-}
-
-.pix-expiry {
-  font-size: 0.875rem;
-  color: $text-tertiary;
+// ─── Animations ───────────────────────────────────────────────────────────────
+@keyframes shimmer {
+  0% { opacity: 0; transform: translateX(-100%); }
+  50% { opacity: 1; }
+  100% { opacity: 0; transform: translateX(100%); }
 }
 </style>
