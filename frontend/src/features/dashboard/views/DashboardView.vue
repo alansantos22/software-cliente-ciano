@@ -233,6 +233,31 @@
         </div>
       </section>
 
+      <!-- ⑥ Referral Card ──────────────────────────────────── -->
+      <section class="dashboard-view__referral">
+        <div class="referral-card">
+          <div class="referral-card__icon">
+            <font-awesome-icon icon="share-nodes" />
+          </div>
+          <div class="referral-card__content">
+            <span class="referral-card__eyebrow">Seu código de patrocínio</span>
+            <div class="referral-card__code-row">
+              <span class="referral-card__code">{{ authStore.user?.referralCode ?? '—' }}</span>
+              <span class="referral-card__link">ciano.com.br/r/{{ authStore.user?.referralCode ?? '' }}</span>
+            </div>
+            <p class="referral-card__desc">Compartilhe este link e ganhe comissões em cada nova adesão da sua rede.</p>
+          </div>
+          <button
+            class="referral-card__copy-btn"
+            :class="{ 'referral-card__copy-btn--copied': referralLinkCopied }"
+            @click="copyReferralLink"
+          >
+            <font-awesome-icon :icon="['fas', referralLinkCopied ? 'check' : 'copy']" />
+            {{ referralLinkCopied ? 'Copiado!' : 'Copiar link' }}
+          </button>
+        </div>
+      </section>
+
     </div><!-- /.dashboard-view__body -->
   </div>
 </template>
@@ -275,6 +300,7 @@ const authStore = useAuthStore();
 
 // ─── State ───────────────────────────────────────────────────
 const selectedMonth = ref<string>(new Date().toISOString().slice(0, 7));
+const referralLinkCopied = ref(false);
 
 const ticker    = ref<SplitTickerData>(mockSplitTicker);
 const career    = ref<CareerProgressData>(mockCareerProgress);
@@ -372,10 +398,11 @@ async function copyReferralLink() {
   const link = `https://ciano.com.br/r/${authStore.user?.referralCode}`;
   try {
     await navigator.clipboard.writeText(link);
-    alert('Link copiado!');
   } catch {
     console.error('Failed to copy');
   }
+  referralLinkCopied.value = true;
+  setTimeout(() => { referralLinkCopied.value = false; }, 2500);
 }
 
 // Refresh payment window status so the lock reflects real-time day changes
@@ -784,4 +811,102 @@ onMounted(async () => {
 .text-success { color: $success; }
 .text-muted   { color: $text-tertiary; }
 .text-warning { color: $warning; }
+
+// ── Referral Card ────────────────────────────────────────────
+.dashboard-view__referral {
+  margin-top: $spacing-4;
+}
+
+.referral-card {
+  display: flex;
+  align-items: center;
+  gap: $spacing-5;
+  padding: $spacing-5 $spacing-6;
+  background: linear-gradient(135deg, rgba($accent-500, 0.08) 0%, rgba($primary-500, 0.06) 100%);
+  border: 1.5px solid rgba($accent-500, 0.25);
+  border-radius: $radius-xl;
+  flex-wrap: wrap;
+
+  &__icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    background: rgba($accent-500, 0.15);
+    color: $accent-700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    flex-shrink: 0;
+  }
+
+  &__content {
+    @include flex-column;
+    gap: $spacing-1;
+    flex: 1;
+    min-width: 0;
+  }
+
+  &__eyebrow {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: $text-tertiary;
+  }
+
+  &__code-row {
+    display: flex;
+    align-items: center;
+    gap: $spacing-3;
+    flex-wrap: wrap;
+  }
+
+  &__code {
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: $accent-800;
+    letter-spacing: 0.12em;
+    font-family: 'Courier New', monospace;
+    background: rgba($accent-500, 0.12);
+    padding: 2px 10px;
+    border-radius: $radius-md;
+    border: 1px solid rgba($accent-500, 0.3);
+  }
+
+  &__link {
+    font-size: 0.8125rem;
+    color: $text-secondary;
+    font-style: italic;
+  }
+
+  &__desc {
+    font-size: 0.8125rem;
+    color: $text-tertiary;
+    margin: 0;
+  }
+
+  &__copy-btn {
+    display: flex;
+    align-items: center;
+    gap: $spacing-2;
+    padding: $spacing-3 $spacing-5;
+    background: $accent-600;
+    color: white;
+    border: none;
+    border-radius: $radius-lg;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+
+    &:hover { background: $accent-700; transform: translateY(-1px); }
+
+    &--copied {
+      background: $success;
+      &:hover { background: $success-dark; }
+    }
+  }
+}
 </style>

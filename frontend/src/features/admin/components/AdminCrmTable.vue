@@ -8,6 +8,7 @@
             <th title="Verde = Ativo, Amarelo = Em risco, Vermelho = Inativo">Farol</th>
             <th title="Lifetime Value — Total investido no sistema">LTV</th>
             <th>Cotas</th>
+            <th>Título</th>
             <th>Nível</th>
             <th class="crm-table__th--center">Ações</th>
           </tr>
@@ -52,6 +53,17 @@
               </div>
             </td>
 
+            <!-- Título -->
+            <td class="crm-table__title-cell">
+              <span
+                v-if="user.title !== 'none'"
+                :class="['crm-title', `crm-title--${user.title}`]"
+              >
+                {{ getTitleLabel(user.title) }}
+              </span>
+              <span v-else class="crm-title crm-title--none">—</span>
+            </td>
+
             <!-- Nível -->
             <td class="crm-table__level-cell">
               <span :class="['crm-level', `crm-level--${user.partnerLevel}`]">
@@ -90,7 +102,7 @@
           </tr>
 
           <tr v-if="users.length === 0">
-            <td colspan="6" class="crm-table__empty">Nenhum usuário encontrado.</td>
+            <td colspan="7" class="crm-table__empty">Nenhum usuário encontrado.</td>
           </tr>
         </tbody>
       </table>
@@ -100,7 +112,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue';
-import type { MockUser, PartnerLevel } from '@/mocks';
+import type { MockUser, PartnerLevel, UserTitle } from '@/mocks';
 
 interface Props {
   users: MockUser[];
@@ -216,6 +228,18 @@ const levelLabels: Record<PartnerLevel, string> = {
 
 function getLevelLabel(level: PartnerLevel): string {
   return levelLabels[level] ?? level;
+}
+
+const titleLabels: Record<UserTitle, string> = {
+  none:    '—',
+  bronze:  'Bronze',
+  silver:  'Prata',
+  gold:    'Ouro',
+  diamond: 'Diamante',
+};
+
+function getTitleLabel(title: UserTitle): string {
+  return titleLabels[title] ?? title;
 }
 </script>
 
@@ -380,6 +404,21 @@ function getLevelLabel(level: PartnerLevel): string {
   &--vip      { background: rgba($accent-500, 0.12);  color: $accent-800;     border: 1px solid rgba($accent-500, 0.35); }
   &--imperial { background: rgba($primary-500, 0.15); color: $primary-800;    border: 1px solid $primary-400;
                 box-shadow: 0 0 6px rgba($primary-500, 0.2); }
+}
+
+// Title badge
+.crm-title {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: $radius-full;
+  font-size: 0.75rem;
+  font-weight: 700;
+
+  &--none    { color: $text-tertiary; background: none; padding: 0; }
+  &--bronze  { background: rgba(#cd7f32, 0.12); color: #7a4a1a; border: 1px solid rgba(#cd7f32, 0.4); }
+  &--silver  { background: rgba(#a8a9ad, 0.15); color: #4a4a4a; border: 1px solid rgba(#a8a9ad, 0.4); }
+  &--gold    { background: rgba(#FFD700, 0.15); color: #7a6000; border: 1px solid rgba(#FFD700, 0.5); }
+  &--diamond { background: rgba(#00BCD4, 0.12); color: #005f70; border: 1px solid rgba(#00BCD4, 0.4); }
 }
 
 // Action menu

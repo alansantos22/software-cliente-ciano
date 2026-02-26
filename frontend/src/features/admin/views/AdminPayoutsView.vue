@@ -16,6 +16,61 @@
       </div>
     </header>
 
+    <!-- Lançamento de Lucro do Período -->
+    <section class="admin-payouts-view__profit-entry">
+      <DsCard>
+        <template #header>
+          <div>
+            <h2>📋 Lançamento de Lucro do Período</h2>
+            <p class="profit-entry__subtitle">Insira o lucro líquido do período para calcular automaticamente o valor a distribuir para cada cotista.</p>
+          </div>
+        </template>
+
+        <div class="profit-entry-form">
+          <div class="profit-entry-form__field">
+            <label>Mês de Referência</label>
+            <DsMonthPicker v-model="profitMonth" />
+          </div>
+
+          <div class="profit-entry-form__field">
+            <label>Lucro Líquido do Período (R$)</label>
+            <DsInput
+              v-model.number="netProfit"
+              type="number"
+              min="0"
+              step="100"
+              placeholder="Ex: 150000"
+            />
+          </div>
+
+          <div class="profit-entry-form__preview">
+            <span class="profit-preview__item">
+              Pool de dividendos: <strong>{{ dividendPoolPercent }}%</strong>
+            </span>
+            <span class="profit-preview__separator">→</span>
+            <span class="profit-preview__item profit-preview__item--highlight">
+              A distribuir: <strong>{{ formatCurrency(dividendPool) }}</strong>
+            </span>
+            <span class="profit-preview__item">
+              entre <strong>{{ totalActiveQuotas }}</strong> cotas ativas
+            </span>
+          </div>
+
+          <DsButton
+            variant="primary"
+            :disabled="!netProfit || netProfit <= 0"
+            @click="calculateDistribution"
+          >
+            📊 Ver Distribuição Calculada
+          </DsButton>
+        </div>
+
+        <DsAlert v-if="generationSuccess" type="success">
+          Pagamentos gerados com sucesso e adicionados à fila de pendentes!
+        </DsAlert>
+      </DsCard>
+    </section>
+
     <!-- Stats -->
     <section class="admin-payouts-view__stats">
       <DsStatCard
@@ -127,6 +182,35 @@
       </DsCard>
     </section>
 
+    <!-- Distribuição Calculada -->
+    <section v-if="showDistribution" class="admin-payouts-view__distribution">
+      <DsCard>
+        <template #header>
+          <div>
+            <h2>💰 Distribuição Calculada &mdash; {{ profitMonth }}</h2>
+            <span class="distribution-meta">
+              Pool: {{ formatCurrency(dividendPool) }} · {{ distributionPreview.length }} cotistas
+            </span>
+          </div>
+          <DsButton variant="primary" @click="generatePayoutsFromProfit">
+            ✅ Gerar Pagamentos
+          </DsButton>
+        </template>
+
+        <DsTable :columns="distributionColumns" :data="distributionPreview" :loading="false">
+          <template #user="{ row }">
+            <div class="user-cell">
+              <div class="user-cell__avatar">{{ getInitials(row.user) }}</div>
+              <span class="user-cell__name">{{ row.user }}</span>
+            </div>
+          </template>
+          <template #amount="{ row }">
+            <strong class="amount-cell">{{ formatCurrency(row.amount) }}</strong>
+          </template>
+        </DsTable>
+      </DsCard>
+    </section>
+
     <!-- Payout Details Modal -->
     <DsModal v-model="showDetailsModal" title="Detalhes do Pagamento">
       <div v-if="selectedPayout" class="payout-details">
@@ -184,12 +268,13 @@ import {
   DsBadge,
   DsButton,
   DsInput,
+  DsAlert,
   DsDropdown,
   DsMonthPicker,
   DsModal,
   DsEmptyState,
 } from '@/design-system';
-import { getPendingPayouts, mockDelay, type PayoutRequest } from '@/mocks';
+import { getPendingPayouts, mockDelay, mockUsers, mockMonthlyConfigs, type PayoutRequest } from '@/mocks';
 
 // State
 const isLoading = ref(false);
@@ -197,6 +282,12 @@ const payouts = ref<PayoutRequest[]>([]);
 const selectedPayouts = ref<string[]>([]);
 const selectedPayout = ref<PayoutRequest | null>(null);
 const showDetailsModal = ref(false);
+
+// ─── Profit Entry State ───────────────────────────────────────
+const netProfit = ref<number>(0);
+const profitMonth = ref<string>(new Date().toISOString().slice(0, 7));
+const showDistribution = ref(false);
+const generationSuccess = ref(false);
 
 const filters = ref({
   search: '',
@@ -229,6 +320,13 @@ const columns = [
   { key: 'actions', label: 'Ações', width: '180px' },
 ];
 
+const distributionColumns = [
+  { key: 'user',   label: 'Cotista' },
+  { key: 'quotas', label: 'Cotas',   align: 'right' as const, width: '80px' },
+  { key: 'share',  label: '% do Pool', align: 'right' as const, width: '110px' },
+  { key: 'amount', label: 'A Receber', align: 'right' as const, width: '150px' },
+];
+
 // Computed
 const filteredPayouts = computed(() => {
   let result = payouts.value;
@@ -248,6 +346,35 @@ const filteredPayouts = computed(() => {
     ...p,
     requestedAt: formatDate(p.requestedAt),
   }));
+});
+
+// ─── Profit Distribution Computeds ─────────────────────────────────
+const dividendPoolPercent = computed(() => {
+  const config = mockMonthlyConfigs.find(c => c.month === profitMonth.value);
+  return config?.dividendPoolPercent ?? 20;
+});
+
+const dividendPool = computed(() =>
+  Math.round(netProfit.value * (dividendPoolPercent.value / 100) * 100) / 100
+);
+
+const totalActiveQuotas = computed(() =>
+  mockUsers.filter(u => u.isActive && u.quotaBalance > 0).reduce((s, u) => s + u.quotaBalance, 0)
+);
+
+const distributionPreview = computed(() => {
+  if (!dividendPool.value || totalActiveQuotas.value === 0) return [];
+  return mockUsers
+    .filter(u => u.isActive && u.quotaBalance > 0)
+    .map(u => ({
+      id: u.id,
+      user: u.name,
+      quotas: u.quotaBalance,
+      share: ((u.quotaBalance / totalActiveQuotas.value) * 100).toFixed(2) + '%',
+      amount: Math.round((u.quotaBalance / totalActiveQuotas.value) * dividendPool.value * 100) / 100,
+      pixKey: u.email,
+    }))
+    .sort((a, b) => b.amount - a.amount);
 });
 
 // Methods
@@ -330,6 +457,32 @@ function confirmPayout(payout: PayoutRequest) {
 function viewDetails(payout: PayoutRequest) {
   selectedPayout.value = payout;
   showDetailsModal.value = true;
+}
+
+function calculateDistribution() {
+  if (netProfit.value > 0) showDistribution.value = true;
+}
+
+function generatePayoutsFromProfit() {
+  const newPayouts: PayoutRequest[] = distributionPreview.value.map((row, i) => ({
+    id: `auto-${Date.now()}-${i}`,
+    userId: row.id,
+    userName: row.user,
+    amount: row.amount,
+    pixKey: row.pixKey,
+    pixKeyType: 'email' as const,
+    status: 'pending' as const,
+    referenceMonth: profitMonth.value,
+    requestedAt: new Date().toISOString(),
+    processedAt: null,
+    completedAt: null,
+    failureReason: null,
+    transactionId: null,
+  }));
+  payouts.value = [...newPayouts, ...payouts.value];
+  stats.value.pending += distributionPreview.value.reduce((s, r) => s + r.amount, 0);
+  generationSuccess.value = true;
+  setTimeout(() => { generationSuccess.value = false; }, 4000);
 }
 
 // Load data
@@ -479,6 +632,83 @@ onMounted(async () => {
   }
 
   strong {
+    color: $text-primary;
+  }
+}
+
+// ─── Profit Entry Section ─────────────────────────────────────────
+.admin-payouts-view__profit-entry {
+  margin-bottom: $spacing-6;
+}
+
+.admin-payouts-view__distribution {
+  margin-bottom: $spacing-6;
+}
+
+.profit-entry__subtitle {
+  font-size: 0.875rem;
+  color: $text-secondary;
+  margin: $spacing-1 0 0;
+}
+
+.profit-entry-form {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-4;
+
+  &__field {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-2;
+    max-width: 400px;
+
+    label {
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: $text-secondary;
+    }
+  }
+
+  &__preview {
+    display: flex;
+    align-items: center;
+    gap: $spacing-3;
+    flex-wrap: wrap;
+    padding: $spacing-3 $spacing-4;
+    background: rgba($primary-500, 0.05);
+    border: 1px solid rgba($primary-500, 0.15);
+    border-radius: $radius-lg;
+    font-size: 0.875rem;
+    color: $text-secondary;
+  }
+}
+
+.profit-preview {
+  &__item {
+    strong { font-weight: 700; color: $text-primary; }
+
+    &--highlight strong {
+      color: $success-dark;
+      font-size: 1rem;
+    }
+  }
+
+  &__separator {
+    color: $text-tertiary;
+    font-size: 1rem;
+  }
+}
+
+.distribution-meta {
+  font-size: 0.875rem;
+  color: $text-secondary;
+  margin-top: 2px;
+}
+
+.user-cell {
+  &__name {
+    font-size: 0.875rem;
+    font-weight: 500;
     color: $text-primary;
   }
 }
