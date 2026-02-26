@@ -35,6 +35,8 @@ export interface MockUser {
   quotaBalance: number;
   availableWithdraw: number;
   totalEarnings: number;
+  /** Data da última compra de cota. Se null ou mais de 6 meses atrás → conta inativa. */
+  lastPurchaseDate: string | null;
   // Network stats
   directCount: number;
   teamCount: number;
@@ -57,6 +59,7 @@ export const mockUsers: MockUser[] = [
     avatarUrl: null,
     isActive: true,
     createdAt: '2024-01-01T00:00:00Z',
+    lastPurchaseDate: '2025-12-01T00:00:00Z',
     purchasedQuotas: 100, // Imperial (≥60 compradas)
     splitQuotas: 15,
     quotaBalance: 115,    // purchased + split (dividendos)
@@ -80,6 +83,7 @@ export const mockUsers: MockUser[] = [
     avatarUrl: null,
     isActive: true,
     createdAt: '2024-01-15T10:30:00Z',
+    lastPurchaseDate: '2025-10-15T10:30:00Z',
     purchasedQuotas: 50, // VIP (≥20 compradas)
     splitQuotas: 7,
     quotaBalance: 57,
@@ -102,6 +106,7 @@ export const mockUsers: MockUser[] = [
     avatarUrl: null,
     isActive: true,
     createdAt: '2024-02-01T08:00:00Z',
+    lastPurchaseDate: '2025-11-01T08:00:00Z',
     purchasedQuotas: 30, // Platinum (≥10 compradas)
     splitQuotas: 4,
     quotaBalance: 34,
@@ -124,6 +129,7 @@ export const mockUsers: MockUser[] = [
     avatarUrl: null,
     isActive: true,
     createdAt: '2024-02-10T14:20:00Z',
+    lastPurchaseDate: '2025-07-01T14:20:00Z',
     purchasedQuotas: 10, // Platinum (≥10 compradas)
     splitQuotas: 2,
     quotaBalance: 12,
@@ -147,6 +153,7 @@ export const mockUsers: MockUser[] = [
     avatarUrl: null,
     isActive: true,
     createdAt: '2024-02-20T09:15:00Z',
+    lastPurchaseDate: '2025-09-20T09:15:00Z',
     purchasedQuotas: 25, // VIP (≥20 compradas)
     splitQuotas: 3,
     quotaBalance: 28,
@@ -169,6 +176,7 @@ export const mockUsers: MockUser[] = [
     avatarUrl: null,
     isActive: true,
     createdAt: '2024-03-01T11:45:00Z',
+    lastPurchaseDate: '2025-06-10T11:45:00Z',
     purchasedQuotas: 15, // Platinum (≥10 compradas)
     splitQuotas: 2,
     quotaBalance: 17,
@@ -192,6 +200,7 @@ export const mockUsers: MockUser[] = [
     avatarUrl: null,
     isActive: true,
     createdAt: '2024-03-05T16:30:00Z',
+    lastPurchaseDate: '2025-12-05T16:30:00Z',
     purchasedQuotas: 8, // Sócio (≥1 comprada)
     splitQuotas: 1,
     quotaBalance: 9,
@@ -215,6 +224,7 @@ export const mockUsers: MockUser[] = [
     avatarUrl: null,
     isActive: true,
     createdAt: '2024-03-15T10:00:00Z',
+    lastPurchaseDate: '2025-10-15T10:00:00Z',
     purchasedQuotas: 5, // Sócio (≥1 comprada)
     splitQuotas: 0,
     quotaBalance: 5,
@@ -237,6 +247,7 @@ export const mockUsers: MockUser[] = [
     avatarUrl: null,
     isActive: true,
     createdAt: '2024-03-20T13:25:00Z',
+    lastPurchaseDate: '2025-06-20T13:25:00Z',
     purchasedQuotas: 3, // Sócio (≥1 comprada)
     splitQuotas: 0,
     quotaBalance: 3,
@@ -260,6 +271,7 @@ export const mockUsers: MockUser[] = [
     avatarUrl: null,
     isActive: false,
     createdAt: '2024-02-25T08:30:00Z',
+    lastPurchaseDate: null,
     purchasedQuotas: 0,
     splitQuotas: 0,
     quotaBalance: 0,
@@ -283,6 +295,7 @@ export const mockUsers: MockUser[] = [
     avatarUrl: null,
     isActive: true,
     createdAt: '2024-01-20T10:00:00Z',
+    lastPurchaseDate: '2025-12-20T10:00:00Z',
     purchasedQuotas: 40, // VIP (≥20 compradas)
     splitQuotas: 6,
     quotaBalance: 46,
@@ -305,6 +318,7 @@ export const mockUsers: MockUser[] = [
     avatarUrl: null,
     isActive: true,
     createdAt: '2024-02-15T14:30:00Z',
+    lastPurchaseDate: '2025-11-15T14:30:00Z',
     purchasedQuotas: 20, // VIP (≥20 compradas)
     splitQuotas: 3,
     quotaBalance: 23,
@@ -328,14 +342,26 @@ export function getMockUserBySponsor(sponsorId: string): MockUser[] {
   return mockUsers.filter((u) => u.sponsorId === sponsorId);
 }
 
+/**
+ * Retorna true se a conta expirou por inatividade:
+ * sem compra nos últimos 6 meses (ou nunca comprou).
+ */
+export function isAccountExpired(user: MockUser): boolean {
+  if (!user.lastPurchaseDate) return true;
+  const sixMonthsAgo = new Date();
+  sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+  return new Date(user.lastPurchaseDate) < sixMonthsAgo;
+}
+
+/** Retorna usuários com conta ativa (flag isActive + não expiradas por 6 meses). */
 export function getActiveUsers(): MockUser[] {
-  return mockUsers.filter((u) => u.isActive);
+  return mockUsers.filter((u) => u.isActive && !isAccountExpired(u));
 }
 
 // Auth mock - returns user if credentials match (all use 'senha123' as password)
 export function mockAuthenticate(email: string, _password: string): MockUser | null {
   const user = getMockUserByEmail(email);
-  if (user && user.isActive) {
+  if (user && user.isActive && !isAccountExpired(user)) {
     return user;
   }
   return null;

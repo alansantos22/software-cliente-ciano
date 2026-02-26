@@ -85,16 +85,6 @@
             @paid="onPixPaid"
           />
 
-          <!-- Boleto -->
-          <BoletoPayment
-            v-else-if="selectedPaymentMethod === 'boleto'"
-            :order-number="orderData.orderNumber"
-            :boleto-code="orderData.boletoCode"
-            :amount="totalAmount"
-            :referral-code="userReferralCode"
-            @go-to-dashboard="goToDashboard"
-          />
-
           <!-- Cartão -->
           <CardRedirect
             v-else-if="selectedPaymentMethod === 'credit'"
@@ -117,7 +107,6 @@ import QuotaCalculator from '../components/QuotaCalculator.vue';
 import PaymentSelector from '../components/PaymentSelector.vue';
 import OrderConfirmation from '../components/OrderConfirmation.vue';
 import PixPayment from '../components/PixPayment.vue';
-import BoletoPayment from '../components/BoletoPayment.vue';
 import CardRedirect from '../components/CardRedirect.vue';
 
 // ─── Router & Stores ──────────────────────────────────────────────────────────
@@ -139,7 +128,6 @@ const isProcessing = ref(false);
 const orderData = ref({
   orderNumber: '',
   pixCode: '',
-  boletoCode: '',
   paymentUrl: '',
 });
 
@@ -184,7 +172,6 @@ async function processOrder() {
     pixCode:
       `00020126580014BR.GOV.BCB.PIX0136${id}-${crypto.randomUUID()}` +
       `5204000053039865802BR5925CIANO COTAS POUSADAS6009SAO PAULO62070503***63041234`,
-    boletoCode: `34191.09026 01903.140001 41000.020001 3 99700000${String(totalAmount.value).padStart(10, '0')}`,
     // In production: comes from Pagar.me API; base URL for mock
     paymentUrl: '',
   };

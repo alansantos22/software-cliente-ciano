@@ -13,6 +13,8 @@ export interface User {
   role: 'user' | 'admin';
   referralCode: string;
   isActive: boolean;
+  /** Data da última compra de cota. Conta expira 6 meses após esta data. */
+  lastPurchaseDate?: string | null;
   title: 'none' | 'bronze' | 'silver' | 'gold' | 'diamond';
   partnerLevel: 'socio' | 'platinum' | 'vip' | 'imperial';
   /**

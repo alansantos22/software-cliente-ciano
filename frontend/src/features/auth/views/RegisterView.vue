@@ -91,7 +91,7 @@
           label="Código de indicação (opcional)"
           placeholder="Ex: CIANO-XXXX"
           :error="errors.referralCode"
-          :readonly="isReferralLocked"
+          :disabled="isReferralLocked"
         />
         <p v-if="isReferralLocked" class="register-form__referral-hint">
           🌟 Você foi convidado por um patrocinador Ciano.

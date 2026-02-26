@@ -82,7 +82,6 @@
         <span class="section-eyebrow">Pacotes de Investimento</span>
         <h2>Escolha sua posição no grupo</h2>
         <p class="section-sub">Cada pacote já te posiciona em um nível da carreira imediatamente</p>
-        <p class="section-sub section-sub--note">*Estimativa com margem de segurança conservadora. Rentabilidade passada não garante retornos futuros.</p>
       </div>
 
       <div class="packages-grid">
@@ -112,11 +111,6 @@
             </div>
           </div>
 
-          <div class="pkg-card__estimate">
-            <span class="pkg-card__estimate-icon">📊</span>
-            <span>Estimativa: <strong>{{ formatCurrency(pkg.monthlyEstimate) }}/mês*</strong></span>
-          </div>
-
           <ul class="pkg-card__benefits">
             <li v-for="b in pkg.benefits" :key="b">
               <span class="pkg-card__check">✓</span>
@@ -137,14 +131,7 @@
     </section>
 
     <!-- ============================================================
-         4. PROFIT SIMULATOR
-    ============================================================ -->
-    <section id="simulator" class="lp-section">
-      <ProfitSimulator />
-    </section>
-
-    <!-- ============================================================
-         5. CAREER TIMELINE
+         3. CAREER TIMELINE
     ============================================================ -->
     <section class="lp-section career-section">
       <div class="section-header">
@@ -156,14 +143,14 @@
     </section>
 
     <!-- ============================================================
-         6. SOCIAL PROOF
+         4. SOCIAL PROOF
     ============================================================ -->
     <section class="lp-section">
       <SocialProof />
     </section>
 
     <!-- ============================================================
-         7. FAQ
+         5. FAQ
     ============================================================ -->
     <section class="lp-section faq-section">
       <div class="section-header section-header--left">
@@ -203,7 +190,6 @@ import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { DsButton, DsAccordion } from '@/design-system';
 import { mockQuotaConfig } from '@/mocks';
-import ProfitSimulator from '../components/ProfitSimulator.vue';
 import CareerTimeline from '../components/CareerTimeline.vue';
 import SocialProof from '../components/SocialProof.vue';
 
@@ -211,8 +197,8 @@ const router = useRouter();
 
 // ─── Hero metrics ──────────────────────────────────────────
 const heroMetrics = [
-  { value: '1.200+', label: 'sócios ativos' },
-  { value: 'R$ 3M+', label: 'distribuídos sem atrasos' },
+  { value: 'R$ 600K', label: 'faturamento anual' },
+  { value: '500%', label: 'crescimento sobre o ano anterior' },
   { value: '4 hotéis', label: 'no portfólio' },
   { value: '100%', label: 'dividendos em dia, sempre' },
 ];
@@ -854,18 +840,6 @@ function scrollTo(id: string) {
     font-size: 0.75rem;
     color: $text-tertiary;
     margin-top: 2px;
-  }
-
-  &__estimate {
-    display: flex;
-    align-items: center;
-    gap: $spacing-2;
-    background: rgba($secondary-500, 0.07);
-    border: 1px solid rgba($secondary-500, 0.2);
-    border-radius: 8px;
-    padding: $spacing-2 $spacing-3;
-    font-size: 0.8125rem;
-    color: $secondary-800;
   }
 
   &__benefits {

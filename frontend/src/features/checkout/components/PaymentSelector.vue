@@ -172,15 +172,6 @@ const methods = [
     tagType: 'installment',
     color: '#2563eb',
   },
-  {
-    id: 'boleto',
-    name: 'Boleto Bancário',
-    icon: 'file-lines',
-    description: 'Pague em qualquer banco ou lotérica.',
-    tag: 'Até 3 dias úteis',
-    tagType: 'slow',
-    color: '#d97706',
-  },
 ];
 
 // ─── Computed ─────────────────────────────────────────────────────────────────

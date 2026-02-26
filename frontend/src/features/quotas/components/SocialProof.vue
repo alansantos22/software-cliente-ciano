@@ -85,8 +85,8 @@ const testimonials = [
 ];
 
 const trustMetrics = [
-  { value: '1.200+', label: 'Sócios Ativos' },
-  { value: 'R$ 3M+', label: 'Distribuídos sem Atrasos' },
+  { value: 'R$ 600K', label: 'Faturamento Anual' },
+  { value: '500%', label: 'Crescimento sobre o Ano Anterior' },
   { value: '4 Hotéis', label: 'Ativos no Portfólio' },
   { value: '100%', label: 'Dividendos Pagos em Dia' },
 ];

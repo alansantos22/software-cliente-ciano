@@ -35,16 +35,6 @@
         </div>
       </div>
 
-      <div class="impact-card impact-card--earnings">
-        <div class="impact-card__icon">
-          <font-awesome-icon :icon="['fas', 'arrow-trend-up']" />
-        </div>
-        <div class="impact-card__body">
-          <span class="impact-card__label">Estimativa de ganhos/mês</span>
-          <span class="impact-card__value">{{ formatCurrency(estimatedMonthly) }}</span>
-          <span class="impact-card__sub">Baseado no histórico de dividendos</span>
-        </div>
-      </div>
     </div>
 
     <!-- Resumo detalhado -->
@@ -137,12 +127,6 @@ const totalAmount = computed(() => props.quotas * props.quotaPrice);
 
 const targetLevel = computed(() => {
   return [...levels].reverse().find((l) => totalQuotas.value >= l.min) ?? levels[0];
-});
-
-// Estimated monthly based on 0.8% of invested capital (mock dividend rate)
-const estimatedMonthly = computed(() => {
-  const totalInvested = totalQuotas.value * props.quotaPrice;
-  return totalInvested * 0.008;
 });
 
 const ctaLabel = computed(() => {

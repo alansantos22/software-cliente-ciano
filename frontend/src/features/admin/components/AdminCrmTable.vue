@@ -153,16 +153,38 @@ function isWhale(user: MockUser): boolean {
   return user.purchasedQuotas * props.quotaPrice >= 100_000;
 }
 
+/** Retorna true se a última compra foi há mais de 6 meses (ou nunca houve compra). */
+function isAccountExpired(user: MockUser): boolean {
+  if (!user.lastPurchaseDate) return true;
+  const sixMonthsAgo = new Date();
+  sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+  return new Date(user.lastPurchaseDate) < sixMonthsAgo;
+}
+
+/** Data em que a conta expira (lastPurchaseDate + 6 meses). */
+function getExpiryDate(user: MockUser): string {
+  if (!user.lastPurchaseDate) return '—';
+  const d = new Date(user.lastPurchaseDate);
+  d.setMonth(d.getMonth() + 6);
+  return d.toLocaleDateString('pt-BR');
+}
+
 type ActivityStatus = 'green' | 'yellow' | 'red';
 
 function getActivityStatus(user: MockUser): ActivityStatus {
-  if (!user.isActive) return 'red';
+  if (!user.isActive || isAccountExpired(user)) return 'red';
+  const expiryDate = new Date(user.lastPurchaseDate!);
+  expiryDate.setMonth(expiryDate.getMonth() + 6);
+  const daysUntilExpiry = Math.ceil((expiryDate.getTime() - Date.now()) / 86_400_000);
+  if (daysUntilExpiry <= 30) return 'yellow';
   if (user.partnerLevel === 'imperial' || user.partnerLevel === 'vip') return 'green';
   if (user.partnerLevel === 'platinum') return 'yellow';
   return 'yellow';
 }
 
 function getActivityLabel(user: MockUser): string {
+  if (!user.isActive) return 'Inativo';
+  if (isAccountExpired(user)) return 'Expirado';
   const s = getActivityStatus(user);
   if (s === 'green') return 'Ativo';
   if (s === 'yellow') return 'Em risco';
@@ -170,9 +192,11 @@ function getActivityLabel(user: MockUser): string {
 }
 
 function getActivityTooltip(user: MockUser): string {
+  if (!user.isActive) return 'Inativo — conta bloqueada ou dormente';
+  if (isAccountExpired(user)) return `Expirado — sem compras nos últimos 6 meses (expirou em ${getExpiryDate(user)})`;
   const s = getActivityStatus(user);
-  if (s === 'green') return 'Ativo — engajamento alto';
-  if (s === 'yellow') return 'Em risco — monitorar renovação';
+  if (s === 'green') return `Ativo — renova em ${getExpiryDate(user)}`;
+  if (s === 'yellow') return `Em risco — expira em ${getExpiryDate(user)}, monitorar renovação`;
   return 'Inativo — conta bloqueada ou dormente';
 }
 

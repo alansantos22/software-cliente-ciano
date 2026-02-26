@@ -51,7 +51,7 @@
             <font-awesome-icon icon="gem" />
           </div>
           <div class="kpi-card__body">
-            <span class="kpi-card__label">Patrimônio Estimado</span>
+            <span class="kpi-card__label">Patrimônio</span>
             <span class="kpi-card__value">{{ formatCurrency(kpi.estimatedPatrimony) }}</span>
             <span class="kpi-card__sub">Cotas × valor atual da cota</span>
           </div>
