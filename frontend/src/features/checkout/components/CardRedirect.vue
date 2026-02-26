@@ -4,7 +4,9 @@
       <!-- Spinner animado -->
       <div class="card-redirect__spinner">
         <div class="spinner"></div>
-        <div class="spinner-lock">🔒</div>
+        <div class="spinner-lock">
+        <font-awesome-icon :icon="['fas', 'shield-halved']" />
+      </div>
       </div>
 
       <h2>Redirecionando para pagamento seguro...</h2>
@@ -28,15 +30,15 @@
       <!-- Security badges -->
       <div class="card-redirect__badges">
         <div class="security-badge">
-          <span>🔒</span>
+          <font-awesome-icon :icon="['fas', 'shield-halved']" />
           <span>SSL 256-bit</span>
         </div>
         <div class="security-badge">
-          <span>✅</span>
+          <font-awesome-icon :icon="['fas', 'circle-check']" />
           <span>PCI-DSS</span>
         </div>
         <div class="security-badge">
-          <span>🛡️</span>
+          <font-awesome-icon :icon="['fas', 'credit-card']" />
           <span>Pagar.me</span>
         </div>
       </div>
@@ -128,8 +130,9 @@ function formatCurrency(value: number): string {
   }
 
   .spinner-lock {
-    font-size: 1.5rem;
+    font-size: 1.3rem;
     z-index: 1;
+    color: $primary-600;
   }
 
   // ── Summary ───────────────────────────────────────────────────────────────

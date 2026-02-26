@@ -29,11 +29,23 @@ export interface AccountHealthData {
 
 export interface DashboardKpiData {
   estimatedPatrimony: number;   // Total invested + valorization
-  availableWithdraw: number;    // What they can withdraw NOW
+  availableWithdraw: number;    // What they can withdraw NOW. Shown only inside payment window
   activeDirects: number;
   totalDirects: number;
   inactiveDirects: number;
   networkTotal: number;
+  /** Fixed day of the month on which payments are processed */
+  paymentDay: number;
+  /** True only during the 5-day window leading up to (and including) paymentDay */
+  paymentWindowOpen: boolean;
+  /** Calendar days remaining until the next payment date */
+  daysUntilPayment: number;
+  /** Next payment date as YYYY-MM-DD */
+  nextPaymentDate: string;
+  /** Earnings from the network (first-purchase + repurchase + team + leadership bonuses) */
+  networkEarnings: number;
+  /** Earnings from quotas (dividends only) */
+  quotaEarnings: number;
 }
 
 export interface EarningSourceData {
@@ -80,6 +92,46 @@ export const mockAccountHealth: AccountHealthData = {
   renewalDeadline: '2026-02-14T10:00:00Z',
 };
 
+// ─── Payment window utility ──────────────────────────────────
+/**
+ * Returns whether we are currently inside the 5-day display window before
+ * the payment day, plus the number of days remaining until payment.
+ *
+ * Rule: the value to be received is only shown starting 5 days before
+ * paymentDay because only then do we know the lodges' profit for the
+ * period (needed to calculate the per-quota dividend).
+ */
+export function getPaymentWindowStatus(paymentDay = 15): {
+  windowOpen: boolean;
+  daysUntilPayment: number;
+  nextPaymentDate: string;
+} {
+  const today = new Date();
+  const y = today.getFullYear();
+  const m = today.getMonth();
+  const d = today.getDate();
+
+  // If we've already passed paymentDay this month, next payment is next month
+  const sameMonth = new Date(y, m, paymentDay);
+  const nextPayment = d <= paymentDay ? sameMonth : new Date(y, m + 1, paymentDay);
+
+  const msPerDay = 1000 * 60 * 60 * 24;
+  const daysUntilPayment = Math.ceil(
+    (nextPayment.getTime() - new Date(y, m, d).getTime()) / msPerDay,
+  );
+
+  // Window is open during the 5 days prior to—and including—paymentDay
+  const windowOpen = daysUntilPayment >= 0 && daysUntilPayment <= 5;
+
+  return {
+    windowOpen,
+    daysUntilPayment,
+    nextPaymentDate: nextPayment.toISOString().slice(0, 10),
+  };
+}
+
+const _paymentStatus = getPaymentWindowStatus(15);
+
 export const mockDashboardKpi: DashboardKpiData = {
   estimatedPatrimony: 17500,
   availableWithdraw: 5200,
@@ -87,6 +139,14 @@ export const mockDashboardKpi: DashboardKpiData = {
   totalDirects: 12,
   inactiveDirects: 2,
   networkTotal: 45,
+  paymentDay: 15,
+  paymentWindowOpen: _paymentStatus.windowOpen,
+  daysUntilPayment: _paymentStatus.daysUntilPayment,
+  nextPaymentDate: _paymentStatus.nextPaymentDate,
+  // networkEarnings = firstPurchase + repurchase + team + leadership for the month
+  networkEarnings: 2945,
+  // quotaEarnings = dividends only
+  quotaEarnings: 320,
 };
 
 export const DONUT_COLORS = {

@@ -37,7 +37,7 @@
             </div>
             <div class="qr-code__data"></div>
             <div class="qr-code__logo">
-              <span>⚡</span>
+              <font-awesome-icon :icon="['fas', 'bolt']" class="qr-pix-icon" />
             </div>
           </div>
 
@@ -54,7 +54,8 @@
         <div class="pix-payment__code-area">
           <code class="pix-code">{{ truncatedPixCode }}</code>
           <button class="copy-btn" :class="{ 'copy-btn--copied': isCopied }" @click="copyPixCode">
-            <span>{{ isCopied ? '✓ Copiado!' : '📋 Copiar código' }}</span>
+            <font-awesome-icon :icon="['fas', isCopied ? 'check' : 'copy']" />
+            <span>{{ isCopied ? 'Copiado!' : 'Copiar código' }}</span>
           </button>
         </div>
 
@@ -79,7 +80,7 @@
 
         <!-- CTA de indicação enquanto aguarda -->
         <div class="pix-payment__referral">
-          <p class="referral__eyebrow">💡 Enquanto aguardamos...</p>
+          <p class="referral__eyebrow">Enquanto aguardamos...</p>
           <h3>Comece a montar sua rede agora</h3>
           <p class="referral__desc">
             Compartilhe seu link de indicação e ganhe comissões em cada nova 
@@ -92,7 +93,8 @@
               :class="{ 'referral__copy-btn--copied': isReferralCopied }"
               @click="copyReferralLink"
             >
-              {{ isReferralCopied ? '✓ Copiado!' : '📋 Copiar meu link' }}
+              <font-awesome-icon :icon="['fas', isReferralCopied ? 'check' : 'copy']" />
+              {{ isReferralCopied ? 'Copiado!' : 'Copiar meu link' }}
             </button>
           </div>
         </div>
@@ -372,8 +374,9 @@ function formatCurrency(value: number): string {
       background: white;
       border-radius: $radius-md;
       @include flex-center;
-      font-size: 1.4rem;
+      font-size: 1.2rem;
       box-shadow: 0 0 0 4px white;
+      color: $success-dark;
     }
   }
 
@@ -427,6 +430,9 @@ function formatCurrency(value: number): string {
   }
 
   .copy-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: $spacing-2;
     padding: $spacing-3 $spacing-6;
     background: $primary-500;
     color: white;
@@ -505,17 +511,17 @@ function formatCurrency(value: number): string {
 
   // ── Referral CTA ──────────────────────────────────────────────────────────
   &__referral {
-    border: 2px solid $accent-200;
+    border: 1px solid $neutral-200;
     border-radius: $radius-xl;
     padding: $spacing-5;
-    background: $accent-50;
+    background: $neutral-50;
     @include flex-column;
     gap: $spacing-3;
 
     .referral__eyebrow {
       font-size: 0.75rem;
       font-weight: 700;
-      color: $warning-dark;
+      color: $text-tertiary;
       text-transform: uppercase;
       letter-spacing: 0.06em;
       margin: 0;
@@ -553,9 +559,13 @@ function formatCurrency(value: number): string {
   }
 
   .referral__copy-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: $spacing-2;
     padding: $spacing-3;
-    background: $accent-500;
-    color: $neutral-900;
+    background: $primary-500;
+    color: white;
     border: none;
     border-radius: $radius-lg;
     font-weight: 700;
@@ -564,7 +574,7 @@ function formatCurrency(value: number): string {
     transition: all 0.2s ease;
     text-align: center;
 
-    &:hover { background: $accent-600; }
+    &:hover { background: $primary-600; }
 
     &--copied {
       background: $success;

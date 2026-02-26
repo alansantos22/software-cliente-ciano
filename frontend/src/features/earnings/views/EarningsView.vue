@@ -3,10 +3,17 @@
 
     <!-- Summary Cards -->
     <section class="earnings-view__summary">
-      <div class="summary-card summary-card--green">
-        <span class="summary-card__label">Total Recebido</span>
-        <span class="summary-card__value">{{ formatCurrency(totalIn) }}</span>
-        <span class="summary-card__icon"><font-awesome-icon icon="arrow-trend-up" /></span>
+      <div class="summary-card summary-card--teal">
+        <span class="summary-card__label">Ganhos de Rede</span>
+        <span class="summary-card__value">{{ formatCurrency(networkEarnings) }}</span>
+        <span class="summary-card__sublabel">Primeira compra, recompra, equipe, liderança</span>
+        <span class="summary-card__icon"><font-awesome-icon icon="network-wired" /></span>
+      </div>
+      <div class="summary-card summary-card--purple">
+        <span class="summary-card__label">Ganhos de Cotas</span>
+        <span class="summary-card__value">{{ formatCurrency(quotaEarnings) }}</span>
+        <span class="summary-card__sublabel">Dividendos mensais das pousadas</span>
+        <span class="summary-card__icon"><font-awesome-icon icon="coins" /></span>
       </div>
       <div class="summary-card summary-card--red">
         <span class="summary-card__label">Total Investido</span>
@@ -20,11 +27,6 @@
         </span>
         <span class="summary-card__icon"><font-awesome-icon icon="wallet" /></span>
       </div>
-      <div class="summary-card summary-card--purple">
-        <span class="summary-card__label">Movimentações</span>
-        <span class="summary-card__value">{{ filteredRows.length }}</span>
-        <span class="summary-card__icon"><font-awesome-icon icon="clipboard-list" /></span>
-      </div>
     </section>
 
     <!-- Filters -->
@@ -33,16 +35,33 @@
         <DsMonthPicker v-model="selectedMonth" />
 
         <div class="filter-group">
-          <button
-            v-for="f in typeFilters"
-            :key="f.value"
-            :class="['filter-chip', { 'filter-chip--active': activeFilter === f.value }]"
-            @click="activeFilter = f.value"
-          >
-            <font-awesome-icon :icon="f.icon" />
-            {{ f.label }}
-          </button>
-        </div>
+            <!-- Group filters -->
+            <button
+              :class="['filter-chip', 'filter-chip--group', { 'filter-chip--active': activeFilter === 'rede' }]"
+              @click="activeFilter = 'rede'"
+            >
+              <font-awesome-icon icon="network-wired" />
+              Ganhos de Rede
+            </button>
+            <button
+              :class="['filter-chip', 'filter-chip--group', { 'filter-chip--active': activeFilter === 'cotas' }]"
+              @click="activeFilter = 'cotas'"
+            >
+              <font-awesome-icon icon="coins" />
+              Ganhos de Cotas
+            </button>
+            <span class="filter-divider"></span>
+            <!-- Individual type filters -->
+            <button
+              v-for="f in typeFilters"
+              :key="f.value"
+              :class="['filter-chip', { 'filter-chip--active': activeFilter === f.value }]"
+              @click="activeFilter = f.value"
+            >
+              <font-awesome-icon :icon="f.icon" />
+              {{ f.label }}
+            </button>
+          </div>
       </div>
     </DsCard>
 
@@ -82,7 +101,16 @@
 
         <!-- Data -->
         <template #cell-date="{ row }">
-          <span class="date-cell">{{ formatDate((row as unknown as ActivityRow).date) }}</span>
+          <div class="date-cell-wrap">
+            <span class="date-cell">{{ formatDate((row as unknown as ActivityRow).date) }}</span>
+            <span
+              v-if="(row as unknown as ActivityRow).cutoffEligible === false"
+              class="cutoff-badge"
+              title="Compra realizada após o corte do mês (dia 1º do mês de referência). Será pago no próximo ciclo — dia 15 do mês seguinte."
+            >
+              <font-awesome-icon icon="calendar-xmark" /> Próx. Mês
+            </span>
+          </div>
         </template>
       </DsTable>
     </DsCard>
@@ -105,6 +133,11 @@ interface ActivityRow {
   description: string;
   amount: number;
   date: string;
+  /**
+   * false when the underlying purchase happened AFTER the cutoff (last day
+   * of the previous month). The earning will be paid in the next cycle.
+   */
+  cutoffEligible?: boolean;
 }
 
 // ─── State ───────────────────────────────────────────
@@ -113,21 +146,32 @@ const activeFilter = ref('all');
 
 // ─── Mock Data ────────────────────────────────────────
 const allRows = ref<ActivityRow[]>([
-  { id: 1,  type: 'Comissão',  rawType: 'first_purchase',    description: 'Bônus primeira compra — João Silva',       amount:  150.00, date: '2025-01-15' },
-  { id: 2,  type: 'Bônus',     rawType: 'repurchase',        description: 'Bônus recompra — Nível 2',                 amount:   75.50, date: '2025-01-14' },
-  { id: 3,  type: 'Dividendo', rawType: 'dividend',          description: 'Dividendo mensal — Janeiro 2025',          amount:  320.00, date: '2025-01-10' },
-  { id: 4,  type: 'Compra',    rawType: 'purchase',          description: 'Aquisição de cotas',                       amount: -2500.00, date: '2025-01-08' },
-  { id: 5,  type: 'Comissão',  rawType: 'first_purchase',    description: 'Bônus primeira compra — Maria Fernanda',   amount:  150.00, date: '2025-01-07' },
-  { id: 6,  type: 'Bônus',     rawType: 'leadership',        description: 'Bônus de liderança — Nível Ouro',          amount:  500.00, date: '2025-01-05' },
-  { id: 7,  type: 'Bônus',     rawType: 'team_bonus',        description: 'Bônus de equipe — 2% do total',            amount:   90.00, date: '2025-01-03' },
-  { id: 8,  type: 'Dividendo', rawType: 'dividend',          description: 'Dividendo mensal — Dezembro 2024',         amount:  310.00, date: '2024-12-10' },
-  { id: 9,  type: 'Compra',    rawType: 'purchase',          description: 'Aquisição de cotas',                       amount: -2500.00, date: '2024-12-05' },
-  { id: 10, type: 'Comissão',  rawType: 'first_purchase',    description: 'Bônus primeira compra — Carlos Eduardo',   amount:  150.00, date: '2024-12-03' },
-  { id: 11, type: 'Bônus',     rawType: 'repurchase',        description: 'Bônus recompra — Nível 3',                 amount:  200.00, date: '2024-12-01' },
-  { id: 12, type: 'Dividendo', rawType: 'dividend',          description: 'Dividendo mensal — Novembro 2024',         amount:  295.00, date: '2024-11-10' },
-  { id: 13, type: 'Comissão',  rawType: 'first_purchase',    description: 'Bônus primeira compra — Ana Paula',        amount:  150.00, date: '2024-11-08' },
-  { id: 14, type: 'Bônus',     rawType: 'repurchase',        description: 'Bônus recompra — Nível 2',                 amount:  120.00, date: '2024-11-05' },
-  { id: 15, type: 'Compra',    rawType: 'purchase',          description: 'Aquisição de cotas',                       amount: -5000.00, date: '2024-11-01' },
+  // ── Janeiro 2025 ────────────────────────────────────────────────────────
+  { id: 1,  type: 'Comissão',  rawType: 'first_purchase', description: 'Bônus primeira compra — João Silva',     amount:  150.00, date: '2025-01-15', cutoffEligible: false },
+  { id: 2,  type: 'Bônus',     rawType: 'repurchase',     description: 'Bônus recompra — Nível 2',               amount:   75.50, date: '2025-01-14', cutoffEligible: false },
+  { id: 3,  type: 'Dividendo', rawType: 'dividend',       description: 'Dividendo mensal — Janeiro 2025',        amount:  320.00, date: '2025-01-10', cutoffEligible: true  },
+  { id: 4,  type: 'Compra',    rawType: 'purchase',       description: 'Aquisição de cotas',                     amount: -2500.00, date: '2025-01-08' },
+  { id: 5,  type: 'Comissão',  rawType: 'first_purchase', description: 'Bônus primeira compra — Maria Fernanda', amount:  150.00, date: '2025-01-07', cutoffEligible: false },
+  { id: 6,  type: 'Bônus',     rawType: 'leadership',     description: 'Bônus de liderança — Nível Ouro',        amount:  500.00, date: '2025-01-05', cutoffEligible: true  },
+  { id: 7,  type: 'Bônus',     rawType: 'team_bonus',     description: 'Bônus de equipe — 2% do total',          amount:   90.00, date: '2025-01-03', cutoffEligible: true  },
+  // ── Dezembro 2024 ───────────────────────────────────────────────────────
+  { id: 8,  type: 'Dividendo', rawType: 'dividend',       description: 'Dividendo mensal — Dezembro 2024',       amount:  310.00, date: '2024-12-10', cutoffEligible: true  },
+  { id: 9,  type: 'Compra',    rawType: 'purchase',       description: 'Aquisição de cotas',                     amount: -2500.00, date: '2024-12-05' },
+  { id: 10, type: 'Comissão',  rawType: 'first_purchase', description: 'Bônus primeira compra — Carlos Eduardo', amount:  150.00, date: '2024-12-03', cutoffEligible: false },
+  { id: 11, type: 'Bônus',     rawType: 'repurchase',     description: 'Bônus recompra — Nível 3',               amount:  200.00, date: '2024-12-01', cutoffEligible: false },
+  // ── Novembro 2024 ───────────────────────────────────────────────────────
+  { id: 12, type: 'Dividendo', rawType: 'dividend',       description: 'Dividendo mensal — Novembro 2024',       amount:  295.00, date: '2024-11-10', cutoffEligible: true  },
+  { id: 13, type: 'Comissão',  rawType: 'first_purchase', description: 'Bônus primeira compra — Ana Paula',      amount:  150.00, date: '2024-11-08', cutoffEligible: false },
+  { id: 14, type: 'Bônus',     rawType: 'repurchase',     description: 'Bônus recompra — Nível 2',               amount:  120.00, date: '2024-11-05', cutoffEligible: false },
+  { id: 15, type: 'Compra',    rawType: 'purchase',       description: 'Aquisição de cotas',                     amount: -5000.00, date: '2024-11-01' },
+  // ── Fevereiro 2026 (mês atual) ─────────────────────────────────────────
+  // Compras realizadas em fevereiro são APÓS o corte (31/jan)
+  // → dividendos e comissões gerados por elas só entram no ciclo de março
+  { id: 16, type: 'Dividendo', rawType: 'dividend',       description: 'Dividendo mensal — Fev 2026 (compra após corte)',        amount:  345.00, date: '2026-02-15', cutoffEligible: false },
+  { id: 17, type: 'Bônus',     rawType: 'repurchase',     description: 'Bônus recompra — Lucas Oliveira (compra após corte)',    amount:   95.00, date: '2026-02-10', cutoffEligible: false },
+  { id: 18, type: 'Comissão',  rawType: 'first_purchase', description: 'Bônus 1ª compra — Rafael Duarte (compra após corte)',   amount:  150.00, date: '2026-02-08', cutoffEligible: false },
+  { id: 19, type: 'Compra',    rawType: 'purchase',       description: 'Aquisição de 1 cota (após corte de jan — dividendo em mar)', amount: -2500.00, date: '2026-02-03' },
+  { id: 20, type: 'Bônus',     rawType: 'leadership',     description: 'Bônus liderança Ouro — ref. jan/2026 (dentro do corte)', amount:  500.00, date: '2026-02-15', cutoffEligible: true  },
 ]);
 
 // ─── Filters config ───────────────────────────────────
@@ -150,10 +194,38 @@ const columns = [
 // ─── Computed ─────────────────────────────────────────
 const filteredRows = computed(() => {
   return allRows.value.filter(row => {
-    const matchType = activeFilter.value === 'all' || row.type === activeFilter.value;
-    return matchType;
+    // Month filter
+    const matchMonth = row.date.startsWith(selectedMonth.value);
+    // Type / group filter
+    const matchType = (() => {
+      if (activeFilter.value === 'all')   return true;
+      if (activeFilter.value === 'rede')  return row.type === 'Comissão' || row.type === 'Bônus';
+      if (activeFilter.value === 'cotas') return row.type === 'Dividendo';
+      return row.type === activeFilter.value;
+    })();
+    return matchMonth && matchType;
   });
 });
+
+/**
+ * Ganhos de Rede = Comissão + Bônus (tudo menos dividendos e compras).
+ * Regra: são os ganhos gerados pela atividade da rede (indicacões e recompras).
+ */
+const networkEarnings = computed(() =>
+  filteredRows.value
+    .filter(r => r.type === 'Comissão' || r.type === 'Bônus')
+    .reduce((s, r) => s + r.amount, 0)
+);
+
+/**
+ * Ganhos de Cotas = Dividendos apenas.
+ * Regra: ganhos de rede = ganhos totais − ganhos de cotas.
+ */
+const quotaEarnings = computed(() =>
+  filteredRows.value
+    .filter(r => r.type === 'Dividendo')
+    .reduce((s, r) => s + r.amount, 0)
+);
 
 const totalIn = computed(() =>
   filteredRows.value.filter(r => r.amount > 0).reduce((s, r) => s + r.amount, 0)
@@ -279,6 +351,14 @@ function getTypeIcon(rawType: string): string {
     color: $neutral-900;
   }
 
+  &__sublabel {
+    font-size: 0.7rem;
+    color: $neutral-400;
+    margin-top: 2px;
+    line-height: 1.3;
+    padding-right: 2.5rem; // avoid overlapping icon
+  }
+
   &__icon {
     position: absolute;
     right: 1.25rem;
@@ -288,10 +368,15 @@ function getTypeIcon(rawType: string): string {
     opacity: 0.12;
   }
 
-  &--green { border-left: 4px solid $success; .summary-card__icon { color: $success; opacity: 0.2; } }
-  &--red   { border-left: 4px solid $error;   .summary-card__icon { color: $error;   opacity: 0.2; } }
-  &--blue  { border-left: 4px solid $info;    .summary-card__icon { color: $info;    opacity: 0.2; } }
-  &--purple{ border-left: 4px solid $primary-500; .summary-card__icon { color: $primary-500; opacity: 0.2; } }
+  &--green { border-left: 4px solid $success;      .summary-card__icon { color: $success;      opacity: 0.2; } }
+  &--red   { border-left: 4px solid $error;        .summary-card__icon { color: $error;        opacity: 0.2; } }
+  &--blue  { border-left: 4px solid $info;         .summary-card__icon { color: $info;         opacity: 0.2; } }
+  &--purple{ border-left: 4px solid $primary-500;  .summary-card__icon { color: $primary-500;  opacity: 0.2; } }
+  &--teal  {
+    border-left: 4px solid $accent-500;
+    .summary-card__icon { color: $accent-500; opacity: 0.2; }
+    .summary-card__value { color: darken(#00bcd4, 10%); }
+  }
 }
 
 // ── Filters ────────────────────────────────────────────
@@ -332,6 +417,26 @@ function getTypeIcon(rawType: string): string {
     border-color: $primary-500;
     color: #fff;
   }
+
+  &--group {
+    border-style: dashed;
+    font-weight: 600;
+
+    &.filter-chip--active {
+      background: $accent-500;
+      border-color: $accent-500;
+    }
+  }
+}
+
+// Vertical divider between group and individual filter chips
+.filter-divider {
+  display: inline-block;
+  width: 1px;
+  height: 24px;
+  background: $neutral-300;
+  align-self: center;
+  flex-shrink: 0;
 }
 
 // ── Table cells ────────────────────────────────────────
@@ -365,6 +470,29 @@ function getTypeIcon(rawType: string): string {
 .date-cell {
   color: $neutral-600;
   font-size: 0.85rem;
+}
+
+// Wrapper that stacks date + cutoff badge vertically
+.date-cell-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+// Badge shown when a purchase was made after the monthly cutoff
+.cutoff-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: $warning-dark;
+  background: rgba($warning, 0.12);
+  border: 1px solid rgba($warning, 0.4);
+  padding: 1px 6px;
+  border-radius: 10px;
+  white-space: nowrap;
+  cursor: help;
 }
 
 .text--positive { color: $success; }

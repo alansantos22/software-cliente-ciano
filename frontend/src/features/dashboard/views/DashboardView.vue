@@ -58,19 +58,44 @@
         </div>
 
         <!-- Saldo a receber no próximo pagamento -->
-        <div class="kpi-card kpi-card--wallet kpi-card--highlight">
+        <div
+          class="kpi-card kpi-card--wallet"
+          :class="kpi.paymentWindowOpen ? 'kpi-card--highlight' : 'kpi-card--locked'"
+        >
           <div class="kpi-card__icon">
-            <font-awesome-icon icon="wallet" />
+            <font-awesome-icon :icon="kpi.paymentWindowOpen ? 'wallet' : 'lock'" />
           </div>
           <div class="kpi-card__body">
             <span class="kpi-card__label">Saldo a Receber</span>
-            <span class="kpi-card__value kpi-card__value--big">
-              {{ formatCurrency(kpi.availableWithdraw) }}
-            </span>
-            <span class="kpi-card__sub">
-              <font-awesome-icon icon="calendar-day" />
-              Pagamentos processados todo dia 5
-            </span>
+
+            <!-- Dentro da janela: exibe o valor calculado -->
+            <template v-if="kpi.paymentWindowOpen">
+              <span class="kpi-card__value kpi-card__value--big">
+                {{ formatCurrency(kpi.availableWithdraw) }}
+              </span>
+              <span class="kpi-card__sub">
+                <font-awesome-icon icon="calendar-check" />
+                Pagamento em {{ kpi.nextPaymentDate ? formatDate(kpi.nextPaymentDate) : 'breve' }}
+              </span>
+            </template>
+
+            <!-- Fora da janela: aguardando fechamento do lucro das pousadas -->
+            <template v-else>
+              <span class="kpi-card__value kpi-card__value--big kpi-card__value--muted">
+                •••••
+              </span>
+              <span class="kpi-card__sub kpi-card__sub--info">
+                <font-awesome-icon icon="clock" />
+                Disponível {{ kpi.daysUntilPayment > 5 ? `em ${kpi.daysUntilPayment - 5} dia(s)` : 'em breve' }}
+                &mdash; aguardando lucro das pousadas
+              </span>
+            </template>
+          </div>
+
+          <!-- Badge mostrando quando abre a janela -->
+          <div v-if="!kpi.paymentWindowOpen" class="kpi-card__payment-badge">
+            <font-awesome-icon icon="calendar-day" />
+            Dia {{ kpi.paymentDay }}
           </div>
         </div>
 
@@ -232,6 +257,7 @@ import {
   mockDashboardKpi,
   mockRecentActivity,
   buildEarningsSources,
+  getPaymentWindowStatus,
   type SplitTickerData,
   type CareerProgressData,
   type AccountHealthData,
@@ -352,11 +378,23 @@ async function copyReferralLink() {
   }
 }
 
+// Refresh payment window status so the lock reflects real-time day changes
+function refreshPaymentWindow() {
+  const status = getPaymentWindowStatus(kpi.value.paymentDay);
+  kpi.value = {
+    ...kpi.value,
+    paymentWindowOpen: status.windowOpen,
+    daysUntilPayment: status.daysUntilPayment,
+    nextPaymentDate: status.nextPaymentDate,
+  };
+}
+
 // ─── Watchers & Lifecycle ────────────────────────────────────
 watch(selectedMonth, loadEarnings);
 
 onMounted(async () => {
   await mockDelay(300);
+  refreshPaymentWindow();
   loadEarnings(selectedMonth.value);
 });
 </script>
@@ -539,6 +577,43 @@ onMounted(async () => {
     border-color: rgba($success, 0.4);
     background: linear-gradient(135deg, rgba($success, 0.04) 0%, #fff 100%);
     .kpi-card__value { color: $success-dark; }
+  }
+
+  &--locked {
+    border-color: $neutral-300;
+    background: $neutral-50;
+    opacity: 0.85;
+
+    .kpi-card__icon {
+      background: rgba($neutral-400, 0.15);
+      color: $neutral-500;
+    }
+  }
+
+  &__value--muted {
+    color: $neutral-400;
+    letter-spacing: 0.25em;
+    font-size: 1.25rem;
+  }
+
+  &__sub--info {
+    color: $primary-600;
+    font-weight: 500;
+  }
+
+  &__payment-badge {
+    position: absolute;
+    top: $spacing-3;
+    right: $spacing-3;
+    background: $neutral-200;
+    color: $neutral-600;
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 2px 7px;
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
   }
 
   &--network {

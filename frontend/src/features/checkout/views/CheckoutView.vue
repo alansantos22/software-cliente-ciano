@@ -4,11 +4,11 @@
     <div class="checkout-view__header">
       <div class="checkout-header__top">
         <div class="checkout-header__brand">
-          <span class="brand-icon">🏦</span>
+          <font-awesome-icon :icon="['fas', 'landmark']" class="brand-icon" />
           <span>Ciano Investimentos</span>
         </div>
         <div class="checkout-header__secure">
-          <span>🔒</span>
+          <font-awesome-icon :icon="['fas', 'shield-halved']" />
           <span>Ambiente seguro</span>
         </div>
       </div>
@@ -227,7 +227,7 @@ function getTargetLevel(total: number): string {
 // ─── Layout ───────────────────────────────────────────────────────────────────
 .checkout-view {
   min-height: 100vh;
-  background: linear-gradient(160deg, #f0f9ff 0%, #fafafa 60%, #f0fdf4 100%);
+  background: #f8fafc;
   @include flex-column;
 
   &__header {

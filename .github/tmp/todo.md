@@ -1,8 +1,40 @@
 # TODO DETALHADO — Sistema de Cotas Ciano (Pousadas)
 
-**Data/Hora:** 2026-02-18
-**Última Atualização:** 2026-02-18
-**Status Geral:** ⏳ EM PROGRESSO — ETAPA 2 CONCLUÍDA + MELHORIAS UX/UI ✅
+**Data/Hora:** 2026-02-18  
+**Última Atualização:** 2026-02-26  
+**Status Geral:** ✅ REGRAS DE NEGÓCIO: PAGAMENTO, CORTE E GANHOS IMPLEMENTADOS
+
+---
+
+## ✅ [2026-02-26] — Regras de Negócio: Pagamento / Corte / Ganhos de Rede
+
+### Arquivos modificados:
+- `frontend/src/mocks/dashboard.mock.ts`
+- `frontend/src/features/dashboard/views/DashboardView.vue`
+- `frontend/src/mocks/earnings.mock.ts`
+- `frontend/src/features/earnings/views/EarningsView.vue`
+
+### Regra 1 — Valor a receber (exibido só 5 dias antes do pagamento)
+- Dia de pagamento corrigido: **dia 5 → dia 15**
+- `getPaymentWindowStatus(paymentDay)` exportada de `dashboard.mock.ts` — retorna `{ windowOpen, daysUntilPayment, nextPaymentDate }`
+- `DashboardKpiData` recebe: `paymentDay`, `paymentWindowOpen`, `daysUntilPayment`, `nextPaymentDate`
+- Card "Saldo a Receber" no dashboard: fora da janela → estado bloqueado (ícone 🔒, valor `•••••`, mensagem "aguardando lucro das pousadas"); dentro da janela → valor exibido normalmente
+
+### Regra 2 — Corte de recebimento (último dia do mês anterior)
+- `getCutoffDate(referenceMonth)` e `isAfterCutoff(purchaseDate, referenceMonth)` exportadas de `earnings.mock.ts`
+- `EarningEntry` recebe `cutoffEligible: boolean`
+- `MonthlyEarningSummary` recebe `cutoffDate: string` (YYYY-MM-DD)
+- `EarningsView`: badge **"Próx. Mês"** na coluna Data quando `cutoffEligible === false`
+- 5 novos entries de Fev 2026 adicionados para demonstrar a regra em produção
+
+### Regra 3 — Ganhos de Rede = ganhos totais − ganhos de cotas
+- `networkEarnings` = Comissão + Bônus (primeira compra, recompra, equipe, liderança)
+- `quotaEarnings` = Dividendos apenas
+- `MonthlyEarningSummary` e `DashboardKpiData` recebem ambos os campos
+- `EarningsView` summary cards atualizados: "Ganhos de Rede" (teal) + "Ganhos de Cotas" (purple)
+- Filtros de grupo: chips "Ganhos de Rede" e "Ganhos de Cotas" com separador visual
+
+---
 
 ---
 

@@ -23,7 +23,9 @@
             class="payment-card__input"
           />
 
-          <div class="payment-card__icon">{{ method.icon }}</div>
+          <div class="payment-card__icon">
+            <font-awesome-icon :icon="['fas', method.icon]" />
+          </div>
 
           <div class="payment-card__body">
             <div class="payment-card__name">{{ method.name }}</div>
@@ -40,6 +42,7 @@
 
           <div class="payment-card__tag-area">
             <span class="payment-card__tag" :class="`payment-card__tag--${method.tagType}`">
+              <font-awesome-icon v-if="method.tagType === 'instant'" :icon="['fas', 'check']" class="tag-check" />
               {{ method.tag }}
             </span>
           </div>
@@ -58,7 +61,7 @@
 
       <!-- Selo de segurança -->
       <div class="payment-selector__security">
-        <span class="security-icon">🔒</span>
+        <font-awesome-icon :icon="['fas', 'shield-halved']" class="security-icon" />
         <span>Pagamento processado de forma <strong>segura e criptografada</strong></span>
       </div>
 
@@ -86,7 +89,7 @@
             class="level-badge"
             :style="{ background: targetLevel.gradientStart, color: 'white' }"
           >
-            <span>{{ targetLevel.icon }}</span>
+            <font-awesome-icon :icon="['fas', targetLevel.icon]" />
             <span>{{ targetLevel.label }}</span>
           </div>
           <span class="level-badge__desc">Seu novo nível</span>
@@ -143,10 +146,10 @@ const selectedMethodId = ref<string | null>(null);
 
 // ─── Level config ────────────────────────────────────────────────────────────
 const levels = [
-  { key: 'socio', label: 'Sócio', min: 1, icon: '🤝', color: '#00bcd4', gradientStart: '#00bcd4' },
-  { key: 'platinum', label: 'Platinum', min: 10, icon: '✨', color: '#64748b', gradientStart: '#94a3b8' },
-  { key: 'vip', label: 'VIP', min: 20, icon: '👑', color: '#b45309', gradientStart: '#eab308' },
-  { key: 'imperial', label: 'Imperial', min: 60, icon: '💎', color: '#7c3aed', gradientStart: '#a855f7' },
+  { key: 'socio', label: 'Sócio', min: 1, icon: 'handshake', color: '#00bcd4', gradientStart: '#00bcd4' },
+  { key: 'platinum', label: 'Platinum', min: 10, icon: 'star', color: '#64748b', gradientStart: '#94a3b8' },
+  { key: 'vip', label: 'VIP', min: 20, icon: 'crown', color: '#b45309', gradientStart: '#eab308' },
+  { key: 'imperial', label: 'Imperial', min: 60, icon: 'gem', color: '#7c3aed', gradientStart: '#a855f7' },
 ];
 
 // ─── Payment methods ──────────────────────────────────────────────────────────
@@ -154,16 +157,16 @@ const methods = [
   {
     id: 'pix',
     name: 'PIX',
-    icon: '⚡',
+    icon: 'bolt',
     description: 'Escaneie o QR Code no seu banco e pronto.',
-    tag: '✅ Aprovação Imediata',
+    tag: 'Aprovação Imediata',
     tagType: 'instant',
     color: '#16a34a',
   },
   {
     id: 'credit',
     name: 'Cartão de Crédito',
-    icon: '💳',
+    icon: 'credit-card',
     description: 'Parcelamento disponível.',
     tag: 'Até 12x',
     tagType: 'installment',
@@ -172,7 +175,7 @@ const methods = [
   {
     id: 'boleto',
     name: 'Boleto Bancário',
-    icon: '📄',
+    icon: 'file-lines',
     description: 'Pague em qualquer banco ou lotérica.',
     tag: 'Até 3 dias úteis',
     tagType: 'slow',
@@ -245,6 +248,11 @@ function formatCurrency(value: number): string {
     padding: $spacing-3;
     border-top: 1px solid $neutral-200;
 
+    .security-icon {
+      color: $success-dark;
+      font-size: 0.85rem;
+    }
+
     strong {
       color: $success-dark;
     }
@@ -286,10 +294,10 @@ function formatCurrency(value: number): string {
   transition: all 0.2s ease;
 
   &:hover {
-    border-color: $primary-300;
-    background: $primary-50;
+    border-color: $neutral-300;
+    background: $neutral-50;
     transform: translateY(-1px);
-    box-shadow: 0 4px 16px rgba(0, 188, 212, 0.12);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
   }
 
   &--selected {
@@ -303,8 +311,14 @@ function formatCurrency(value: number): string {
   }
 
   &__icon {
-    font-size: 2rem;
+    font-size: 1.4rem;
     @include flex-center;
+    color: $neutral-500;
+    transition: color 0.2s ease;
+  }
+
+  &--selected .payment-card__icon {
+    color: var(--m-color, #{$primary-500});
   }
 
   &__body {
@@ -341,6 +355,13 @@ function formatCurrency(value: number): string {
     padding: 3px 8px;
     border-radius: $radius-full;
     white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 3px;
+
+    .tag-check {
+      font-size: 0.6rem;
+    }
 
     &--instant {
       background: $secondary-50;

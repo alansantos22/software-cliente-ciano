@@ -6,7 +6,7 @@
 
       <Transition name="pop-in" appear>
         <div class="hero__badge" :style="{ '--c': levelConfig.color }">
-          <span class="hero__badge-icon">{{ levelConfig.icon }}</span>
+          <font-awesome-icon :icon="['fas', levelConfig.icon]" class="hero__badge-icon" />
         </div>
       </Transition>
 
@@ -29,19 +29,25 @@
     <Transition name="slide-up" appear>
       <div class="confirmation-view__impact" style="transition-delay: 0.15s">
         <div class="impact-card">
-          <span class="impact-card__icon">📊</span>
+          <span class="impact-card__icon">
+            <font-awesome-icon :icon="['fas', 'coins']" />
+          </span>
           <span class="impact-card__label">Cotas adquiridas</span>
           <span class="impact-card__value">{{ quotaCount }}</span>
         </div>
         <div class="impact-card impact-card--level" :style="{ '--c': levelConfig.color }">
-          <span class="impact-card__icon">{{ levelConfig.icon }}</span>
+          <span class="impact-card__icon">
+            <font-awesome-icon :icon="['fas', levelConfig.icon]" />
+          </span>
           <span class="impact-card__label">Seu novo status</span>
           <span class="impact-card__value" :style="{ color: levelConfig.color }">
             {{ levelConfig.label }}
           </span>
         </div>
         <div class="impact-card">
-          <span class="impact-card__icon">📈</span>
+          <span class="impact-card__icon">
+            <font-awesome-icon :icon="['fas', 'arrow-trend-up']" />
+          </span>
           <span class="impact-card__label">Benefícios ativos</span>
           <span class="impact-card__value">{{ levelConfig.benefitsCount }}+</span>
         </div>
@@ -51,7 +57,7 @@
     <!-- Benefícios desbloqueados -->
     <Transition name="slide-up" appear>
       <div class="confirmation-view__benefits" style="transition-delay: 0.25s">
-        <h3>Seus benefícios desbloqueados {{ levelConfig.icon }}</h3>
+        <h3>Benefícios desbloqueados</h3>
         <ul>
           <li v-for="b in levelConfig.benefits" :key="b">
             <span class="benefit-check" :style="{ color: levelConfig.color }">✓</span>
@@ -65,7 +71,7 @@
     <Transition name="slide-up" appear>
       <div class="confirmation-view__referral" style="transition-delay: 0.35s">
         <div class="referral__content">
-          <p class="referral__eyebrow">💡 Ganhe mais multiplicando sua rede</p>
+          <p class="referral__eyebrow">Multiplique seus rendimentos</p>
           <h3>Compartilhe e receba comissões</h3>
           <p>
             Cada novo investidor que entrar pelo seu link rende comissões diretas
@@ -80,7 +86,8 @@
               :class="{ 'referral__copy-btn--copied': isCopied }"
               @click="copyLink"
             >
-              {{ isCopied ? '✓ Link copiado!' : '📋 Copiar meu link de indicação' }}
+              <font-awesome-icon :icon="['fas', isCopied ? 'check' : 'copy']" />
+              {{ isCopied ? 'Link copiado!' : 'Copiar meu link de indicação' }}
             </button>
           </div>
         </div>
@@ -118,7 +125,7 @@ const levelConfigs = {
   socio: {
     key: 'socio',
     label: 'Sócio',
-    icon: '🤝',
+    icon: 'handshake',
     color: '#00bcd4',
     benefitsCount: 4,
     benefits: [
@@ -131,7 +138,7 @@ const levelConfigs = {
   platinum: {
     key: 'platinum',
     label: 'Platinum',
-    icon: '✨',
+    icon: 'star',
     color: '#64748b',
     benefitsCount: 8,
     benefits: [
@@ -144,7 +151,7 @@ const levelConfigs = {
   vip: {
     key: 'vip',
     label: 'VIP',
-    icon: '👑',
+    icon: 'crown',
     color: '#b45309',
     benefitsCount: 12,
     benefits: [
@@ -157,7 +164,7 @@ const levelConfigs = {
   imperial: {
     key: 'imperial',
     label: 'Imperial',
-    icon: '💎',
+    icon: 'gem',
     color: '#7c3aed',
     benefitsCount: 18,
     benefits: [
@@ -206,7 +213,7 @@ onMounted(() => {
 
 // ─── Methods ──────────────────────────────────────────────────────────────────
 function launchConfetti() {
-  const colors = ['#00bcd4', '#ffc107', '#4caf50', '#ffd700', '#a855f7', '#f43f5e'];
+  const colors = ['#B8860B', '#C0C0C0', '#FFD700', '#0097a7', '#1a2e4a', '#4a3728'];
 
   // First burst
   confetti({
@@ -290,7 +297,8 @@ async function copyLink() {
   }
 
   .hero__badge-icon {
-    font-size: 2.8rem;
+    font-size: 2.4rem;
+    color: var(--c);
   }
 
   .hero__text {
@@ -350,10 +358,17 @@ async function copyLink() {
 
     &--level {
       border-color: var(--c);
-      background: color-mix(in srgb, var(--c) 6%, white);
+      background: white;
     }
 
-    &__icon { font-size: 1.5rem; }
+    &__icon {
+      font-size: 1.4rem;
+      color: $neutral-500;
+
+      .impact-card--level & {
+        color: var(--c);
+      }
+    }
 
     &__label {
       font-size: 0.75rem;
@@ -409,8 +424,8 @@ async function copyLink() {
 
   // ── Referral ──────────────────────────────────────────────────────────────
   &__referral {
-    background: linear-gradient(135deg, $accent-50 0%, $secondary-50 100%);
-    border: 2px solid $accent-200;
+    background: $neutral-900;
+    border: 1px solid $neutral-800;
     border-radius: $radius-2xl;
     padding: $spacing-6;
     width: 100%;
@@ -424,21 +439,21 @@ async function copyLink() {
       font-size: 0.75rem;
       font-weight: 700;
       text-transform: uppercase;
-      letter-spacing: 0.08em;
-      color: $warning-dark;
+      letter-spacing: 0.1em;
+      color: $primary-400;
       margin: 0;
     }
 
     h3 {
       font-size: 1.1rem;
       font-weight: 700;
-      color: $neutral-900;
+      color: white;
       margin: 0;
     }
 
     p {
       font-size: 0.875rem;
-      color: $text-secondary;
+      color: $neutral-400;
       line-height: 1.6;
       margin: 0;
     }
@@ -450,21 +465,25 @@ async function copyLink() {
   }
 
   .referral__link-display {
-    background: white;
-    border: 1px solid $primary-200;
+    background: $neutral-800;
+    border: 1px solid $neutral-700;
     border-radius: $radius-lg;
     padding: $spacing-3 $spacing-4;
     font-size: 0.875rem;
-    color: $primary-700;
+    color: $neutral-300;
 
-    strong { font-weight: 800; }
+    strong { font-weight: 800; color: white; }
   }
 
   .referral__copy-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: $spacing-2;
     width: 100%;
     padding: $spacing-4;
-    background: $accent-500;
-    color: $neutral-900;
+    background: $primary-500;
+    color: white;
     border: none;
     border-radius: $radius-lg;
     font-weight: 700;
@@ -472,7 +491,7 @@ async function copyLink() {
     cursor: pointer;
     transition: all 0.2s ease;
 
-    &:hover { background: $accent-600; transform: translateY(-1px); }
+    &:hover { background: $primary-600; transform: translateY(-1px); }
     &--copied { background: $success; color: white; }
   }
 

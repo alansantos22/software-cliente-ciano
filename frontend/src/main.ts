@@ -22,6 +22,9 @@ import {
   faPhone, faChevronUp,
   // Dashboard additions
   faTriangleExclamation, faCalendarDay,
+  // Checkout premium icons
+  faLandmark, faCopy, faDownload, faQrcode, faFileLines, faLightbulb,
+  faFileInvoiceDollar, faArrowUpRightFromSquare,
 } from '@fortawesome/free-solid-svg-icons'
 
 library.add(
@@ -39,6 +42,9 @@ library.add(
   faPhone, faChevronUp,
   // Dashboard additions
   faTriangleExclamation, faCalendarDay,
+  // Checkout premium icons
+  faLandmark, faCopy, faDownload, faQrcode, faFileLines, faLightbulb,
+  faFileInvoiceDollar, faArrowUpRightFromSquare,
 )
 
 // Styles

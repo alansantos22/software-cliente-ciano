@@ -1,7 +1,9 @@
 <template>
   <div class="boleto-payment">
     <div class="boleto-payment__header">
-      <div class="boleto-payment__icon">📄</div>
+      <div class="boleto-payment__icon">
+        <font-awesome-icon :icon="['fas', 'file-invoice-dollar']" />
+      </div>
       <h2>Boleto Gerado!</h2>
       <p>
         Pague até <strong>{{ dueDateFormatted }}</strong> em qualquer banco,
@@ -19,7 +21,8 @@
           :class="{ 'code-copy-btn--copied': isCopied }"
           @click="copyCode"
         >
-          {{ isCopied ? '✓ Copiado!' : '📋 Copiar' }}
+          <font-awesome-icon :icon="['fas', isCopied ? 'check' : 'copy']" />
+          <span>{{ isCopied ? 'Copiado!' : 'Copiar' }}</span>
         </button>
       </div>
     </div>
@@ -58,7 +61,8 @@
     <!-- Ações -->
     <div class="boleto-payment__actions">
       <DsButton variant="outline" @click="downloadBoleto">
-        ⬇ Baixar PDF
+        <font-awesome-icon :icon="['fas', 'download']" />
+        Baixar PDF
       </DsButton>
       <DsButton variant="primary" size="lg" @click="$emit('goToDashboard')">
         Ir para o Dashboard
@@ -67,7 +71,7 @@
 
     <!-- Referral CTA -->
     <div class="boleto-payment__referral">
-      <p class="referral__eyebrow">💡 Enquanto aguardamos a compensação...</p>
+      <p class="referral__eyebrow">Enquanto aguardamos a compensação...</p>
       <h3>Compartilhe e já comece a ganhar</h3>
       <div class="referral__link-row">
         <span class="referral__link">ciano.com.br/{{ referralCode }}</span>
@@ -76,7 +80,8 @@
           :class="{ 'referral__btn--copied': isReferralCopied }"
           @click="copyReferral"
         >
-          {{ isReferralCopied ? '✓ Copiado!' : '📋 Copiar meu link de indicação' }}
+          <font-awesome-icon :icon="['fas', isReferralCopied ? 'check' : 'copy']" />
+          {{ isReferralCopied ? 'Copiado!' : 'Copiar meu link de indicação' }}
         </button>
       </div>
     </div>
@@ -178,6 +183,7 @@ function formatCurrency(value: number): string {
 
   &__icon {
     font-size: 2.5rem;
+    color: $neutral-600;
   }
 
   // ── Código de barras ──────────────────────────────────────────────────────
@@ -213,6 +219,9 @@ function formatCurrency(value: number): string {
   }
 
   .code-copy-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: $spacing-2;
     padding: $spacing-2 $spacing-4;
     background: $primary-500;
     color: white;
@@ -282,17 +291,17 @@ function formatCurrency(value: number): string {
 
   // ── Referral ──────────────────────────────────────────────────────────────
   &__referral {
-    border: 2px solid $accent-200;
+    border: 1px solid $neutral-200;
     border-radius: $radius-xl;
     padding: $spacing-5;
-    background: $accent-50;
+    background: $neutral-50;
     @include flex-column;
     gap: $spacing-3;
 
     .referral__eyebrow {
       font-size: 0.75rem;
       font-weight: 700;
-      color: $warning-dark;
+      color: $text-tertiary;
       text-transform: uppercase;
       letter-spacing: 0.06em;
       margin: 0;
@@ -324,9 +333,12 @@ function formatCurrency(value: number): string {
   }
 
   .referral__btn {
+    display: inline-flex;
+    align-items: center;
+    gap: $spacing-2;
     padding: $spacing-3 $spacing-4;
-    background: $accent-500;
-    color: $neutral-900;
+    background: $primary-500;
+    color: white;
     border: none;
     border-radius: $radius-lg;
     font-weight: 700;
@@ -334,7 +346,7 @@ function formatCurrency(value: number): string {
     cursor: pointer;
     transition: background 0.2s;
 
-    &:hover { background: $accent-600; }
+    &:hover { background: $primary-600; }
     &--copied { background: $success; color: white; }
   }
 }

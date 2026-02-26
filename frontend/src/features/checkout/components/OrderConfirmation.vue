@@ -5,7 +5,8 @@
       <h2 class="order-confirmation__title">
         Você está a um passo de se tornar
         <span class="title-level" :style="{ color: targetLevel.color }">
-          {{ targetLevel.icon }} {{ targetLevel.label }}
+          <font-awesome-icon :icon="['fas', targetLevel.icon]" />
+          {{ targetLevel.label }}
         </span>
       </h2>
     </div>
@@ -13,7 +14,9 @@
     <!-- Impact cards -->
     <div class="impact-cards">
       <div class="impact-card impact-card--investment">
-        <div class="impact-card__icon">💰</div>
+        <div class="impact-card__icon">
+          <font-awesome-icon :icon="['fas', 'coins']" />
+        </div>
         <div class="impact-card__body">
           <span class="impact-card__label">Você está investindo</span>
           <span class="impact-card__value">{{ formatCurrency(totalAmount) }}</span>
@@ -21,17 +24,21 @@
       </div>
 
       <div class="impact-card impact-card--level">
-        <div class="impact-card__icon">{{ targetLevel.icon }}</div>
+        <div class="impact-card__icon" :style="{ color: targetLevel.color }">
+          <font-awesome-icon :icon="['fas', targetLevel.icon]" />
+        </div>
         <div class="impact-card__body">
           <span class="impact-card__label">Seu novo status</span>
           <span class="impact-card__value" :style="{ color: targetLevel.color }">
-            Sócio {{ targetLevel.label }}
+            {{ targetLevel.label }}
           </span>
         </div>
       </div>
 
       <div class="impact-card impact-card--earnings">
-        <div class="impact-card__icon">📈</div>
+        <div class="impact-card__icon">
+          <font-awesome-icon :icon="['fas', 'arrow-trend-up']" />
+        </div>
         <div class="impact-card__body">
           <span class="impact-card__label">Estimativa de ganhos/mês</span>
           <span class="impact-card__value">{{ formatCurrency(estimatedMonthly) }}</span>
@@ -112,16 +119,16 @@ defineEmits<{
 
 // ─── Levels ───────────────────────────────────────────────────────────────────
 const levels = [
-  { key: 'socio', label: 'Sócio', min: 1, icon: '🤝', color: '#00bcd4' },
-  { key: 'platinum', label: 'Platinum', min: 10, icon: '✨', color: '#64748b' },
-  { key: 'vip', label: 'VIP', min: 20, icon: '👑', color: '#b45309' },
-  { key: 'imperial', label: 'Imperial', min: 60, icon: '💎', color: '#7c3aed' },
+  { key: 'socio', label: 'Sócio', min: 1, icon: 'handshake', color: '#00bcd4' },
+  { key: 'platinum', label: 'Platinum', min: 10, icon: 'star', color: '#64748b' },
+  { key: 'vip', label: 'VIP', min: 20, icon: 'crown', color: '#b45309' },
+  { key: 'imperial', label: 'Imperial', min: 60, icon: 'gem', color: '#7c3aed' },
 ];
 
 const methodLabels: Record<string, string> = {
-  pix: '⚡ PIX (Aprovação Imediata)',
-  credit: '💳 Cartão de Crédito',
-  boleto: '📄 Boleto Bancário',
+  pix: 'PIX — Aprovação Imediata',
+  credit: 'Cartão de Crédito',
+  boleto: 'Boleto Bancário',
 };
 
 // ─── Computed ─────────────────────────────────────────────────────────────────
@@ -210,13 +217,17 @@ function formatCurrency(value: number): string {
       transform: translateY(-2px);
     }
 
-    &--investment { border-color: $primary-200; background: $primary-50; }
-    &--level { border-color: $accent-200; background: $accent-50; }
-    &--earnings { border-color: $secondary-200; background: $secondary-50; }
+    &--investment { border-color: $neutral-200; background: white; }
+    &--level { border-color: $neutral-200; background: white; }
+    &--earnings { border-color: $neutral-200; background: white; }
 
     &__icon {
-      font-size: 1.5rem;
+      font-size: 1.4rem;
+      color: $neutral-500;
     }
+
+    &--investment &__icon { color: $primary-600; }
+    &--earnings &__icon { color: $success-dark; }
 
     &__body {
       @include flex-column;
