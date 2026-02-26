@@ -123,15 +123,39 @@
             <span class="config-item__help">Percentual sobre 5 níveis qualificados para título Diamante</span>
           </div>
 
-          <div class="config-item">
+          <div class="config-item config-item--full">
             <label>Dia de Fechamento</label>
-            <DsInput
-              v-model.number="config.closingDay"
-              type="number"
-              min="1"
-              max="28"
-            />
-            <span class="config-item__help">Dia do mês para fechamento dos rendimentos</span>
+            <div class="closing-day-control">
+              <div class="closing-day-modes">
+                <label class="radio-item" :class="{ 'radio-item--active': config.closingDayMode === 'fixed' }">
+                  <input v-model="config.closingDayMode" type="radio" value="fixed" />
+                  <span>Dia fixo do mês</span>
+                </label>
+                <label class="radio-item" :class="{ 'radio-item--active': config.closingDayMode === 'last_day' }">
+                  <input v-model="config.closingDayMode" type="radio" value="last_day" />
+                  <span>Último dia do mês</span>
+                </label>
+                <label class="radio-item" :class="{ 'radio-item--active': config.closingDayMode === 'first_next_month' }">
+                  <input v-model="config.closingDayMode" type="radio" value="first_next_month" />
+                  <span>1º dia do próximo mês</span>
+                </label>
+              </div>
+              <div v-if="config.closingDayMode === 'fixed'" class="closing-day-input">
+                <DsInput
+                  v-model.number="config.closingDay"
+                  type="number"
+                  min="1"
+                  max="31"
+                  placeholder="Ex: 25"
+                />
+                <span class="closing-day-input__note">Quando o mês tiver menos dias que o configurado, será usado o último dia disponível automaticamente.</span>
+              </div>
+              <div class="closing-day-preview">
+                <span class="closing-day-preview__label">Exemplo com o mês atual:</span>
+                <strong class="closing-day-preview__value">{{ closingDayPreview }}</strong>
+              </div>
+            </div>
+            <span class="config-item__help">Define quando o ciclo mensal encerra para contabilizar rendimentos</span>
           </div>
 
           <div class="config-item">
@@ -194,6 +218,60 @@
       </DsCard>
     </section>
 
+    <!-- Title Movement Rules -->
+    <section class="config-section">
+      <DsCard>
+        <template #header>
+          <h2>🎯 Movimentação Mínima por Título</h2>
+          <p class="section-subtitle">Para bater um título no mês, a rede do usuário precisa movimentar um valor mínimo até o nível configurado.</p>
+        </template>
+
+        <div class="movement-rules">
+          <div
+            v-for="(level, index) in config.careerLevels"
+            :key="level.title"
+            class="movement-rule-row"
+          >
+            <div class="movement-rule-row__title">
+              <span>{{ careerData[index]?.icon }}</span>
+              <strong :style="{ color: careerData[index]?.color }">{{ level.title }}</strong>
+            </div>
+
+            <div class="movement-rule-row__fields">
+              <div class="movement-rule-field">
+                <label>Movimentação mínima da rede (R$)</label>
+                <DsInput
+                  v-model.number="level.minNetworkMovement"
+                  type="number"
+                  min="0"
+                  step="100"
+                  placeholder="0 = sem exigência"
+                />
+              </div>
+              <div class="movement-rule-field">
+                <label>Níveis de rede considerados</label>
+                <DsInput
+                  v-model.number="level.networkLevelsDepth"
+                  type="number"
+                  min="1"
+                  max="10"
+                  placeholder="Ex: 3"
+                />
+              </div>
+            </div>
+
+            <div v-if="level.minNetworkMovement > 0" class="movement-rule-row__summary">
+              Rede até o <strong>{{ level.networkLevelsDepth }}º nível</strong> precisa movimentar
+              <strong>{{ formatCurrency(level.minNetworkMovement) }}</strong> no mês.
+            </div>
+            <div v-else class="movement-rule-row__summary movement-rule-row__summary--none">
+              Sem exigência de movimentação para este título.
+            </div>
+          </div>
+        </div>
+      </DsCard>
+    </section>
+
     <!-- Quota Settings -->
     <section class="config-section">
       <DsCard>
@@ -246,61 +324,11 @@
       </DsCard>
     </section>
 
-    <!-- Payment Settings -->
-    <section class="config-section">
-      <DsCard>
-        <template #header>
-          <h2>💳 Pagamentos</h2>
-        </template>
-
-        <div class="config-grid">
-          <div class="config-item">
-            <label>Valor Mínimo para Saque (R$)</label>
-            <DsInput
-              v-model.number="config.minWithdrawal"
-              type="number"
-              min="0"
-            />
-            <span class="config-item__help">Valor mínimo para solicitar saque</span>
-          </div>
-
-          <div class="config-item">
-            <label>Taxa de Saque (%)</label>
-            <DsInput
-              v-model.number="config.withdrawalFee"
-              type="number"
-              min="0"
-              max="100"
-              step="0.1"
-            />
-            <span class="config-item__help">Taxa cobrada sobre saques</span>
-          </div>
-
-          <div class="config-item config-item--full">
-            <label>Métodos de Pagamento Aceitos</label>
-            <div class="payment-methods">
-              <label class="checkbox-item">
-                <input v-model="config.paymentMethods" type="checkbox" value="pix" />
-                <span>PIX</span>
-              </label>
-              <label class="checkbox-item">
-                <input v-model="config.paymentMethods" type="checkbox" value="boleto" />
-                <span>Boleto</span>
-              </label>
-              <label class="checkbox-item">
-                <input v-model="config.paymentMethods" type="checkbox" value="credit" />
-                <span>Cartão de Crédito</span>
-              </label>
-            </div>
-          </div>
-        </div>
-      </DsCard>
-    </section>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue';
+import { ref, reactive, computed, onMounted } from 'vue';
 import {
   DsCard,
   DsButton,
@@ -326,14 +354,15 @@ const config = reactive({
   leadershipBonusOuro: 1,
   leadershipBonusDiamante: 2,
   closingDay: 25,
+  closingDayMode: 'fixed' as 'fixed' | 'last_day' | 'first_next_month',
   paymentDay: 5,
 
   // Career Levels (network-based)
   careerLevels: [
-    { title: 'Bronze', requirement: '2 pessoas ativas', repurchaseLevels: 1, teamLevels: 2, leadershipPercent: 0 },
-    { title: 'Prata', requirement: '1 indicado Bronze', repurchaseLevels: 2, teamLevels: 3, leadershipPercent: 0 },
-    { title: 'Ouro', requirement: '2 Bronzes linhas diferentes', repurchaseLevels: 4, teamLevels: 4, leadershipPercent: 1 },
-    { title: 'Diamante', requirement: '3 Bronzes linhas diferentes', repurchaseLevels: 6, teamLevels: 5, leadershipPercent: 2 },
+    { title: 'Bronze',   requirement: '2 pessoas ativas',          repurchaseLevels: 1, teamLevels: 2, leadershipPercent: 0, minNetworkMovement: 0,    networkLevelsDepth: 2 },
+    { title: 'Prata',    requirement: '1 indicado Bronze',          repurchaseLevels: 2, teamLevels: 3, leadershipPercent: 0, minNetworkMovement: 5000, networkLevelsDepth: 3 },
+    { title: 'Ouro',     requirement: '2 Bronzes linhas diferentes',repurchaseLevels: 4, teamLevels: 4, leadershipPercent: 1, minNetworkMovement: 0,    networkLevelsDepth: 4 },
+    { title: 'Diamante', requirement: '3 Bronzes linhas diferentes',repurchaseLevels: 6, teamLevels: 5, leadershipPercent: 2, minNetworkMovement: 0,    networkLevelsDepth: 5 },
   ],
 
   // Quotas
@@ -341,11 +370,6 @@ const config = reactive({
   minQuotas: 1,
   maxQuotasPerUser: 1000,
   totalQuotasAvailable: 100000,
-
-  // Payments
-  minWithdrawal: 100,
-  withdrawalFee: 0,
-  paymentMethods: ['pix', 'boleto', 'credit'] as string[],
 });
 
 const careerColumns = [
@@ -357,11 +381,38 @@ const careerColumns = [
 ];
 
 const careerData = [
-  { title: 'Bronze', icon: '🥉', color: '#CD7F32' },
-  { title: 'Prata', icon: '🥈', color: '#C0C0C0' },
-  { title: 'Ouro', icon: '🥇', color: '#FFD700' },
-  { title: 'Diamante', icon: '💎', color: '#00BCD4' },
+  { title: 'Bronze',   icon: '🥉', color: '#CD7F32' },
+  { title: 'Prata',   icon: '🥈', color: '#C0C0C0' },
+  { title: 'Ouro',    icon: '🥇', color: '#FFD700' },
+  { title: 'Diamante',icon: '💎', color: '#00BCD4' },
 ];
+
+// Computed
+const closingDayPreview = computed(() => {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth(); // 0-indexed
+
+  if (config.closingDayMode === 'last_day') {
+    const lastDay = new Date(year, month + 1, 0).getDate();
+    return `${String(lastDay).padStart(2, '0')}/${String(month + 1).padStart(2, '0')}/${year} (último dia do mês)`;
+  }
+
+  if (config.closingDayMode === 'first_next_month') {
+    const nextMonth = month + 2 > 12 ? 1 : month + 2;
+    const nextYear = month + 2 > 12 ? year + 1 : year;
+    return `01/${String(nextMonth).padStart(2, '0')}/${nextYear} (1º dia do próximo mês)`;
+  }
+
+  // fixed: clamp to last day of month if day > days in month
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const effectiveDay = Math.min(config.closingDay, daysInMonth);
+  return `${String(effectiveDay).padStart(2, '0')}/${String(month + 1).padStart(2, '0')}/${year}`;
+});
+
+function formatCurrency(value: number): string {
+  return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
+}
 
 // Methods
 async function saveConfig() {
@@ -373,7 +424,6 @@ async function saveConfig() {
 
 function resetDefaults() {
   if (confirm('Tem certeza que deseja restaurar as configurações padrão?')) {
-    // Reset to hardcoded defaults
     config.firstPurchaseBonus = 10;
     config.repurchaseBonusL1 = 5;
     config.repurchaseBonusL2to6 = 2;
@@ -381,9 +431,16 @@ function resetDefaults() {
     config.dividendPool = 20;
     config.leadershipBonusOuro = 1;
     config.leadershipBonusDiamante = 2;
+    config.closingDay = 25;
+    config.closingDayMode = 'fixed';
+    config.paymentDay = 5;
     config.quotaValue = 2500;
     config.minQuotas = 1;
     config.maxQuotasPerUser = 1000;
+    config.totalQuotasAvailable = 100000;
+    config.careerLevels.forEach(l => {
+      l.minNetworkMovement = 0;
+    });
   }
 }
 
@@ -480,20 +537,126 @@ onMounted(async () => {
   gap: $spacing-2;
 }
 
-.payment-methods {
-  display: flex;
-  gap: $spacing-4;
-  flex-wrap: wrap;
+.closing-day-control {
+  @include flex-column;
+  gap: $spacing-3;
 }
 
-.checkbox-item {
+.closing-day-modes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $spacing-2;
+}
+
+.radio-item {
   display: flex;
   align-items: center;
   gap: $spacing-2;
   cursor: pointer;
+  padding: $spacing-2 $spacing-3;
+  border: 1px solid $border-default;
+  border-radius: 8px;
+  transition: border-color 0.15s, background 0.15s;
 
-  input {
-    accent-color: $primary-500;
+  &--active {
+    border-color: $primary-500;
+    background: rgba($primary-500, 0.06);
+  }
+
+  input { accent-color: $primary-500; }
+}
+
+.closing-day-input {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-2;
+  max-width: 280px;
+
+  &__note {
+    font-size: 0.75rem;
+    color: $text-tertiary;
+    line-height: 1.5;
+  }
+}
+
+.closing-day-preview {
+  display: inline-flex;
+  align-items: center;
+  gap: $spacing-2;
+  padding: $spacing-2 $spacing-3;
+  background: rgba($primary-500, 0.05);
+  border-radius: 6px;
+  font-size: 0.875rem;
+  color: $text-secondary;
+
+  &__label { opacity: 0.75; }
+  &__value { color: $primary-600; }
+}
+
+.section-subtitle {
+  font-size: 0.8125rem;
+  color: $text-tertiary;
+  margin: $spacing-1 0 0;
+}
+
+.movement-rules {
+  @include flex-column;
+  gap: $spacing-4;
+}
+
+.movement-rule-row {
+  display: grid;
+  grid-template-columns: 160px 1fr;
+  grid-template-rows: auto auto;
+  gap: $spacing-2 $spacing-6;
+  padding: $spacing-4;
+  background: $bg-tertiary;
+  border-radius: 10px;
+  border: 1px solid $border-default;
+
+  @media (max-width: 640px) {
+    grid-template-columns: 1fr;
+  }
+
+  &__title {
+    display: flex;
+    align-items: center;
+    gap: $spacing-2;
+    font-size: 1rem;
+    align-self: center;
+  }
+
+  &__fields {
+    display: flex;
+    flex-wrap: wrap;
+    gap: $spacing-4;
+
+    .movement-rule-field {
+      @include flex-column;
+      gap: $spacing-1;
+      min-width: 200px;
+
+      label {
+        font-size: 0.75rem;
+        font-weight: 500;
+        color: $text-secondary;
+      }
+    }
+  }
+
+  &__summary {
+    grid-column: 1 / -1;
+    font-size: 0.8125rem;
+    color: $text-secondary;
+    padding: $spacing-2 $spacing-3;
+    background: rgba($primary-500, 0.05);
+    border-radius: 6px;
+
+    &--none {
+      color: $text-tertiary;
+      background: transparent;
+      padding: 0;
+    }
   }
 }
 </style>

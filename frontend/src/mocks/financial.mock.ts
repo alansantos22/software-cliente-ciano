@@ -140,14 +140,25 @@ export interface TitleRequirements {
   repurchaseLevels: number; // Quantos níveis de recompra desbloqueia
   teamLevels: number; // Quantos níveis de bônus equipe desbloqueia
   leadershipPercent: number; // % de liderança (0 para bronze/prata)
+  /**
+   * Movimentação mínima (R$) que a rede do usuário precisa gerar no mês
+   * para que ele CONQUISTE este título naquele ciclo.
+   * null = sem exigência de movimentação.
+   */
+  minNetworkMovement: number | null;
+  /**
+   * Até qual nível da rede a movimentação é contabilizada.
+   * null = sem exigência.
+   */
+  networkLevelsDepth: number | null;
 }
 
 export const mockTitleRequirements: TitleRequirements[] = [
-  { title: 'none', requirement: 'Sem título', repurchaseLevels: 0, teamLevels: 0, leadershipPercent: 0 },
-  { title: 'bronze', requirement: '2 pessoas ativas na rede', repurchaseLevels: 1, teamLevels: 2, leadershipPercent: 0 },
-  { title: 'silver', requirement: 'Ajudar 1 indicado a virar Bronze', repurchaseLevels: 2, teamLevels: 3, leadershipPercent: 0 },
-  { title: 'gold', requirement: '2 Bronzes em linhas diferentes', repurchaseLevels: 4, teamLevels: 4, leadershipPercent: 1 },
-  { title: 'diamond', requirement: '3 Bronzes em linhas diferentes', repurchaseLevels: 6, teamLevels: 5, leadershipPercent: 2 },
+  { title: 'none',    requirement: 'Sem título',                       repurchaseLevels: 0, teamLevels: 0, leadershipPercent: 0, minNetworkMovement: null, networkLevelsDepth: null },
+  { title: 'bronze',  requirement: '2 pessoas ativas na rede',         repurchaseLevels: 1, teamLevels: 2, leadershipPercent: 0, minNetworkMovement: null, networkLevelsDepth: null },
+  { title: 'silver',  requirement: 'Ajudar 1 indicado a virar Bronze', repurchaseLevels: 2, teamLevels: 3, leadershipPercent: 0, minNetworkMovement: 5000, networkLevelsDepth: 3    },
+  { title: 'gold',    requirement: '2 Bronzes em linhas diferentes',   repurchaseLevels: 4, teamLevels: 4, leadershipPercent: 1, minNetworkMovement: null, networkLevelsDepth: null },
+  { title: 'diamond', requirement: '3 Bronzes em linhas diferentes',   repurchaseLevels: 6, teamLevels: 5, leadershipPercent: 2, minNetworkMovement: null, networkLevelsDepth: null },
 ];
 
 // Partner level requirements
