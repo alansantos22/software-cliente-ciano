@@ -5,7 +5,9 @@
       :class="['ds-copy-button', { 'ds-copy-button--copied': copied }]"
       @click="copy"
     >
-      <span class="ds-copy-button__icon">{{ copied ? '✓' : '📋' }}</span>
+      <span class="ds-copy-button__icon">
+        <font-awesome-icon :icon="copied ? 'check' : 'copy'" />
+      </span>
       <span v-if="showLabel" class="ds-copy-button__label">
         {{ copied ? 'Copiado!' : label }}
       </span>

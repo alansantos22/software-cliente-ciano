@@ -23,7 +23,7 @@
             <span class="testimonial-card__detail">{{ item.detail }}</span>
           </div>
           <div class="testimonial-card__badge" :style="{ background: item.levelColor }">
-            {{ item.level }}
+            <font-awesome-icon :icon="item.levelIcon" /> {{ item.level }}
           </div>
         </div>
         <div class="testimonial-card__stat">
@@ -55,7 +55,8 @@ const testimonials = [
     name: 'João S.',
     initials: 'JS',
     detail: '18 cotas • Sócio há 8 meses',
-    level: '🥇 Ouro',
+    level: 'Ouro',
+    levelIcon: 'medal',
     levelColor: '#D97706',
     statValue: 'R$ 4.200',
     statLabel: 'ganhos no último mês',
@@ -66,7 +67,8 @@ const testimonials = [
     name: 'Ana C.',
     initials: 'AC',
     detail: '15 cotas • Sócio há 5 meses',
-    level: '⭐ Platinum',
+    level: 'Platinum',
+    levelIcon: 'star',
     levelColor: '#9BA3AF',
     statValue: '5 diretos',
     statLabel: 'indicados ativos',
@@ -77,7 +79,8 @@ const testimonials = [
     name: 'Marcos R.',
     initials: 'MR',
     detail: '50 cotas • Sócio há 14 meses',
-    level: '💎 Diamante',
+    level: 'Diamante',
+    levelIcon: 'gem',
     levelColor: '#38BDF8',
     statValue: 'R$ 12.500',
     statLabel: 'ganhos no último mês',

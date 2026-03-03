@@ -1,7 +1,7 @@
 <template>
   <div :class="['ds-alert', `ds-alert--${type}`]">
     <span class="ds-alert__icon">
-      {{ icon }}
+      <font-awesome-icon :icon="icon" />
     </span>
     <div class="ds-alert__content">
       <strong v-if="title" class="ds-alert__title">{{ title }}</strong>
@@ -14,7 +14,7 @@
       aria-label="Fechar"
       @click="emit('dismiss')"
     >
-      ✕
+      <font-awesome-icon icon="xmark" />
     </button>
   </div>
 </template>
@@ -38,11 +38,11 @@ const emit = defineEmits<{
 }>();
 
 const icon = computed(() => {
-  const icons = {
-    info: 'ℹ️',
-    success: '✅',
-    warning: '⚠️',
-    error: '❌',
+  const icons: Record<string, string> = {
+    info: 'circle-info',
+    success: 'circle-check',
+    warning: 'triangle-exclamation',
+    error: 'circle-xmark',
   };
   return icons[props.type];
 });

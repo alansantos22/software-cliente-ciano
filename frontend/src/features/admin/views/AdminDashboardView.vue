@@ -39,33 +39,37 @@
         :value="kpis.monthRevenue"
         :is-currency="true"
         :trend="kpis.monthRevenueTrend"
-        icon="💰"
+        icon="dollar-sign"
+        icon-color="#16a34a"
         subtitle="Mês atual vs. mês anterior"
       />
       <DsStatCard
         label="Usuários Ativos"
         :value="`${kpis.activeUsers} (${kpis.retentionRate}%)`"
-        icon="✅"
+        icon="circle-check"
+        icon-color="#0284c7"
         subtitle="Taxa de retenção da base"
       />
       <DsStatCard
         label="Cotas Este Mês"
         :value="String(kpis.monthQuotas)"
         :trend="kpis.monthQuotasTrend"
-        icon="📊"
+        icon="chart-pie"
+        icon-color="#0891b2"
         subtitle="Novas cotas vendidas"
       />
       <DsStatCard
         label="Histórico Total"
         :value="kpis.totalRevenue"
         :is-currency="true"
-        icon="🏦"
+        icon="landmark"
+        icon-color="#7c3aed"
         subtitle="Desde o início da operação"
       />
       <!-- Caixa de Dividendos Prometido (card especial âmbar) -->
       <div class="kpi-dividend" role="region" aria-label="Caixa de dividendos prometido">
         <div class="kpi-dividend__header">
-          <span class="kpi-dividend__icon">💸</span>
+          <span class="kpi-dividend__icon"><font-awesome-icon icon="money-bill-transfer" /></span>
           <span class="kpi-dividend__label">Caixa de Dividendos</span>
         </div>
         <div class="kpi-dividend__value">{{ formatCurrency(kpis.dividendPool) }}</div>
@@ -152,7 +156,7 @@
         </template>
         <div class="title-distribution">
           <div v-for="title in titleDistribution" :key="title.name" class="title-bar">
-            <span class="title-bar__icon-name">{{ title.icon }} {{ title.name }}</span>
+            <span class="title-bar__icon-name"><font-awesome-icon :icon="title.icon" :style="{ color: title.color }" /> {{ title.name }}</span>
             <div class="title-bar__progress">
               <div class="title-bar__fill" :style="{ width: title.percentage + '%', background: title.color }" />
             </div>
@@ -165,7 +169,12 @@
         <template #header>
           <h2>CRM de Usuários</h2>
           <div class="crm-header-meta">
-            <span class="crm-header-meta__hint">🐋 Baleias · 🟢 Ativo · 🟡 Em risco · 🔴 Inativo</span>
+            <span class="crm-header-meta__hint">
+              <font-awesome-icon icon="circle" class="crm-dot crm-dot--whale" /> Baleias
+              <font-awesome-icon icon="circle" class="crm-dot crm-dot--active" /> Ativo
+              <font-awesome-icon icon="circle" class="crm-dot crm-dot--risk" /> Em risco
+              <font-awesome-icon icon="circle" class="crm-dot crm-dot--inactive" /> Inativo
+            </span>
             <RouterLink to="/admin/users" class="view-all">Ver todos →</RouterLink>
           </div>
         </template>
@@ -250,10 +259,10 @@ const dividendPoolPercent = computed(() => {
 // Title distribution
 // =====================================================
 const titleDistribution = ref([
-  { name: 'Bronze',   icon: '🥉', color: '#CD7F32', count: 0, percentage: 0 },
-  { name: 'Prata',    icon: '🥈', color: '#C0C0C0', count: 0, percentage: 0 },
-  { name: 'Ouro',     icon: '🥇', color: '#FFD700', count: 0, percentage: 0 },
-  { name: 'Diamante', icon: '💎', color: '#00BCD4', count: 0, percentage: 0 },
+  { name: 'Bronze',   icon: 'medal', color: '#CD7F32', count: 0, percentage: 0 },
+  { name: 'Prata',    icon: 'medal', color: '#C0C0C0', count: 0, percentage: 0 },
+  { name: 'Ouro',     icon: 'medal', color: '#FFD700', count: 0, percentage: 0 },
+  { name: 'Diamante', icon: 'gem',   color: '#00BCD4', count: 0, percentage: 0 },
 ]);
 
 // =====================================================

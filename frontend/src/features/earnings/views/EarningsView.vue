@@ -270,6 +270,7 @@ function getTypeIcon(rawType: string): string {
 </script>
 
 <style scoped lang="scss">
+@use 'sass:color';
 @use '@/assets/scss/colors' as *;
 @use '@/assets/scss/spacing' as *;
 @use '@/assets/scss/mixins' as *;
@@ -375,7 +376,7 @@ function getTypeIcon(rawType: string): string {
   &--teal  {
     border-left: 4px solid $accent-500;
     .summary-card__icon { color: $accent-500; opacity: 0.2; }
-    .summary-card__value { color: darken(#00bcd4, 10%); }
+    .summary-card__value { color: color.adjust(#00bcd4, $lightness: -10%); }
   }
 }
 

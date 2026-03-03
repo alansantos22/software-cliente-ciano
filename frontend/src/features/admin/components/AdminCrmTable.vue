@@ -22,7 +22,7 @@
                 <span class="crm-info__name">
                   {{ user.name }}
                   <span v-if="isWhale(user)" class="crm-info__whale" title="Investidor Baleia (LTV &gt; R$ 100k)">
-                    🐋
+                    <font-awesome-icon icon="crown" />
                   </span>
                 </span>
                 <span class="crm-info__email">{{ user.email }}</span>
@@ -84,16 +84,16 @@
                 <transition name="menu-drop">
                   <div v-if="openMenuId === user.id" class="crm-action-menu__dropdown">
                     <button class="crm-action-menu__item" @click="handleAction('extrato', user)">
-                      📄 Ver Extrato
+                      <font-awesome-icon icon="file-lines" /> Ver Extrato
                     </button>
                     <button
                       class="crm-action-menu__item crm-action-menu__item--danger"
                       @click="handleAction('bloquear', user)"
                     >
-                      🚫 Bloquear Conta
+                      <font-awesome-icon icon="ban" /> Bloquear Conta
                     </button>
                     <button class="crm-action-menu__item" @click="handleAction('mensagem', user)">
-                      💬 Enviar Mensagem
+                      <font-awesome-icon icon="comment" /> Enviar Mensagem
                     </button>
                   </div>
                 </transition>

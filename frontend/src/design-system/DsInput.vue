@@ -31,7 +31,7 @@
         class="ds-input__toggle-password"
         @click="togglePassword"
       >
-        {{ showPassword ? '🙈' : '👁️' }}
+        <font-awesome-icon :icon="showPassword ? 'eye-slash' : 'eye'" />
       </button>
 
       <span v-if="$slots.suffix" class="ds-input__suffix">

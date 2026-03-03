@@ -16,7 +16,7 @@
 
         <!-- Icon bubble -->
         <div class="tier-node__bubble" @mouseenter="activeTierIndex = idx">
-          <span class="tier-node__icon">{{ tier.icon }}</span>
+          <span class="tier-node__icon"><font-awesome-icon :icon="tier.icon" :style="{ color: tier.color }" /></span>
         </div>
 
         <!-- Label -->
@@ -29,7 +29,7 @@
         <Transition name="tier-popup">
           <div v-if="activeTierIndex === idx" class="tier-node__card">
             <div class="tier-node__card-header">
-              <span class="tier-node__card-icon">{{ tier.icon }}</span>
+              <span class="tier-node__card-icon"><font-awesome-icon :icon="tier.icon" :style="{ color: tier.color }" /></span>
               <div>
                 <strong :style="{ color: tier.color }">{{ tier.name }}</strong>
                 <p class="tier-node__card-req">{{ tier.requirement }}</p>
@@ -37,11 +37,11 @@
             </div>
             <ul class="tier-node__card-benefits">
               <li v-for="b in tier.benefits" :key="b">
-                <span class="tier-check">✓</span> {{ b }}
+                <span class="tier-check"><font-awesome-icon icon="check" /></span> {{ b }}
               </li>
             </ul>
             <div v-if="tier.perk" class="tier-node__perk">
-              {{ tier.perk }}
+              <font-awesome-icon icon="plane" /> {{ tier.perk }}
             </div>
           </div>
         </Transition>
@@ -58,7 +58,7 @@
       >
         <div class="tier-mobile__left">
           <div class="tier-mobile__bubble">
-            <span>{{ tier.icon }}</span>
+            <span><font-awesome-icon :icon="tier.icon" :style="{ color: tier.color }" /></span>
           </div>
           <div v-if="idx < tiers.length - 1" class="tier-mobile__line" />
         </div>
@@ -66,9 +66,9 @@
           <h4 :style="{ color: tier.color }">{{ tier.name }}</h4>
           <p class="tier-mobile__req">{{ tier.requirement }}</p>
           <ul>
-            <li v-for="b in tier.benefits" :key="b">✓ {{ b }}</li>
+            <li v-for="b in tier.benefits" :key="b"><font-awesome-icon icon="check" /> {{ b }}</li>
           </ul>
-          <div v-if="tier.perk" class="tier-mobile__perk">{{ tier.perk }}</div>
+          <div v-if="tier.perk" class="tier-mobile__perk"><font-awesome-icon icon="plane" /> {{ tier.perk }}</div>
         </div>
       </div>
     </div>
@@ -83,7 +83,7 @@ const activeTierIndex = ref(0);
 const tiers = [
   {
     name: 'Bronze',
-    icon: '🥉',
+    icon: 'medal',
     color: '#CD7F32',
     miniReq: '2 ativos',
     requirement: '2 pessoas ativas na sua rede',
@@ -96,7 +96,7 @@ const tiers = [
   },
   {
     name: 'Prata',
-    icon: '🥈',
+    icon: 'shield-halved',
     color: '#9BA3AF',
     miniReq: '1 Bronze',
     requirement: 'Ajudar 1 indicado a virar Bronze',
@@ -109,7 +109,7 @@ const tiers = [
   },
   {
     name: 'Ouro',
-    icon: '🥇',
+    icon: 'trophy',
     color: '#D97706',
     miniReq: '2 Bronzes',
     requirement: '2 Bronzes em linhas diferentes',
@@ -123,7 +123,7 @@ const tiers = [
   },
   {
     name: 'Diamante',
-    icon: '💎',
+    icon: 'gem',
     color: '#38BDF8',
     miniReq: '3 Bronzes',
     requirement: '3 Bronzes em linhas diferentes',
@@ -133,7 +133,7 @@ const tiers = [
       'Bônus liderança: 2% sobre 5 níveis qualificados',
       'Comissão primeira compra 10%',
     ],
-    perk: '✈️ Máximo de profundidade desbloqueado',
+    perk: 'Máximo de profundidade desbloqueado',
   },
 ];
 </script>
@@ -202,17 +202,18 @@ const tiers = [
     width: 64px;
     height: 64px;
     border-radius: 50%;
-    background: $bg-primary;
-    border: 3px solid $border-light;
+    background: color-mix(in srgb, var(--color) 12%, $bg-primary);
+    border: 3px solid color-mix(in srgb, var(--color) 40%, $border-light);
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 1.75rem;
-    transition: border-color 0.25s, transform 0.25s, box-shadow 0.25s;
+    transition: border-color 0.25s, transform 0.25s, box-shadow 0.25s, background 0.25s;
 
     .tier-node:hover &,
     .tier-node--active & {
       border-color: var(--color);
+      background: color-mix(in srgb, var(--color) 22%, $bg-primary);
       transform: scale(1.15);
       box-shadow: 0 0 0 6px color-mix(in srgb, var(--color) 15%, transparent);
     }
@@ -337,7 +338,7 @@ const tiers = [
     align-items: center;
     justify-content: center;
     font-size: 1.5rem;
-    background: $bg-primary;
+    background: color-mix(in srgb, var(--color) 14%, $bg-primary);
     flex-shrink: 0;
   }
 

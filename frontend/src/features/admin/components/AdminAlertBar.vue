@@ -2,7 +2,9 @@
   <transition name="alert-slide">
     <div v-if="!dismissed" class="admin-alert-bar" :class="`admin-alert-bar--${urgency}`" role="alert">
       <div class="admin-alert-bar__inner">
-        <span class="admin-alert-bar__icon" aria-hidden="true">{{ urgencyIcon }}</span>
+        <span class="admin-alert-bar__icon" aria-hidden="true">
+          <font-awesome-icon :icon="urgencyIcon" />
+        </span>
         <p class="admin-alert-bar__message">
           O ciclo de pagamento de <strong>{{ referenceMonthLabel }}</strong>
           totaliza <strong>{{ formatCurrency(total) }}</strong>
@@ -27,7 +29,7 @@
           aria-label="Fechar alerta"
           title="Fechar"
         >
-          ✕
+          <font-awesome-icon icon="xmark" />
         </button>
       </div>
     </div>
@@ -74,9 +76,9 @@ const urgency = computed(() => {
 });
 
 const urgencyIcon = computed(() => {
-  if (urgency.value === 'overdue') return '🔴';
-  if (urgency.value === 'urgent') return '🟡';
-  return '📅';
+  if (urgency.value === 'overdue') return 'circle-xmark';
+  if (urgency.value === 'urgent') return 'triangle-exclamation';
+  return 'calendar-days';
 });
 
 function formatCurrency(value: number): string {

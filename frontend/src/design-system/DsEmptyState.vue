@@ -1,7 +1,9 @@
 <template>
   <div class="ds-empty-state">
     <div class="ds-empty-state__icon">
-      <slot name="icon">{{ icon || '📭' }}</slot>
+      <slot name="icon">
+        <font-awesome-icon :icon="icon || 'inbox'" />
+      </slot>
     </div>
 
     <h3 class="ds-empty-state__title">{{ title }}</h3>

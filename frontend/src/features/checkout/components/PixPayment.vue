@@ -44,7 +44,7 @@
           <!-- Paid state overlay -->
           <Transition name="paid-reveal">
             <div v-if="isPaid" class="pix-payment__paid-overlay">
-              <div class="paid-check">✓</div>
+              <div class="paid-check"><font-awesome-icon icon="check" /></div>
               <p>Pagamento confirmado!</p>
             </div>
           </Transition>

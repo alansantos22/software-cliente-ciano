@@ -94,7 +94,7 @@
           :disabled="isReferralLocked"
         />
         <p v-if="isReferralLocked" class="register-form__referral-hint">
-          🌟 Você foi convidado por um patrocinador Ciano.
+          <font-awesome-icon icon="star" /> Você foi convidado por um patrocinador Ciano.
         </p>
 
         <DsButton

@@ -14,7 +14,7 @@
               aria-label="Fechar"
               @click="close"
             >
-              ✕
+              <font-awesome-icon icon="xmark" />
             </button>
           </header>
 

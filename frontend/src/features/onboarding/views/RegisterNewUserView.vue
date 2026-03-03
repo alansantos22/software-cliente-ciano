@@ -1,7 +1,7 @@
 <template>
   <div class="register-new-user-view">
     <h1>{{ t('onboarding.registerMember') }}</h1>
-    <p class="placeholder">🚧 Cadastro de Membro em construção - Etapa 2 do TODO</p>
+    <p class="placeholder"><font-awesome-icon icon="wrench" /> Cadastro de Membro em construção - Etapa 2 do TODO</p>
   </div>
 </template>
 

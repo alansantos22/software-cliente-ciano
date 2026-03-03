@@ -1,49 +1,61 @@
 <template>
   <div class="admin-payouts-view">
-    <!-- Header -->
+
+    <!-- ══════════════════════════════════════════════════════════
+         CABEÇALHO
+    ══════════════════════════════════════════════════════════ -->
     <header class="admin-payouts-view__header">
       <div>
-        <h1>Gerenciamento de Pagamentos</h1>
-        <p class="admin-payouts-view__subtitle">Processe e acompanhe os pagamentos aos cotistas</p>
-      </div>
-      <div class="admin-payouts-view__actions">
-        <DsButton variant="outline" @click="exportPayouts">
-          📥 Exportar
-        </DsButton>
-        <DsButton variant="primary" :disabled="selectedPayouts.length === 0" @click="processSelected">
-          Processar Selecionados ({{ selectedPayouts.length }})
-        </DsButton>
+        <h1>Fechamento de Folha de Pagamento</h1>
+        <p class="admin-payouts-view__subtitle">
+          Calcule e aprove a distribuição mensal de dividendos para os cotistas
+        </p>
       </div>
     </header>
 
-    <!-- Lançamento de Lucro do Período -->
-    <section class="admin-payouts-view__profit-entry">
-      <DsCard>
+    <!-- ══════════════════════════════════════════════════════════
+         ETAPA 1 — GATILHO MENSAL
+         Sempre visível no topo. Bloqueado se o mês já foi processado.
+    ══════════════════════════════════════════════════════════ -->
+    <section class="admin-payouts-view__trigger">
+      <DsCard class="trigger-card">
         <template #header>
           <div>
-            <h2>📋 Lançamento de Lucro do Período</h2>
-            <p class="profit-entry__subtitle">Insira o lucro líquido do período para calcular automaticamente o valor a distribuir para cada cotista.</p>
+            <h2 class="trigger-card__title"><font-awesome-icon icon="clipboard-list" /> Etapa 1 — Lançamento do Lucro</h2>
+            <p class="trigger-card__subtitle">
+              Selecione o mês de competência, informe o lucro líquido e visualize como os
+              dividendos serão distribuídos entre os cotistas antes de aprovar.
+            </p>
           </div>
         </template>
 
+        <!-- Alerta: mês já processado -->
+        <DsAlert v-if="isMonthAlreadyProcessed" type="warning" class="trigger-card__lock-alert">
+          <font-awesome-icon icon="triangle-exclamation" /> A distribuição de <strong>{{ formatMonthLabel(profitMonth) }}</strong> já foi
+          processada. Apenas operações de pagamento na lista abaixo estão liberadas.
+        </DsAlert>
+
         <div class="profit-entry-form">
-          <div class="profit-entry-form__field">
-            <label>Mês de Referência</label>
-            <DsMonthPicker v-model="profitMonth" />
+          <div class="profit-entry-form__fields">
+            <div class="profit-entry-form__field">
+              <label>Mês de Referência</label>
+              <DsMonthPicker v-model="profitMonth" />
+            </div>
+
+            <div class="profit-entry-form__field">
+              <label>Lucro Líquido do Período (R$)</label>
+              <DsInput
+                v-model.number="netProfit"
+                type="number"
+                min="0"
+                step="100"
+                placeholder="Ex: 150.000,00"
+                :disabled="isMonthAlreadyProcessed"
+              />
+            </div>
           </div>
 
-          <div class="profit-entry-form__field">
-            <label>Lucro Líquido do Período (R$)</label>
-            <DsInput
-              v-model.number="netProfit"
-              type="number"
-              min="0"
-              step="100"
-              placeholder="Ex: 150000"
-            />
-          </div>
-
-          <div class="profit-entry-form__preview">
+          <div v-if="!isMonthAlreadyProcessed" class="profit-entry-form__preview">
             <span class="profit-preview__item">
               Pool de dividendos: <strong>{{ dividendPoolPercent }}%</strong>
             </span>
@@ -57,161 +69,213 @@
           </div>
 
           <DsButton
+            v-if="!isMonthAlreadyProcessed"
             variant="primary"
+            size="lg"
             :disabled="!netProfit || netProfit <= 0"
+            class="trigger-card__cta"
             @click="calculateDistribution"
           >
-            📊 Ver Distribuição Calculada
-          </DsButton>
-        </div>
-
-        <DsAlert v-if="generationSuccess" type="success">
-          Pagamentos gerados com sucesso e adicionados à fila de pendentes!
-        </DsAlert>
-      </DsCard>
-    </section>
-
-    <!-- Stats -->
-    <section class="admin-payouts-view__stats">
-      <DsStatCard
-        label="Total Pendente"
-        :value="formatCurrency(stats.pending)"
-        icon="⏳"
-      />
-      <DsStatCard
-        label="Processando"
-        :value="formatCurrency(stats.processing)"
-        icon="🔄"
-      />
-      <DsStatCard
-        label="Pago Este Mês"
-        :value="formatCurrency(stats.paidThisMonth)"
-        icon="✅"
-      />
-      <DsStatCard
-        label="Total Histórico"
-        :value="formatCurrency(stats.totalPaid)"
-        icon="💰"
-      />
-    </section>
-
-    <!-- Filters -->
-    <section class="admin-payouts-view__filters">
-      <DsCard>
-        <div class="filters-row">
-          <DsInput
-            v-model="filters.search"
-            placeholder="Buscar por nome..."
-            type="text"
-          />
-          <DsDropdown
-            v-model="filters.status"
-            :options="statusOptions"
-            placeholder="Status"
-          />
-          <DsMonthPicker v-model="filters.month" />
-          <DsButton variant="ghost" @click="clearFilters">
-            Limpar Filtros
+            <font-awesome-icon icon="chart-pie" /> Ver Distribuição Calculada
           </DsButton>
         </div>
       </DsCard>
     </section>
 
-    <!-- Payouts Table -->
-    <section class="admin-payouts-view__table">
-      <DsCard>
-        <DsTable
-          :columns="columns"
-          :data="filteredPayouts"
-          :loading="isLoading"
-          selectable
-          @selection-change="onSelectionChange as any"
-        >
-          <template #user="{ row }">
-            <div class="user-cell">
-              <div class="user-cell__avatar">{{ getInitials(row.userName) }}</div>
-              <div class="user-cell__info">
-                <strong>{{ row.userName }}</strong>
-                <span>{{ row.userEmail }}</span>
+    <!-- ══════════════════════════════════════════════════════════
+         ETAPA 2 — PRÉVIA DA DISTRIBUIÇÃO
+         Aparece após clicar em "Ver Distribuição Calculada".
+    ══════════════════════════════════════════════════════════ -->
+    <Transition name="slide-down">
+      <section v-if="showDistribution" class="admin-payouts-view__distribution">
+        <DsCard>
+          <template #header>
+            <div>
+              <h2><font-awesome-icon icon="dollar-sign" /> Etapa 2 — Prévia da Distribuição &mdash; {{ formatMonthLabel(profitMonth) }}</h2>
+              <span class="distribution-meta">
+                Pool total: {{ formatCurrency(dividendPool) }} · {{ distributionPreview.length }} cotistas
+              </span>
+            </div>
+            <DsButton variant="primary" @click="generatePayoutsFromProfit">
+              <font-awesome-icon icon="circle-check" /> Aprovar Lote e Gerar Faturas
+            </DsButton>
+          </template>
+
+          <DsAlert v-if="generationSuccess" type="success" class="distribution-success">
+            <font-awesome-icon icon="champagne-glasses" /> Lote aprovado! As faturas foram geradas e adicionadas à fila de execução abaixo.
+          </DsAlert>
+
+          <DsTable :columns="distributionColumns" :data="distributionPreview" :loading="false">
+            <template #cell-user="{ row }">
+              <div class="user-cell">
+                <div class="user-cell__avatar">{{ getInitials(String(row.user ?? '')) }}</div>
+                <span class="user-cell__name">{{ row.user }}</span>
               </div>
-            </div>
-          </template>
-          <template #amount="{ row }">
-            <strong class="amount-cell">{{ formatCurrency(row.amount) }}</strong>
-          </template>
-          <template #status="{ row }">
-            <DsBadge :variant="getStatusVariant(row.status)">
-              {{ getStatusLabel(row.status) }}
-            </DsBadge>
-          </template>
-          <template #actions="{ row }">
-            <div class="actions-cell">
-              <DsButton
-                v-if="row.status === 'pending'"
-                variant="primary"
-                size="sm"
-                @click="processPayout(row)"
-              >
-                Processar
-              </DsButton>
-              <DsButton
-                v-if="row.status === 'processing'"
-                variant="primary"
-                size="sm"
-                @click="confirmPayout(row)"
-              >
-                Confirmar
-              </DsButton>
-              <DsButton
-                variant="ghost"
-                size="sm"
-                @click="viewDetails(row)"
-              >
-                Detalhes
-              </DsButton>
-            </div>
-          </template>
-        </DsTable>
+            </template>
+            <template #cell-amount="{ row }">
+              <strong class="amount-cell amount-cell--right">{{ formatCurrency(Number(row.amount)) }}</strong>
+            </template>
+            <template #cell-pix="{ row }">
+              <div class="pix-cell">
+                <font-awesome-icon icon="key" class="pix-cell__icon" />
+                <span class="pix-cell__key">{{ row.pix }}</span>
+                <DsCopyButton :text="String(row.pix ?? '')" />
+              </div>
+            </template>
+          </DsTable>
+        </DsCard>
+      </section>
+    </Transition>
 
-        <DsEmptyState
-          v-if="filteredPayouts.length === 0 && !isLoading"
-          icon="💸"
-          title="Nenhum pagamento encontrado"
-          description="Tente ajustar os filtros de busca"
-        />
-      </DsCard>
-    </section>
+    <!-- ══════════════════════════════════════════════════════════
+         ETAPA 3 — EXECUÇÃO DE PAGAMENTOS
+         Aparece quando há pagamentos gerados (novos ou históricos).
+    ══════════════════════════════════════════════════════════ -->
+    <Transition name="slide-down">
+      <div v-if="showExecution" class="execution-wrapper">
 
-    <!-- Distribuição Calculada -->
-    <section v-if="showDistribution" class="admin-payouts-view__distribution">
-      <DsCard>
-        <template #header>
-          <div>
-            <h2>💰 Distribuição Calculada &mdash; {{ profitMonth }}</h2>
-            <span class="distribution-meta">
-              Pool: {{ formatCurrency(dividendPool) }} · {{ distributionPreview.length }} cotistas
-            </span>
+        <!-- KPIs -->
+        <section class="admin-payouts-view__stats">
+          <DsStatCard label="Total Pendente"   :value="formatCurrency(stats.pending)"      icon="hourglass"    icon-color="#d97706" />
+          <DsStatCard label="Processando"      :value="formatCurrency(stats.processing)"   icon="rotate"      icon-color="#0284c7" />
+          <DsStatCard label="Pago Este Mês"    :value="formatCurrency(stats.paidThisMonth)" icon="circle-check" icon-color="#16a34a" />
+          <DsStatCard label="Total Histórico"  :value="formatCurrency(stats.totalPaid)"    icon="dollar-sign" icon-color="#16a34a" />
+        </section>
+
+        <!-- Controles da tabela de execução -->
+        <section class="admin-payouts-view__execution-header">
+          <div class="execution-header__title">
+            <h2><font-awesome-icon icon="bolt" /> Etapa 3 — Execução de Pagamentos</h2>
+            <p class="execution-header__subtitle">
+              Gerencie individualmente cada fatura gerada para o lote selecionado.
+            </p>
           </div>
-          <DsButton variant="primary" @click="generatePayoutsFromProfit">
-            ✅ Gerar Pagamentos
-          </DsButton>
-        </template>
+          <div class="execution-header__actions">
+            <DsButton variant="outline" @click="exportPayouts">
+              <font-awesome-icon icon="download" /> Exportar Lista
+            </DsButton>
+            <DsButton
+              variant="primary"
+              :disabled="selectedPayouts.length === 0"
+              @click="processSelected"
+            >
+              Processar Selecionados ({{ selectedPayouts.length }})
+            </DsButton>
+            <DsButton
+              variant="outline"
+              :disabled="processingPayoutsCount === 0"
+              @click="confirmAllProcessing"
+            >
+              <font-awesome-icon icon="circle-check" /> Confirmar todos ({{ processingPayoutsCount }})
+            </DsButton>
+          </div>
+        </section>
 
-        <DsTable :columns="distributionColumns" :data="distributionPreview" :loading="false">
-          <template #user="{ row }">
-            <div class="user-cell">
-              <div class="user-cell__avatar">{{ getInitials(row.user) }}</div>
-              <span class="user-cell__name">{{ row.user }}</span>
+        <!-- Filtros -->
+        <section class="admin-payouts-view__filters">
+          <DsCard>
+            <div class="filters-row">
+              <DsInput
+                v-model="filters.search"
+                placeholder="Buscar por nome..."
+                type="text"
+              />
+              <DsDropdown
+                v-model="filters.status"
+                :options="statusOptions"
+                placeholder="Status"
+              />
+              <DsMonthPicker v-model="filters.month" />
+              <DsButton variant="ghost" @click="clearFilters">
+                Limpar Filtros
+              </DsButton>
             </div>
-          </template>
-          <template #amount="{ row }">
-            <strong class="amount-cell">{{ formatCurrency(row.amount) }}</strong>
-          </template>
-        </DsTable>
-      </DsCard>
-    </section>
+          </DsCard>
+        </section>
 
-    <!-- Payout Details Modal -->
+        <!-- Tabela de execução -->
+        <section class="admin-payouts-view__table">
+          <DsCard>
+            <DsTable
+              :columns="columns"
+              :data="filteredPayouts"
+              :loading="isLoading"
+              selectable
+              @selection-change="onSelectionChange"
+            >
+              <template #cell-user="{ row }">
+                <div class="user-cell">
+                  <div class="user-cell__avatar">{{ getInitials(String(row.userName ?? '')) }}</div>
+                  <div class="user-cell__info">
+                    <strong>{{ row.userName }}</strong>
+                    <span>{{ row.pixKey }}</span>
+                  </div>
+                </div>
+              </template>
+              <template #cell-amount="{ row }">
+                <strong class="amount-cell amount-cell--right">{{ formatCurrency(Number(row.amount)) }}</strong>
+              </template>
+              <template #cell-referenceMonth="{ row }">
+                <span class="competencia-cell">{{ formatMonthLabel(String(row.referenceMonth ?? '')) }}</span>
+              </template>
+              <template #cell-status="{ row }">
+                <DsBadge :variant="getStatusVariant(String(row.status ?? ''))">
+                  {{ getStatusLabel(String(row.status ?? '')) }}
+                </DsBadge>
+              </template>
+              <template #cell-actions="{ row }">
+                <div class="actions-cell">
+                  <DsButton
+                    v-if="row.status === 'completed'"
+                    variant="ghost"
+                    size="sm"
+                    @click="downloadReceiptRow(row)"
+                  >
+                    <font-awesome-icon icon="file-lines" /> Comprovante
+                  </DsButton>
+                  <DsButton
+                    v-if="row.status === 'failed'"
+                    variant="outline"
+                    size="sm"
+                    @click="markAsPaidRow(row)"
+                  >
+                    <font-awesome-icon icon="check" /> Marcar como Pago
+                  </DsButton>
+                  <DsButton
+                    v-if="row.status === 'pending'"
+                    variant="primary"
+                    size="sm"
+                    @click="processPayoutRow(row)"
+                  >
+                    Processar
+                  </DsButton>
+                  <DsButton
+                    v-if="row.status === 'processing'"
+                    variant="primary"
+                    size="sm"
+                    @click="confirmPayoutRow(row)"
+                  >
+                    Confirmar
+                  </DsButton>
+                </div>
+              </template>
+            </DsTable>
+
+            <DsEmptyState
+              v-if="filteredPayouts.length === 0 && !isLoading"
+              icon="money-bill-wave"
+              title="Nenhum pagamento encontrado"
+              description="Tente ajustar os filtros de busca"
+            />
+          </DsCard>
+        </section>
+
+      </div>
+    </Transition>
+
+    <!-- ══════════════════════════════════════════════════════════
+         MODAL DE DETALHES
+    ══════════════════════════════════════════════════════════ -->
     <DsModal v-model="showDetailsModal" title="Detalhes do Pagamento">
       <div v-if="selectedPayout" class="payout-details">
         <div class="detail-row">
@@ -219,8 +283,8 @@
           <strong>{{ selectedPayout.userName }}</strong>
         </div>
         <div class="detail-row">
-          <span>Email/Chave:</span>
-          <strong>{{ selectedPayout.pixKey }}</strong>
+          <span>Competência:</span>
+          <strong>{{ formatMonthLabel(selectedPayout.referenceMonth) }}</strong>
         </div>
         <div class="detail-row">
           <span>Valor:</span>
@@ -240,9 +304,13 @@
             {{ getStatusLabel(selectedPayout.status) }}
           </DsBadge>
         </div>
-        <div class="detail-row">
-          <span>Solicitado em:</span>
-          <strong>{{ formatDate(selectedPayout.requestedAt) }}</strong>
+        <div v-if="selectedPayout.transactionId" class="detail-row">
+          <span>ID Transação:</span>
+          <strong>{{ selectedPayout.transactionId }}</strong>
+        </div>
+        <div v-if="selectedPayout.failureReason" class="detail-row detail-row--error">
+          <span>Motivo da Falha:</span>
+          <strong>{{ selectedPayout.failureReason }}</strong>
         </div>
       </div>
       <template #footer>
@@ -256,6 +324,7 @@
         </DsButton>
       </template>
     </DsModal>
+
   </div>
 </template>
 
@@ -267,6 +336,7 @@ import {
   DsTable,
   DsBadge,
   DsButton,
+  DsCopyButton,
   DsInput,
   DsAlert,
   DsDropdown,
@@ -274,20 +344,26 @@ import {
   DsModal,
   DsEmptyState,
 } from '@/design-system';
-import { getPendingPayouts, mockDelay, mockUsers, mockMonthlyConfigs, type PayoutRequest } from '@/mocks';
+import { mockDelay, mockUsers, mockMonthlyConfigs, type PayoutRequest } from '@/mocks';
 
-// State
-const isLoading = ref(false);
-const payouts = ref<PayoutRequest[]>([]);
+// ─── State ────────────────────────────────────────────────────
+const isLoading    = ref(false);
+const payouts      = ref<PayoutRequest[]>([]);
 const selectedPayouts = ref<string[]>([]);
-const selectedPayout = ref<PayoutRequest | null>(null);
+const selectedPayout  = ref<PayoutRequest | null>(null);
 const showDetailsModal = ref(false);
 
-// ─── Profit Entry State ───────────────────────────────────────
-const netProfit = ref<number>(0);
+// ─── Etapa 1: Gatilho ─────────────────────────────────────────
+const netProfit   = ref<number>(0);
 const profitMonth = ref<string>(new Date().toISOString().slice(0, 7));
+
+// ─── Etapa 2: Distribuição ────────────────────────────────────
 const showDistribution = ref(false);
 const generationSuccess = ref(false);
+
+// ─── Etapa 3: Execução ────────────────────────────────────────
+/** Torna verdadeiro assim que o primeiro lote é aprovado na sessão */
+const batchApproved = ref(false);
 
 const filters = ref({
   search: '',
@@ -302,39 +378,53 @@ const stats = ref({
   totalPaid: 0,
 });
 
-// Options
+// ─── Opções e Colunas ─────────────────────────────────────────
 const statusOptions = [
-  { label: 'Todos', value: '' },
-  { label: 'Pendente', value: 'pending' },
-  { label: 'Processando', value: 'processing' },
-  { label: 'Pago', value: 'paid' },
-  { label: 'Cancelado', value: 'cancelled' },
+  { label: 'Todos',        value: '' },
+  { label: 'Pendente',     value: 'pending' },
+  { label: 'Processando',  value: 'processing' },
+  { label: 'Pago',         value: 'completed' },
+  { label: 'Falha',        value: 'failed' },
+  { label: 'Cancelado',    value: 'cancelled' },
 ];
 
+/** Tabela de execução: "Competência" substitui "Solicitado" */
 const columns = [
-  { key: 'user', label: 'Usuário' },
-  { key: 'amount', label: 'Valor', align: 'right' as const, width: '120px' },
-  { key: 'type', label: 'Tipo', width: '120px' },
-  { key: 'status', label: 'Status', width: '120px' },
-  { key: 'requestedAt', label: 'Solicitado', width: '120px' },
-  { key: 'actions', label: 'Ações', width: '180px' },
+  { key: 'user',           label: 'Cotista' },
+  { key: 'amount',         label: 'Valor',        align: 'right' as const, width: '140px' },
+  { key: 'referenceMonth', label: 'Competência',  width: '120px' },
+  { key: 'status',         label: 'Status',       width: '130px' },
+  { key: 'actions',        label: 'Ações',        width: '200px' },
 ];
 
 const distributionColumns = [
   { key: 'user',   label: 'Cotista' },
-  { key: 'quotas', label: 'Cotas',   align: 'right' as const, width: '80px' },
-  { key: 'share',  label: '% do Pool', align: 'right' as const, width: '110px' },
-  { key: 'amount', label: 'A Receber', align: 'right' as const, width: '150px' },
+  { key: 'quotas', label: 'Cotas',      align: 'right' as const, width: '80px' },
+  { key: 'share',  label: '% do Pool',  align: 'right' as const, width: '110px' },
+  { key: 'amount', label: 'A Receber',  align: 'right' as const, width: '160px' },
+  // TODO (backend): pixKey virá de user.pixKey salvo no perfil do usuário
+  { key: 'pix',    label: 'Chave PIX',              width: '230px' },
 ];
 
-// Computed
+// ─── Computeds ────────────────────────────────────────────────
+
+/** Verifica se o mês selecionado já tem pagamentos gerados (prevenção de duplicata) */
+const isMonthAlreadyProcessed = computed(() =>
+  payouts.value.some(p => p.referenceMonth === profitMonth.value)
+);
+
+/** Etapa 3 é visível quando há pagamentos carregados OU quando o lote foi aprovado */
+const showExecution = computed(() =>
+  batchApproved.value || payouts.value.length > 0
+);
+
 const filteredPayouts = computed(() => {
   let result = payouts.value;
 
   if (filters.value.search) {
-    const search = filters.value.search.toLowerCase();
+    const q = filters.value.search.toLowerCase();
     result = result.filter(
-      p => p.userName.toLowerCase().includes(search) || p.pixKey.toLowerCase().includes(search)
+      p => p.userName.toLowerCase().includes(q) || p.pixKey.toLowerCase().includes(q)
     );
   }
 
@@ -342,13 +432,10 @@ const filteredPayouts = computed(() => {
     result = result.filter(p => p.status === filters.value.status);
   }
 
-  return result.map(p => ({
-    ...p,
-    requestedAt: formatDate(p.requestedAt),
-  }));
+  return result;
 });
 
-// ─── Profit Distribution Computeds ─────────────────────────────────
+// ─── Profit Distribution Computeds ───────────────────────────
 const dividendPoolPercent = computed(() => {
   const config = mockMonthlyConfigs.find(c => c.month === profitMonth.value);
   return config?.dividendPoolPercent ?? 20;
@@ -367,97 +454,113 @@ const distributionPreview = computed(() => {
   return mockUsers
     .filter(u => u.isActive && u.quotaBalance > 0)
     .map(u => ({
-      id: u.id,
-      user: u.name,
+      id:     u.id,
+      user:   u.name,
       quotas: u.quotaBalance,
-      share: ((u.quotaBalance / totalActiveQuotas.value) * 100).toFixed(2) + '%',
+      share:  ((u.quotaBalance / totalActiveQuotas.value) * 100).toFixed(2) + '%',
       amount: Math.round((u.quotaBalance / totalActiveQuotas.value) * dividendPool.value * 100) / 100,
       pixKey: u.email,
+      // TODO (backend): mapear para user.pixKey do perfil
+      pix:    u.email,
     }))
     .sort((a, b) => b.amount - a.amount);
 });
 
-// Methods
+/** Quantidade de pagamentos atualmente em status 'processing' */
+const processingPayoutsCount = computed(
+  () => payouts.value.filter(p => p.status === 'processing').length
+);
+
+// ─── Helpers ──────────────────────────────────────────────────
+
 function formatCurrency(value: number): string {
-  return new Intl.NumberFormat('pt-BR', {
-    style: 'currency',
-    currency: 'BRL',
-  }).format(value);
+  return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
 }
 
-function formatDate(date: string): string {
-  return new Date(date).toLocaleDateString('pt-BR');
+function formatMonthLabel(ym: string): string {
+  if (!ym) return '';
+  const [year, month] = ym.split('-').map(Number);
+  const names = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+  return `${names[(month ?? 1) - 1]}/${year}`;
 }
 
 function getInitials(name: string): string {
-  return name
-    .split(' ')
-    .map(n => n[0])
-    .slice(0, 2)
-    .join('')
-    .toUpperCase();
+  return name.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase();
 }
 
 function getStatusVariant(status: string): 'default' | 'success' | 'warning' | 'info' | 'primary' {
-  const variants: Record<string, 'default' | 'success' | 'warning' | 'info' | 'primary'> = {
-    pending: 'warning',
+  const map: Record<string, 'default' | 'success' | 'warning' | 'info' | 'primary'> = {
+    pending:    'warning',
     processing: 'info',
-    paid: 'success',
-    cancelled: 'default',
+    completed:  'success',
+    failed:     'default',
+    cancelled:  'default',
   };
-  return variants[status] || 'default';
+  return map[status] ?? 'default';
 }
 
 function getStatusLabel(status: string): string {
-  const labels: Record<string, string> = {
-    pending: 'Pendente',
+  const map: Record<string, string> = {
+    pending:    'Pendente',
     processing: 'Processando',
-    paid: 'Pago',
-    cancelled: 'Cancelado',
+    completed:  'Pago',
+    failed:     'Falhou',
+    cancelled:  'Cancelado',
   };
-  return labels[status] || status;
+  return map[status] ?? status;
 }
 
-function onSelectionChange(ids: string[]) {
-  selectedPayouts.value = ids;
+// ─── Ações Etapa 3 ────────────────────────────────────────────
+
+function onSelectionChange(rows: Record<string, unknown>[]) {
+  selectedPayouts.value = rows.map(r => String(r.id ?? ''));
 }
 
 function clearFilters() {
-  filters.value = {
-    search: '',
-    status: '',
-    month: new Date().toISOString().slice(0, 7),
-  };
+  filters.value = { search: '', status: '', month: new Date().toISOString().slice(0, 7) };
 }
 
 function exportPayouts() {
-  // TODO: Implement export
   alert('Exportação em desenvolvimento');
 }
 
 function processSelected() {
-  // TODO: Implement batch processing
   alert(`Processando ${selectedPayouts.value.length} pagamentos`);
 }
 
+/** Confirma TODOS os pagamentos com status 'processing' de uma vez */
+function confirmAllProcessing() {
+  payouts.value
+    .filter(p => p.status === 'processing')
+    .forEach(p => confirmPayout(p));
+  recalcStats();
+}
+
 function processPayout(payout: PayoutRequest) {
-  const index = payouts.value.findIndex(p => p.id === payout.id);
-  if (index !== -1 && payouts.value[index]) {
-    payouts.value[index].status = 'processing';
-  }
+  const idx = payouts.value.findIndex(p => p.id === payout.id);
+  if (idx !== -1 && payouts.value[idx]) payouts.value[idx].status = 'processing';
 }
 
 function confirmPayout(payout: PayoutRequest) {
-  const index = payouts.value.findIndex(p => p.id === payout.id);
-  if (index !== -1 && payouts.value[index]) {
-    payouts.value[index].status = 'completed';
-  }
+  const idx = payouts.value.findIndex(p => p.id === payout.id);
+  if (idx !== -1 && payouts.value[idx]) payouts.value[idx].status = 'completed';
 }
 
-function viewDetails(payout: PayoutRequest) {
-  selectedPayout.value = payout;
-  showDetailsModal.value = true;
+function markAsPaid(payout: PayoutRequest) {
+  const idx = payouts.value.findIndex(p => p.id === payout.id);
+  if (idx !== -1 && payouts.value[idx]) {
+    payouts.value[idx].status = 'completed';
+    payouts.value[idx].completedAt = new Date().toISOString();
+    payouts.value[idx].transactionId = `MANUAL-${Date.now()}`;
+  }
+  recalcStats();
 }
+
+function downloadReceipt(payout: PayoutRequest) {
+  alert(`Comprovante de ${formatCurrency(payout.amount)} · ID: ${payout.transactionId ?? payout.id}`);
+}
+
+// ─── Ações Etapa 1 & 2 ────────────────────────────────────────
 
 function calculateDistribution() {
   if (netProfit.value > 0) showDistribution.value = true;
@@ -465,40 +568,52 @@ function calculateDistribution() {
 
 function generatePayoutsFromProfit() {
   const newPayouts: PayoutRequest[] = distributionPreview.value.map((row, i) => ({
-    id: `auto-${Date.now()}-${i}`,
-    userId: row.id,
-    userName: row.user,
-    amount: row.amount,
-    pixKey: row.pixKey,
-    pixKeyType: 'email' as const,
-    status: 'pending' as const,
+    id:             `auto-${Date.now()}-${i}`,
+    userId:         row.id,
+    userName:       row.user,
+    amount:         row.amount,
+    pixKey:         row.pixKey,
+    pixKeyType:     'email' as const,
+    status:         'pending' as const,
     referenceMonth: profitMonth.value,
-    requestedAt: new Date().toISOString(),
-    processedAt: null,
-    completedAt: null,
-    failureReason: null,
-    transactionId: null,
+    requestedAt:    new Date().toISOString(),
+    processedAt:    null,
+    completedAt:    null,
+    failureReason:  null,
+    transactionId:  null,
   }));
+
   payouts.value = [...newPayouts, ...payouts.value];
-  stats.value.pending += distributionPreview.value.reduce((s, r) => s + r.amount, 0);
+  batchApproved.value = true;
   generationSuccess.value = true;
   setTimeout(() => { generationSuccess.value = false; }, 4000);
+  recalcStats();
 }
 
-// Load data
+// ─── Stats ────────────────────────────────────────────────────
+
+function recalcStats() {
+  stats.value = {
+    pending:      payouts.value.filter(p => p.status === 'pending').reduce((s, p) => s + p.amount, 0),
+    processing:   payouts.value.filter(p => p.status === 'processing').reduce((s, p) => s + p.amount, 0),
+    paidThisMonth: payouts.value.filter(p => p.status === 'completed').reduce((s, p) => s + p.amount, 0),
+    totalPaid:    320000,
+  };
+}
+
+// ─── Wrappers para slots do DsTable (row tipado como Record) ──────
+function processPayoutRow(row: Record<string, unknown>)  { processPayout(row as unknown as PayoutRequest); }
+function confirmPayoutRow(row: Record<string, unknown>)  { confirmPayout(row as unknown as PayoutRequest); }
+function markAsPaidRow(row: Record<string, unknown>)     { markAsPaid(row as unknown as PayoutRequest); }
+function downloadReceiptRow(row: Record<string, unknown>) { downloadReceipt(row as unknown as PayoutRequest); }
+
+// ─── Mount ────────────────────────────────────────────────────
+// Nenhum pagamento pré-existente: a lista só é populada quando o admin
+// aprova um lote no fechamento mensal. Não existem saques solicitados
+// por usuários neste sistema.
 onMounted(async () => {
   isLoading.value = true;
-  await mockDelay(500);
-
-  payouts.value = getPendingPayouts();
-
-  stats.value = {
-    pending: payouts.value.filter(p => p.status === 'pending').reduce((sum, p) => sum + p.amount, 0),
-    processing: payouts.value.filter(p => p.status === 'processing').reduce((sum, p) => sum + p.amount, 0),
-    paidThisMonth: 45000,
-    totalPaid: 320000,
-  };
-
+  await mockDelay(300);
   isLoading.value = false;
 });
 </script>
@@ -508,159 +623,95 @@ onMounted(async () => {
 @use '@/assets/scss/spacing' as *;
 @use '@/assets/scss/mixins' as *;
 
+// ─── Layout raiz ──────────────────────────────────────────────
 .admin-payouts-view {
   padding: $spacing-6;
   max-width: 1400px;
   margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-6;
 
   @media (max-width: 768px) {
     padding: $spacing-4;
+    gap: $spacing-4;
   }
 
   &__header {
-    @include flex-between;
-    flex-wrap: wrap;
-    gap: $spacing-4;
-    margin-bottom: $spacing-6;
-
     h1 {
       font-size: 1.75rem;
-      font-weight: 600;
+      font-weight: 700;
       margin-bottom: $spacing-1;
+      color: $text-primary;
     }
   }
 
   &__subtitle {
     color: $text-secondary;
     margin: 0;
-  }
-
-  &__actions {
-    display: flex;
-    gap: $spacing-3;
+    font-size: 0.95rem;
   }
 
   &__stats {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
     gap: $spacing-4;
-    margin-bottom: $spacing-6;
 
-    @media (max-width: 1024px) {
-      grid-template-columns: repeat(2, 1fr);
-    }
-
-    @media (max-width: 576px) {
-      grid-template-columns: 1fr;
-    }
+    @media (max-width: 1024px) { grid-template-columns: repeat(2, 1fr); }
+    @media (max-width: 576px)  { grid-template-columns: 1fr; }
   }
 
-  &__filters {
+}
+
+
+// ─── Etapa 1: Trigger Card ────────────────────────────────────
+.trigger-card {
+  border: 2px solid rgba($primary-500, 0.2);
+  background: linear-gradient(135deg, rgba($primary-500, 0.03) 0%, rgba($secondary-500, 0.03) 100%);
+
+  &__title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: $text-primary;
+    margin-bottom: $spacing-1;
+  }
+
+  &__subtitle {
+    font-size: 0.875rem;
+    color: $text-secondary;
+    margin: 0;
+    max-width: 640px;
+  }
+
+  &__lock-alert {
     margin-bottom: $spacing-4;
   }
 
-  &__table {
-    margin-bottom: $spacing-6;
+  &__cta {
+    align-self: flex-start;
+    min-width: 240px;
   }
 }
 
-.filters-row {
-  display: flex;
-  gap: $spacing-4;
-  flex-wrap: wrap;
-  align-items: flex-end;
-
-  > * {
-    flex: 1;
-    min-width: 150px;
-  }
-}
-
-.user-cell {
-  display: flex;
-  align-items: center;
-  gap: $spacing-3;
-
-  &__avatar {
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, $primary-500, $secondary-500);
-    color: white;
-    @include flex-center;
-    font-size: 0.75rem;
-    font-weight: 600;
-  }
-
-  &__info {
-    @include flex-column;
-    gap: 2px;
-
-    strong {
-      font-size: 0.875rem;
-    }
-
-    span {
-      font-size: 0.75rem;
-      color: $text-tertiary;
-    }
-  }
-}
-
-.amount-cell {
-  color: $success;
-}
-
-.actions-cell {
-  display: flex;
-  gap: $spacing-2;
-}
-
-.payout-details {
-  display: flex;
-  flex-direction: column;
-  gap: $spacing-3;
-}
-
-.detail-row {
-  @include flex-between;
-  padding: $spacing-2 0;
-  border-bottom: 1px solid $neutral-200;
-
-  span {
-    color: $text-secondary;
-  }
-
-  strong {
-    color: $text-primary;
-  }
-}
-
-// ─── Profit Entry Section ─────────────────────────────────────────
-.admin-payouts-view__profit-entry {
-  margin-bottom: $spacing-6;
-}
-
-.admin-payouts-view__distribution {
-  margin-bottom: $spacing-6;
-}
-
-.profit-entry__subtitle {
-  font-size: 0.875rem;
-  color: $text-secondary;
-  margin: $spacing-1 0 0;
-}
-
+// ─── Formulário ───────────────────────────────────────────────
 .profit-entry-form {
   display: flex;
   flex-direction: column;
   gap: $spacing-4;
 
+  &__fields {
+    display: flex;
+    gap: $spacing-6;
+    flex-wrap: wrap;
+  }
+
   &__field {
     display: flex;
     flex-direction: column;
     gap: $spacing-2;
-    max-width: 400px;
+    min-width: 240px;
+    max-width: 340px;
+    flex: 1;
 
     label {
       font-size: 0.875rem;
@@ -675,41 +726,199 @@ onMounted(async () => {
     gap: $spacing-3;
     flex-wrap: wrap;
     padding: $spacing-3 $spacing-4;
-    background: rgba($primary-500, 0.05);
-    border: 1px solid rgba($primary-500, 0.15);
+    background: rgba($primary-500, 0.06);
+    border: 1px solid rgba($primary-500, 0.18);
     border-radius: $radius-lg;
     font-size: 0.875rem;
     color: $text-secondary;
+    align-self: flex-start;
   }
 }
 
 .profit-preview {
   &__item {
     strong { font-weight: 700; color: $text-primary; }
-
     &--highlight strong {
       color: $success-dark;
       font-size: 1rem;
     }
   }
-
   &__separator {
     color: $text-tertiary;
     font-size: 1rem;
   }
 }
 
+// ─── Etapa 2: Distribuição ────────────────────────────────────
 .distribution-meta {
   font-size: 0.875rem;
   color: $text-secondary;
   margin-top: 2px;
 }
 
+.distribution-success {
+  margin-bottom: $spacing-4;
+}
+
+// ─── Etapa 3: Execução ────────────────────────────────────────
+.admin-payouts-view__execution-header {
+  @include flex-between;
+  flex-wrap: wrap;
+  gap: $spacing-4;
+}
+
+.execution-header {
+  &__title {
+    h2 {
+      font-size: 1.1rem;
+      font-weight: 700;
+      margin-bottom: $spacing-1;
+    }
+  }
+
+  &__subtitle {
+    font-size: 0.875rem;
+    color: $text-secondary;
+    margin: 0;
+  }
+
+  &__actions {
+    display: flex;
+    gap: $spacing-3;
+    flex-wrap: wrap;
+  }
+}
+
+// ─── Filtros ──────────────────────────────────────────────────
+.filters-row {
+  display: flex;
+  gap: $spacing-4;
+  flex-wrap: wrap;
+  align-items: flex-end;
+
+  > * {
+    flex: 1;
+    min-width: 150px;
+  }
+}
+
+// ─── Células da tabela ────────────────────────────────────────
 .user-cell {
+  display: flex;
+  align-items: center;
+  gap: $spacing-3;
+
+  &__avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, $primary-500, $secondary-500);
+    color: white;
+    @include flex-center;
+    font-size: 0.75rem;
+    font-weight: 600;
+    flex-shrink: 0;
+  }
+
+  &__info {
+    @include flex-column;
+    gap: 2px;
+    strong { font-size: 0.875rem; }
+    span { font-size: 0.75rem; color: $text-tertiary; }
+  }
+
   &__name {
     font-size: 0.875rem;
     font-weight: 500;
     color: $text-primary;
   }
+}
+
+.amount-cell {
+  color: $success-dark;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+
+  // Alinhamento a direita para comparar grandezas financeiras
+  &--right {
+    display: block;
+    text-align: right;
+    width: 100%;
+  }
+}
+
+.competencia-cell {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: $text-secondary;
+}
+
+.actions-cell {
+  display: flex;
+  gap: $spacing-2;
+  flex-wrap: wrap;
+}
+
+// ─── Célula PIX (tabela de distribuição) ─────────────────────
+.pix-cell {
+  display: flex;
+  align-items: center;
+  gap: $spacing-2;
+
+  &__icon {
+    color: $primary-400;
+    font-size: 0.75rem;
+    flex-shrink: 0;
+  }
+
+  &__key {
+    font-size: 0.8rem;
+    color: $text-secondary;
+    font-family: monospace;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 130px;
+  }
+}
+
+// ─── Modal de Detalhes ────────────────────────────────────────
+.payout-details {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-3;
+}
+
+.detail-row {
+  @include flex-between;
+  padding: $spacing-2 0;
+  border-bottom: 1px solid $neutral-200;
+
+  span { color: $text-secondary; font-size: 0.875rem; }
+  strong { color: $text-primary; }
+
+  &--error strong { color: $error; }
+}
+
+// ─── Wrapper da Etapa 3 ──────────────────────────────────────
+// Único filho direto do <Transition>; organiza as seções internas
+.execution-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-6;
+
+  @media (max-width: 768px) { gap: $spacing-4; }
+}
+
+// ─── Animações de Divulgação Progressiva ──────────────────────
+.slide-down-enter-active,
+.slide-down-leave-active {
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.slide-down-enter-from,
+.slide-down-leave-to {
+  opacity: 0;
+  transform: translateY(-12px);
 }
 </style>

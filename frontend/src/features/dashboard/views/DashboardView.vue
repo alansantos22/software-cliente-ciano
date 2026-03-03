@@ -47,7 +47,7 @@
       <section class="dashboard-view__kpis">
         <!-- Patrimônio -->
         <div class="kpi-card kpi-card--patrimony">
-          <div class="kpi-card__icon">
+          <div class="kpi-card__icon" style="color: #0891b2">
             <font-awesome-icon icon="gem" />
           </div>
           <div class="kpi-card__body">
@@ -62,7 +62,7 @@
           class="kpi-card kpi-card--wallet"
           :class="kpi.paymentWindowOpen ? 'kpi-card--highlight' : 'kpi-card--locked'"
         >
-          <div class="kpi-card__icon">
+          <div class="kpi-card__icon" :style="kpi.paymentWindowOpen ? { color: '#7c3aed' } : { color: '#9ca3af' }">
             <font-awesome-icon :icon="kpi.paymentWindowOpen ? 'wallet' : 'lock'" />
           </div>
           <div class="kpi-card__body">
@@ -104,7 +104,7 @@
           class="kpi-card kpi-card--network"
           :class="kpi.inactiveDirects > 0 ? 'kpi-card--network-warn' : ''"
         >
-          <div class="kpi-card__icon">
+          <div class="kpi-card__icon" :style="kpi.inactiveDirects > 0 ? { color: '#d97706' } : { color: '#16a34a' }">
             <font-awesome-icon icon="sitemap" />
           </div>
           <div class="kpi-card__body">
@@ -115,10 +115,10 @@
             </span>
             <span class="kpi-card__sub" :class="kpi.inactiveDirects > 0 ? 'text-warning' : ''">
               <template v-if="kpi.inactiveDirects > 0">
-                ⚠ {{ kpi.inactiveDirects }} inativo(s) — você perde bônus deles
+                <font-awesome-icon icon="triangle-exclamation" /> {{ kpi.inactiveDirects }} inativo(s) — você perde bônus deles
               </template>
               <template v-else>
-                ✅ Toda a rede está ativa
+                <font-awesome-icon icon="circle-check" /> Toda a rede está ativa
               </template>
             </span>
           </div>
@@ -200,7 +200,7 @@
 
             <DsEmptyState
               v-if="recentActivity.length === 0"
-              icon="📋"
+              icon="clipboard-list"
               title="Sem atividades"
               description="Suas atividades recentes aparecerão aqui"
             />

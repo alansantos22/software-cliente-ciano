@@ -61,7 +61,7 @@
       <div class="profit-simulator__results">
 
         <div class="sim-result-card">
-          <div class="sim-result-card__icon">📊</div>
+          <div class="sim-result-card__icon"><font-awesome-icon icon="chart-pie" /></div>
           <div class="sim-result-card__info">
             <span class="sim-result-card__label">Dividendos Mensais</span>
             <span class="sim-result-card__amount">{{ formatCurrency(monthlyDividends) }}</span>
@@ -69,7 +69,7 @@
         </div>
 
         <div class="sim-result-card">
-          <div class="sim-result-card__icon">🤝</div>
+          <div class="sim-result-card__icon"><font-awesome-icon icon="handshake" /></div>
           <div class="sim-result-card__info">
             <span class="sim-result-card__label">Bônus de Indicação</span>
             <span class="sim-result-card__amount">{{ formatCurrency(referralBonus) }}</span>
@@ -77,7 +77,7 @@
         </div>
 
         <div class="sim-result-card sim-result-card--total">
-          <div class="sim-result-card__icon">🚀</div>
+          <div class="sim-result-card__icon"><font-awesome-icon icon="rocket" /></div>
           <div class="sim-result-card__info">
             <span class="sim-result-card__label">Total Mensal Estimado</span>
             <span class="sim-result-card__amount sim-result-card__amount--big">

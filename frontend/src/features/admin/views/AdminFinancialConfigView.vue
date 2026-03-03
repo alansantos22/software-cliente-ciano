@@ -24,7 +24,7 @@
     <section class="config-section">
       <DsCard>
         <template #header>
-          <h2>💵 Comissões</h2>
+          <h2><font-awesome-icon icon="dollar-sign" /> Comissões</h2>
         </template>
 
         <div class="config-grid">
@@ -83,7 +83,7 @@
     <section class="config-section">
       <DsCard>
         <template #header>
-          <h2>📊 Dividendos e Liderança</h2>
+          <h2><font-awesome-icon icon="chart-pie" /> Dividendos e Liderança</h2>
         </template>
 
         <div class="config-grid">
@@ -176,37 +176,37 @@
     <section class="config-section">
       <DsCard>
         <template #header>
-          <h2>🏆 Plano de Carreira</h2>
+          <h2><font-awesome-icon icon="trophy" /> Plano de Carreira</h2>
         </template>
 
         <div class="career-table">
           <DsTable :columns="careerColumns" :data="careerData">
-            <template #title="{ row }">
+            <template #cell-title="{ row }">
               <div class="title-cell">
-                <span>{{ row.icon }}</span>
+                <font-awesome-icon :icon="row.icon" :style="{ color: row.color }" />
                 <strong :style="{ color: row.color }">{{ row.title }}</strong>
               </div>
             </template>
-            <template #requirement="{ index }">
-              {{ config.careerLevels[index]!.requirement }}
+            <template #cell-requirement="{ index }">
+              {{ config.careerLevels[index].requirement }}
             </template>
-            <template #repurchaseLevels="{ index }">
+            <template #cell-repurchaseLevels="{ index }">
               <DsInput
-                v-model.number="config.careerLevels[index]!.repurchaseLevels"
+                v-model.number="config.careerLevels[index].repurchaseLevels"
                 type="number"
                 min="0"
               />
             </template>
-            <template #teamLevels="{ index }">
+            <template #cell-teamLevels="{ index }">
               <DsInput
-                v-model.number="config.careerLevels[index]!.teamLevels"
+                v-model.number="config.careerLevels[index].teamLevels"
                 type="number"
                 min="0"
               />
             </template>
-            <template #leadershipPercent="{ index }">
+            <template #cell-leadershipPercent="{ index }">
               <DsInput
-                v-model.number="config.careerLevels[index]!.leadershipPercent"
+                v-model.number="config.careerLevels[index].leadershipPercent"
                 type="number"
                 min="0"
                 max="100"
@@ -222,7 +222,7 @@
     <section class="config-section">
       <DsCard>
         <template #header>
-          <h2>🎯 Movimentação Mínima por Título</h2>
+          <h2><font-awesome-icon icon="bullseye" /> Movimentação Mínima por Título</h2>
           <p class="section-subtitle">Para bater um título no mês, a rede do usuário precisa movimentar um valor mínimo até o nível configurado.</p>
         </template>
 
@@ -233,7 +233,7 @@
             class="movement-rule-row"
           >
             <div class="movement-rule-row__title">
-              <span>{{ careerData[index]?.icon }}</span>
+              <font-awesome-icon :icon="careerData[index]?.icon" :style="{ color: careerData[index]?.color }" />
               <strong :style="{ color: careerData[index]?.color }">{{ level.title }}</strong>
             </div>
 
@@ -276,7 +276,7 @@
     <section class="config-section">
       <DsCard>
         <template #header>
-          <h2>📈 Configurações de Cotas</h2>
+          <h2><font-awesome-icon icon="chart-line" /> Configurações de Cotas</h2>
         </template>
 
         <div class="config-grid">
@@ -381,10 +381,10 @@ const careerColumns = [
 ];
 
 const careerData = [
-  { title: 'Bronze',   icon: '🥉', color: '#CD7F32' },
-  { title: 'Prata',   icon: '🥈', color: '#C0C0C0' },
-  { title: 'Ouro',    icon: '🥇', color: '#FFD700' },
-  { title: 'Diamante',icon: '💎', color: '#00BCD4' },
+  { title: 'Bronze',   icon: 'medal', color: '#CD7F32' },
+  { title: 'Prata',   icon: 'medal', color: '#C0C0C0' },
+  { title: 'Ouro',    icon: 'medal', color: '#FFD700' },
+  { title: 'Diamante',icon: 'gem',   color: '#00BCD4' },
 ];
 
 // Computed

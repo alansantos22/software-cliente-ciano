@@ -54,7 +54,7 @@
         >
           <div class="step-item__connector" v-if="idx < steps.length - 1" aria-hidden="true" />
           <div class="step-item__circle">
-            <span class="step-item__icon">{{ step.icon }}</span>
+            <span class="step-item__icon"><font-awesome-icon :icon="step.icon" /></span>
             <span class="step-item__num">{{ idx + 1 }}</span>
           </div>
           <h3 class="step-item__title">{{ step.title }}</h3>
@@ -70,7 +70,7 @@
 
       <!-- Split countdown banner -->
       <div class="split-alert">
-        <span class="split-alert__icon">⏳</span>
+        <span class="split-alert__icon"><font-awesome-icon icon="hourglass" /></span>
         <span>
           O preço da cota vai subir no próximo split em:
           <strong class="split-alert__timer">{{ countdownDisplay }}</strong>
@@ -91,10 +91,10 @@
           class="pkg-card"
           :class="{ 'pkg-card--featured': pkg.popular }"
         >
-          <div v-if="pkg.popular" class="pkg-card__ribbon">⭐ Mais Popular</div>
+          <div v-if="pkg.popular" class="pkg-card__ribbon"><font-awesome-icon icon="star" /> Mais Popular</div>
 
           <div class="pkg-card__level-badge" :style="{ background: pkg.levelColor }">
-            {{ pkg.levelEmoji }} Você inicia como <strong>{{ pkg.levelName }}</strong>
+            <font-awesome-icon :icon="pkg.levelEmoji" /> Você inicia como <strong>{{ pkg.levelName }}</strong>
           </div>
 
           <h3 class="pkg-card__name">{{ pkg.name }}</h3>
@@ -113,7 +113,7 @@
 
           <ul class="pkg-card__benefits">
             <li v-for="b in pkg.benefits" :key="b">
-              <span class="pkg-card__check">✓</span>
+              <span class="pkg-card__check"><font-awesome-icon icon="check" /></span>
               {{ b }}
             </li>
           </ul>
@@ -205,10 +205,10 @@ const heroMetrics = [
 
 // ─── How it works ──────────────────────────────────────────
 const steps = [
-  { icon: '🏨', title: 'Torne-se Sócio', desc: 'Escolha seu pacote e adquira cotas do grupo hoteleiro' },
-  { icon: '💰', title: 'Receba Dividendos', desc: 'Lucros mensais proporcionais à sua participação' },
-  { icon: '🤝', title: 'Indique e Ganhe', desc: 'Comissões diretas e bônus de rede ilimitados' },
-  { icon: '🏆', title: 'Evolua na Carreira', desc: 'Suba de nível e desbloqueie benefícios exclusivos' },
+  { icon: 'hotel', title: 'Torne-se Sócio', desc: 'Escolha seu pacote e adquira cotas do grupo hoteleiro' },
+  { icon: 'dollar-sign', title: 'Receba Dividendos', desc: 'Lucros mensais proporcionais à sua participação' },
+  { icon: 'handshake', title: 'Indique e Ganhe', desc: 'Comissões diretas e bônus de rede ilimitados' },
+  { icon: 'trophy', title: 'Evolua na Carreira', desc: 'Suba de nível e desbloqueie benefícios exclusivos' },
 ];
 
 // ─── Packages ──────────────────────────────────────────────
@@ -241,7 +241,7 @@ const packages: Package[] = [
     quotas: 1,
     price: mockQuotaConfig.quotaPrice,
     levelName: 'Sócio',
-    levelEmoji: '🤝',
+    levelEmoji: 'handshake',
     levelColor: '#0097a7',
     hotelSubtitle: 'Grupo Ciano',
     monthlyEstimate: netYieldPerQuota,
@@ -260,7 +260,7 @@ const packages: Package[] = [
     price: 10 * mockQuotaConfig.quotaPrice,
     popular: true,
     levelName: 'Platinum',
-    levelEmoji: '🚀',
+    levelEmoji: 'rocket',
     levelColor: '#6B7280',
     hotelSubtitle: 'Resort Ciano Prime',
     monthlyEstimate: 10 * netYieldPerQuota,
@@ -279,7 +279,7 @@ const packages: Package[] = [
     quotas: 20,
     price: 20 * mockQuotaConfig.quotaPrice,
     levelName: 'VIP',
-    levelEmoji: '👑',
+    levelEmoji: 'crown',
     levelColor: '#D97706',
     hotelSubtitle: 'Resort Ciano VIP',
     monthlyEstimate: 20 * netYieldPerQuota,
@@ -299,7 +299,7 @@ const packages: Package[] = [
     quotas: 60,
     price: 60 * mockQuotaConfig.quotaPrice,
     levelName: 'Imperial',
-    levelEmoji: '🏛️',
+    levelEmoji: 'building-columns',
     levelColor: '#7c3aed',
     hotelSubtitle: 'Resort Ciano Imperial',
     monthlyEstimate: 60 * netYieldPerQuota,

@@ -30,7 +30,10 @@
             'step-label--done': currentStep > idx,
           }"
         >
-          <span class="step-label__num">{{ currentStep > idx ? '✓' : idx + 1 }}</span>
+          <span class="step-label__num">
+            <font-awesome-icon v-if="currentStep > idx" icon="check" />
+            <template v-else>{{ idx + 1 }}</template>
+          </span>
           <span class="step-label__text">{{ step }}</span>
         </span>
       </div>
@@ -223,7 +226,6 @@ function getTargetLevel(total: number): string {
     box-shadow: 0 1px 8px rgba(0, 0, 0, 0.04);
     position: sticky;
     top: 0;
-    z-index: $z-sticky;
   }
 
   &__body {

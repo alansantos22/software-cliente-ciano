@@ -26,7 +26,7 @@
           />
         </div>
         <p class="split-ticker__microcopy">
-          ⚡ Faltam apenas
+          <font-awesome-icon icon="bolt" /> Faltam apenas
           <strong>{{ quotasRemaining }} cotas</strong>
           para a virada de preço!
         </p>

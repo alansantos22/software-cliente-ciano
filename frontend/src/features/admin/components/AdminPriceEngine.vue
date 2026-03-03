@@ -3,7 +3,7 @@
     <!-- Header -->
     <div class="price-engine__header">
       <div class="price-engine__title-group">
-        <span class="price-engine__badge">⚡ Motor de Preço</span>
+        <span class="price-engine__badge"><font-awesome-icon icon="bolt" /> Motor de Preço</span>
         <span class="price-engine__lot">Lote #{{ lotNumber }}</span>
       </div>
       <div class="price-engine__price">
@@ -31,7 +31,7 @@
         </span>
       </div>
       <p class="price-engine__thermo-cta">
-        <span :class="urgencyClass">{{ urgencyIcon }}</span>
+        <span :class="urgencyClass"><font-awesome-icon icon="circle" /></span>
         Faltam <strong>{{ quotasRemaining }} cotas</strong> para o próximo
         {{ progressPercent >= 80 ? 'Split automático' : 'aumento programado' }}.
       </p>
@@ -40,10 +40,10 @@
     <!-- Actions -->
     <div class="price-engine__actions" v-if="!confirmingAction">
       <button class="price-engine__btn price-engine__btn--force" @click="startConfirm('force-split')">
-        ⚡ Forçar Virada de Lote
+        <font-awesome-icon icon="bolt" /> Forçar Virada de Lote
       </button>
       <button class="price-engine__btn price-engine__btn--adjust" @click="startConfirm('adjust-constant')">
-        🔧 Ajustar Constante
+        <font-awesome-icon icon="wrench" /> Ajustar Constante
       </button>
     </div>
 
@@ -53,7 +53,7 @@
       class="price-engine__confirm price-engine__confirm--danger"
     >
       <p class="price-engine__confirm-msg">
-        ⚠️ <strong>Atenção:</strong> Forçar a virada de lote encerrará o lote atual imediatamente,
+        <font-awesome-icon icon="triangle-exclamation" /> <strong>Atenção:</strong> Forçar a virada de lote encerrará o lote atual imediatamente,
         independente do progresso. Esta ação <strong>não pode ser desfeita</strong>.
       </p>
       <label class="price-engine__confirm-label">
@@ -86,7 +86,7 @@
       class="price-engine__confirm price-engine__confirm--warning"
     >
       <p class="price-engine__confirm-msg">
-        🔧 <strong>Ajustar Constante de Estimativa:</strong> Define a velocidade esperada de
+        <font-awesome-icon icon="wrench" /> <strong>Ajustar Constante de Estimativa:</strong> Define a velocidade esperada de
         vendas para projeções de dividendo.
       </p>
       <label class="price-engine__confirm-label">
@@ -117,7 +117,7 @@
     <!-- Success Feedback -->
     <transition name="feedback-fade">
       <div v-if="successMsg" class="price-engine__success">
-        ✅ {{ successMsg }}
+        <font-awesome-icon icon="circle-check" /> {{ successMsg }}
       </div>
     </transition>
   </div>
@@ -173,9 +173,9 @@ const urgencyClass = computed(() => {
 });
 
 const urgencyIcon = computed(() => {
-  if (quotasRemaining.value <= 20) return '🔴';
-  if (quotasRemaining.value <= 60) return '🟡';
-  return '🟢';
+  if (quotasRemaining.value <= 20) return 'critical';
+  if (quotasRemaining.value <= 60) return 'warning';
+  return 'ok';
 });
 
 // Methods

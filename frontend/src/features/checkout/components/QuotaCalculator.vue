@@ -18,7 +18,7 @@
             <strong>{{ totalQuotas }} cotas</strong>
           </span>
           <span v-if="isUpgrading" class="microcopy__upgrade">
-            e sobe para <strong :style="{ color: targetLevel.color }">{{ targetLevel.label }} {{ targetLevel.icon }}</strong>! 🚀
+            e sobe para <strong :style="{ color: targetLevel.color }">{{ targetLevel.label }}</strong>! <font-awesome-icon icon="rocket" />
           </span>
           <span v-else class="microcopy__same">
             mantendo o nível <strong :style="{ color: targetLevel.color }">{{ targetLevel.label }}</strong>.
@@ -92,7 +92,7 @@
             :style="{ '--level-color': preset.color }"
             @click="setPreset(preset.quotas)"
           >
-            <span class="preset-icon">{{ preset.icon }}</span>
+            <span class="preset-icon"><font-awesome-icon :icon="preset.icon" /></span>
             <div class="preset-info">
               <span class="preset-level">{{ preset.label }}</span>
               <span class="preset-count">{{ preset.quotas }} cotas</span>
@@ -124,17 +124,17 @@
       >
         <div class="benefit-tier__header">
           <div class="benefit-tier__name">
-            <span class="tier-icon">{{ level.icon }}</span>
+            <span class="tier-icon"><font-awesome-icon :icon="level.icon" /></span>
             <span class="tier-label">{{ level.label }}</span>
             <span class="tier-min">{{ level.min }}+ cotas</span>
           </div>
           <div class="benefit-tier__status">
             <Transition name="unlock-bounce" mode="out-in">
               <span v-if="totalQuotas >= level.min" key="unlocked" class="status-badge status-badge--unlocked">
-                ✅ Desbloqueado
+                <font-awesome-icon icon="circle-check" /> Desbloqueado
               </span>
               <span v-else key="locked" class="status-badge status-badge--locked">
-                🔒 faltam {{ level.min - totalQuotas }}
+                <font-awesome-icon icon="lock" /> faltam {{ level.min - totalQuotas }}
               </span>
             </Transition>
           </div>
@@ -142,7 +142,9 @@
 
         <ul class="benefit-tier__list" :class="{ 'benefit-tier__list--locked': totalQuotas < level.min }">
           <li v-for="benefit in level.benefits" :key="benefit">
-            <span class="benefit-check">{{ totalQuotas >= level.min ? '✓' : '○' }}</span>
+            <span class="benefit-check">
+              <font-awesome-icon :icon="totalQuotas >= level.min ? 'circle-check' : 'circle'" />
+            </span>
             <span>{{ benefit }}</span>
           </li>
         </ul>
@@ -179,7 +181,7 @@ const levels = [
     key: 'socio',
     label: 'Sócio',
     min: 1,
-    icon: '🤝',
+    icon: 'handshake',
     color: '#00bcd4',
     benefits: [
       'Participação nos lucros do Grupo Ciano',
@@ -192,7 +194,7 @@ const levels = [
     key: 'platinum',
     label: 'Platinum',
     min: 10,
-    icon: '✨',
+    icon: 'wand-magic-sparkles',
     color: '#94a3b8',
     benefits: [
       '30% desconto em pousadas Ciano',
@@ -205,7 +207,7 @@ const levels = [
     key: 'vip',
     label: 'VIP',
     min: 20,
-    icon: '👑',
+    icon: 'crown',
     color: '#eab308',
     benefits: [
       '50% desconto em todas as pousadas',
@@ -218,7 +220,7 @@ const levels = [
     key: 'imperial',
     label: 'Imperial',
     min: 60,
-    icon: '💎',
+    icon: 'gem',
     color: '#a855f7',
     benefits: [
       'Hospedagem gratuita ilimitada (até 3 acompanhantes)',

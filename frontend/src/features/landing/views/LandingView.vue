@@ -14,7 +14,7 @@
       </router-link>
     </section>
 
-    <p class="placeholder">🚧 Landing Page em construção - Etapa 2 do TODO</p>
+    <p class="placeholder"><font-awesome-icon icon="wrench" /> Landing Page em construção - Etapa 2 do TODO</p>
   </div>
 </template>
 

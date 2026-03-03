@@ -60,7 +60,7 @@
             />
           </td>
           <td v-for="col in columns" :key="col.key">
-            <slot :name="`cell-${col.key}`" :row="row" :value="row[col.key]">
+            <slot :name="`cell-${col.key}`" :row="row" :value="row[col.key]" :index="idx">
               {{ row[col.key] }}
             </slot>
           </td>

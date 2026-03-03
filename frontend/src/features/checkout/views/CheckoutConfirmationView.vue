@@ -60,7 +60,7 @@
         <h3>Benefícios desbloqueados</h3>
         <ul>
           <li v-for="b in levelConfig.benefits" :key="b">
-            <span class="benefit-check" :style="{ color: levelConfig.color }">✓</span>
+            <span class="benefit-check" :style="{ color: levelConfig.color }"><font-awesome-icon icon="check" /></span>
             <span>{{ b }}</span>
           </li>
         </ul>

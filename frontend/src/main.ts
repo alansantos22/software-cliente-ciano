@@ -13,7 +13,7 @@ import {
   faRightFromBracket, faChevronLeft, faChevronRight, faChevronDown,
   faBars, faDollarSign, faUsers, faGlobe, faTrophy, faRotate,
   faStar, faGem, faMedal, faHandshake, faCheck, faArrowRight,
-  faEye, faCalendarDays, faMoneyBillWave, faNetworkWired,
+  faEye, faEyeSlash, faCalendarDays, faMoneyBillWave, faNetworkWired,
   faCircleInfo, faShieldHalved, faArrowTrendUp, faArrowTrendDown,
   faWallet, faClipboardList, faXmark, faEllipsisVertical,
   faClockRotateLeft,
@@ -21,10 +21,15 @@ import {
   faUserPlus, faBolt, faCircleCheck, faCircleXmark, faClock,
   faPhone, faChevronUp,
   // Dashboard additions
-  faTriangleExclamation, faCalendarDay,
+  faTriangleExclamation, faCalendarDay, faCalendarCheck, faCalendarXmark,
   // Checkout premium icons
   faLandmark, faCopy, faDownload, faQrcode, faFileLines, faLightbulb,
   faFileInvoiceDollar, faArrowUpRightFromSquare,
+  // Emoji replacement icons
+  faInbox, faWrench, faBan, faComment, faHotel, faRocket,
+  faBuilding, faWandMagicSparkles, faLock, faHourglass, faChartPie,
+  faPlane, faMoneyBillTransfer, faChampagneGlasses, faSquareArrowUpRight,
+  faCircle, faBullseye, faBuildingColumns, faShareNodes,
 } from '@fortawesome/free-solid-svg-icons'
 
 library.add(
@@ -33,7 +38,7 @@ library.add(
   faRightFromBracket, faChevronLeft, faChevronRight, faChevronDown,
   faBars, faDollarSign, faUsers, faGlobe, faTrophy, faRotate,
   faStar, faGem, faMedal, faHandshake, faCheck, faArrowRight,
-  faEye, faCalendarDays, faMoneyBillWave, faNetworkWired,
+  faEye, faEyeSlash, faCalendarDays, faMoneyBillWave, faNetworkWired,
   faCircleInfo, faShieldHalved, faArrowTrendUp, faArrowTrendDown,
   faWallet, faClipboardList, faXmark, faEllipsisVertical,
   faClockRotateLeft,
@@ -41,10 +46,15 @@ library.add(
   faUserPlus, faBolt, faCircleCheck, faCircleXmark, faClock,
   faPhone, faChevronUp,
   // Dashboard additions
-  faTriangleExclamation, faCalendarDay,
+  faTriangleExclamation, faCalendarDay, faCalendarCheck, faCalendarXmark,
   // Checkout premium icons
   faLandmark, faCopy, faDownload, faQrcode, faFileLines, faLightbulb,
   faFileInvoiceDollar, faArrowUpRightFromSquare,
+  // Emoji replacement icons
+  faInbox, faWrench, faBan, faComment, faHotel, faRocket,
+  faBuilding, faWandMagicSparkles, faLock, faHourglass, faChartPie,
+  faPlane, faMoneyBillTransfer, faChampagneGlasses, faSquareArrowUpRight,
+  faCircle, faBullseye, faBuildingColumns, faShareNodes,
 )
 
 // Styles

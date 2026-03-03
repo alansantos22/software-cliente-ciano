@@ -2,8 +2,10 @@
   <div :class="['ds-stat-card', { 'ds-stat-card--clickable': clickable }]" @click="handleClick">
     <div class="ds-stat-card__header">
       <span class="ds-stat-card__label">{{ label }}</span>
-      <span class="ds-stat-card__icon">
-        <slot name="icon">{{ icon }}</slot>
+      <span class="ds-stat-card__icon" :style="iconColor ? { color: iconColor } : {}">
+        <slot name="icon">
+          <font-awesome-icon :icon="icon" />
+        </slot>
       </span>
     </div>
 
@@ -29,6 +31,7 @@ interface Props {
   label: string;
   value: number | string;
   icon?: string;
+  iconColor?: string;
   subtitle?: string;
   trend?: number;
   isCurrency?: boolean;
