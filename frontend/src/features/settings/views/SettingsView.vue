@@ -292,7 +292,6 @@ function showFeedback(type: typeof feedback.type, message: string) {
   display: flex;
   flex-direction: column;
   gap: $spacing-6;
-  max-width: 800px;
 
   // ── Section Header ──
   &__section-header {

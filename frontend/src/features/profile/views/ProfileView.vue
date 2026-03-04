@@ -337,7 +337,6 @@ function showFeedback(type: typeof feedback.type, message: string) {
   display: flex;
   flex-direction: column;
   gap: $spacing-6;
-  max-width: 900px;
 
   // ── Header Card ──
   &__header {
