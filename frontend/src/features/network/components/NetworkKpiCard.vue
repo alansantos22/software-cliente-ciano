@@ -40,31 +40,31 @@ withDefaults(defineProps<Props>(), {
 @use '@/assets/scss/mixins' as *;
 
 .kpi-card {
-  background: $bg-primary;
+  background: var(--bg-primary);
   border-radius: $radius-lg;
   padding: $spacing-5 $spacing-6;
-  box-shadow: $shadow-md;
+  box-shadow: var(--shadow-md);
   border-left: 4px solid transparent;
   transition: box-shadow 0.2s ease, transform 0.2s ease;
 
   &:hover {
-    box-shadow: $shadow-lg;
+    box-shadow: var(--shadow-lg);
     transform: translateY(-1px);
   }
 
   &--alert {
-    border-left-color: $warning;
+    border-left-color: var(--color-warning);
 
     .kpi-card__value {
-      color: $warning-dark;
+      color: var(--color-warning-dark);
     }
   }
 
   &--success {
-    border-left-color: $success;
+    border-left-color: var(--color-success);
 
     .kpi-card__value {
-      color: $success-dark;
+      color: var(--color-success-dark);
     }
   }
 
@@ -76,20 +76,20 @@ withDefaults(defineProps<Props>(), {
   &__label {
     font-size: 0.8125rem;
     font-weight: 500;
-    color: $text-secondary;
+    color: var(--text-secondary);
     text-transform: uppercase;
     letter-spacing: 0.04em;
   }
 
   &__icon {
     font-size: 1.125rem;
-    color: $text-tertiary;
+    color: var(--text-tertiary);
   }
 
   &__value {
     font-size: 1.75rem;
     font-weight: 700;
-    color: $text-primary;
+    color: var(--text-primary);
     line-height: 1.1;
     margin-bottom: $spacing-2;
     letter-spacing: -0.02em;
@@ -101,15 +101,15 @@ withDefaults(defineProps<Props>(), {
     gap: $spacing-1;
     font-size: 0.8125rem;
     font-weight: 600;
-    color: $success-dark;
-    background: $secondary-50;
+    color: var(--color-success-dark);
+    background: var(--secondary-50);
     padding: 2px $spacing-2;
     border-radius: $radius-full;
   }
 
   &__subtitle {
     font-size: 0.8125rem;
-    color: $text-tertiary;
+    color: var(--text-tertiary);
     margin-top: $spacing-1;
   }
 }

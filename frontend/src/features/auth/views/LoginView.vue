@@ -196,7 +196,7 @@ function transformUser(mockUser: MockUser) {
 // ═══════════════════════════════════════════════════════════════
 .login-page {
   min-height: 100vh;
-  background: $bg-secondary;
+  background: var(--bg-secondary);
   @include flex-center;
   padding: $spacing-8 $spacing-4;
 }
@@ -205,7 +205,7 @@ function transformUser(mockUser: MockUser) {
 // PAINEL — Formulário
 // ═══════════════════════════════════════════════════════════════
 .login-page__form-panel {
-  background: $bg-primary;
+  background: var(--bg-primary);
   border-radius: 20px;
   box-shadow: 0 8px 40px rgba(0, 0, 0, 0.08);
   padding: $spacing-8;
@@ -236,7 +236,7 @@ function transformUser(mockUser: MockUser) {
   &__brand-name {
     font-size: 1.5rem;
     font-weight: 800;
-    color: $primary-700;
+    color: var(--primary-700);
     letter-spacing: -0.03em;
   }
 
@@ -250,7 +250,7 @@ function transformUser(mockUser: MockUser) {
   &__title {
     font-size: 1.625rem;
     font-weight: 700;
-    color: $text-primary;
+    color: var(--text-primary);
     line-height: 1.25;
     margin: 0;
     letter-spacing: -0.02em;
@@ -258,7 +258,7 @@ function transformUser(mockUser: MockUser) {
 
   &__subtitle {
     font-size: 0.9375rem;
-    color: $text-secondary;
+    color: var(--text-secondary);
     margin: 0;
     line-height: 1.5;
   }
@@ -268,22 +268,22 @@ function transformUser(mockUser: MockUser) {
     display: flex;
     align-items: center;
     gap: $spacing-2;
-    color: $text-tertiary;
+    color: var(--text-tertiary);
     font-size: 0.8125rem;
     justify-content: center;
 
-    svg { color: $success; }
+    svg { color: var(--color-success); }
   }
 
   // ── Rodapé ──
   &__footer {
     text-align: center;
-    color: $text-secondary;
+    color: var(--text-secondary);
     font-size: 0.9rem;
     margin: 0;
 
     a {
-      color: $primary-600;
+      color: var(--primary-600);
       text-decoration: none;
       font-weight: 600;
 
@@ -297,16 +297,16 @@ function transformUser(mockUser: MockUser) {
     align-items: center;
     gap: $spacing-3;
     padding: $spacing-3 $spacing-4;
-    background: $neutral-100;
-    border: 1px dashed $neutral-300;
+    background: var(--neutral-100);
+    border: 1px dashed var(--neutral-300);
     border-radius: 8px;
     font-size: 0.8125rem;
-    color: $text-secondary;
+    color: var(--text-secondary);
   }
 
   &__demo-badge {
     flex-shrink: 0;
-    background: $warning;
+    background: var(--color-warning);
     color: #fff;
     font-size: 0.625rem;
     font-weight: 700;
@@ -334,14 +334,14 @@ function transformUser(mockUser: MockUser) {
     align-items: center;
     gap: $spacing-2;
     cursor: pointer;
-    color: $text-secondary;
+    color: var(--text-secondary);
     user-select: none;
 
-    input { accent-color: $primary-500; }
+    input { accent-color: var(--primary-500); }
   }
 
   &__forgot {
-    color: $primary-600;
+    color: var(--primary-600);
     text-decoration: none;
     font-weight: 500;
 

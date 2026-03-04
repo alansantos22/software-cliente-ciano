@@ -218,12 +218,12 @@ function formatCurrency(value: number): string {
     h2 {
       font-size: 1.5rem;
       font-weight: 700;
-      color: $neutral-900;
+      color: var(--neutral-900);
       margin-bottom: $spacing-1;
     }
 
     p {
-      color: $text-secondary;
+      color: var(--text-secondary);
       font-size: 0.9rem;
       margin: 0;
     }
@@ -235,17 +235,17 @@ function formatCurrency(value: number): string {
     justify-content: center;
     gap: $spacing-2;
     font-size: 0.8rem;
-    color: $text-tertiary;
+    color: var(--text-tertiary);
     padding: $spacing-3;
-    border-top: 1px solid $neutral-200;
+    border-top: 1px solid var(--neutral-200);
 
     .security-icon {
-      color: $success-dark;
+      color: var(--color-success-dark);
       font-size: 0.85rem;
     }
 
     strong {
-      color: $success-dark;
+      color: var(--color-success-dark);
     }
   }
 
@@ -278,23 +278,23 @@ function formatCurrency(value: number): string {
   align-items: center;
   gap: $spacing-4;
   padding: $spacing-4 $spacing-5;
-  border: 2px solid $neutral-200;
+  border: 2px solid var(--neutral-200);
   border-radius: $radius-xl;
   background: white;
   cursor: pointer;
   transition: all 0.2s ease;
 
   &:hover {
-    border-color: $neutral-300;
-    background: $neutral-50;
+    border-color: var(--neutral-300);
+    background: var(--neutral-50);
     transform: translateY(-1px);
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
   }
 
   &--selected {
-    border-color: var(--m-color, #{$primary-500});
-    background: color-mix(in srgb, var(--m-color, #{$primary-500}) 5%, white);
-    box-shadow: 0 0 0 1px var(--m-color, #{$primary-500}), 0 4px 16px rgba(0, 0, 0, 0.08);
+    border-color: var(--m-color, #{var(--primary-500)});
+    background: color-mix(in srgb, var(--m-color, #{var(--primary-500)}) 5%, white);
+    box-shadow: 0 0 0 1px var(--m-color, #{var(--primary-500)}), 0 4px 16px rgba(0, 0, 0, 0.08);
   }
 
   &__input {
@@ -304,12 +304,12 @@ function formatCurrency(value: number): string {
   &__icon {
     font-size: 1.4rem;
     @include flex-center;
-    color: $neutral-500;
+    color: var(--neutral-500);
     transition: color 0.2s ease;
   }
 
   &--selected .payment-card__icon {
-    color: var(--m-color, #{$primary-500});
+    color: var(--m-color, #{var(--primary-500)});
   }
 
   &__body {
@@ -320,12 +320,12 @@ function formatCurrency(value: number): string {
   &__name {
     font-weight: 700;
     font-size: 1rem;
-    color: $neutral-900;
+    color: var(--neutral-900);
   }
 
   &__desc {
     font-size: 0.825rem;
-    color: $text-secondary;
+    color: var(--text-secondary);
   }
 
   &__brands {
@@ -355,9 +355,9 @@ function formatCurrency(value: number): string {
     }
 
     &--instant {
-      background: $secondary-50;
-      color: $success-dark;
-      border: 1px solid $secondary-200;
+      background: var(--secondary-50);
+      color: var(--color-success-dark);
+      border: 1px solid var(--secondary-200);
     }
 
     &--installment {
@@ -367,9 +367,9 @@ function formatCurrency(value: number): string {
     }
 
     &--slow {
-      background: $accent-50;
-      color: $warning-dark;
-      border: 1px solid $accent-100;
+      background: var(--accent-50);
+      color: var(--color-warning-dark);
+      border: 1px solid var(--accent-100);
     }
   }
 }
@@ -380,27 +380,27 @@ function formatCurrency(value: number): string {
   letter-spacing: 0.02em;
   padding: 2px 5px;
   border-radius: $radius-sm;
-  background: $neutral-100;
-  color: $neutral-600;
+  background: var(--neutral-100);
+  color: var(--neutral-600);
 }
 
 .radio-dot {
   width: 20px;
   height: 20px;
   border-radius: 50%;
-  border: 2px solid $neutral-300;
+  border: 2px solid var(--neutral-300);
   @include flex-center;
   transition: border-color 0.2s ease;
 
   &--active {
-    border-color: var(--m-color, #{$primary-500});
+    border-color: var(--m-color, #{var(--primary-500)});
   }
 
   &__inner {
     width: 10px;
     height: 10px;
     border-radius: 50%;
-    background: var(--m-color, #{$primary-500});
+    background: var(--m-color, #{var(--primary-500)});
     animation: radio-pop 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
   }
 }
@@ -412,17 +412,17 @@ function formatCurrency(value: number): string {
 
 // ── Order Summary Sidebar ─────────────────────────────────────────────────────
 .order-summary {
-  border: 2px solid $neutral-200;
+  border: 2px solid var(--neutral-200);
   border-radius: $radius-xl;
   padding: $spacing-5;
-  background: $neutral-50;
+  background: var(--neutral-50);
   @include flex-column;
   gap: $spacing-4;
 
   &__title {
     font-size: 1rem;
     font-weight: 700;
-    color: $neutral-700;
+    color: var(--neutral-700);
     text-transform: uppercase;
     letter-spacing: 0.05em;
     margin: 0;
@@ -446,7 +446,7 @@ function formatCurrency(value: number): string {
 
   .level-badge__desc {
     font-size: 0.75rem;
-    color: $text-tertiary;
+    color: var(--text-tertiary);
     margin-left: $spacing-2;
   }
 
@@ -457,7 +457,7 @@ function formatCurrency(value: number): string {
 
   &__divider {
     height: 1px;
-    background: $neutral-200;
+    background: var(--neutral-200);
     margin: 0;
   }
 
@@ -465,10 +465,10 @@ function formatCurrency(value: number): string {
     @include flex-between;
     font-size: 1.1rem;
     font-weight: 700;
-    color: $neutral-900;
+    color: var(--neutral-900);
 
     strong {
-      color: $primary-700;
+      color: var(--primary-700);
       font-size: 1.3rem;
     }
   }
@@ -476,17 +476,17 @@ function formatCurrency(value: number): string {
   &__installment {
     text-align: center;
     font-size: 0.8rem;
-    color: $text-tertiary;
+    color: var(--text-tertiary);
   }
 }
 
 .summary-row {
   @include flex-between;
   font-size: 0.875rem;
-  color: $text-secondary;
+  color: var(--text-secondary);
 
   strong {
-    color: $neutral-800;
+    color: var(--neutral-800);
     font-weight: 600;
   }
 }

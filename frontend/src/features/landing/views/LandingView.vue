@@ -229,8 +229,8 @@ const titles = [
 
 // ── Shared ──────────────────────────────────────────────────────────────────
 .landing {
-  background: $bg-primary;
-  color: $text-primary;
+  background: var(--bg-primary);
+  color: var(--text-primary);
 
   &__container {
     max-width: 1140px;
@@ -252,13 +252,13 @@ const titles = [
     font-weight: 800;
     margin: 0 0 $spacing-3;
     letter-spacing: -0.02em;
-    color: $text-primary;
+    color: var(--text-primary);
   }
 
   &__section-subtitle {
     text-align: center;
     font-size: 1.0625rem;
-    color: $text-secondary;
+    color: var(--text-secondary);
     max-width: 600px;
     margin: 0 auto $spacing-10;
     line-height: 1.6;
@@ -283,7 +283,7 @@ const titles = [
     }
 
     &--primary {
-      background: $primary-600;
+      background: var(--primary-600);
       color: white;
     }
 
@@ -304,7 +304,7 @@ const titles = [
 
 // ── HERO ──────────────────────────────────────────────────────────────────────
 .landing__hero {
-  background: linear-gradient(135deg, $primary-800 0%, $primary-600 50%, $secondary-600 100%);
+  background: linear-gradient(135deg, var(--primary-800) 0%, var(--primary-600) 50%, var(--secondary-600) 100%);
   min-height: 80vh;
   display: flex;
   align-items: center;
@@ -348,7 +348,7 @@ const titles = [
 }
 
 .landing__hero-highlight {
-  color: $accent-300;
+  color: var(--accent-300);
 }
 
 .landing__hero-subtitle {
@@ -368,7 +368,7 @@ const titles = [
   font-size: 0.9375rem;
   margin-bottom: $spacing-6;
 
-  svg { color: $accent-400; }
+  svg { color: var(--accent-400); }
 }
 
 .landing__hero-actions {
@@ -391,7 +391,7 @@ const titles = [
 }
 
 .landing__about-card {
-  background: $bg-secondary;
+  background: var(--bg-secondary);
   border-radius: $radius-xl;
   padding: $spacing-8 $spacing-6;
   text-align: center;
@@ -406,7 +406,7 @@ const titles = [
   }
 
   p {
-    color: $text-secondary;
+    color: var(--text-secondary);
     font-size: 0.9375rem;
     line-height: 1.5;
     margin: 0;
@@ -417,8 +417,8 @@ const titles = [
   width: 56px;
   height: 56px;
   border-radius: $radius-full;
-  background: rgba($primary-500, 0.1);
-  color: $primary-600;
+  background: rgba(var(--primary-500-rgb), 0.1);
+  color: var(--primary-600);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -427,7 +427,7 @@ const titles = [
 
 // ── GALLERY ───────────────────────────────────────────────────────────────────
 .landing__gallery {
-  background: $bg-secondary;
+  background: var(--bg-secondary);
 }
 
 .landing__gallery-grid {
@@ -442,15 +442,15 @@ const titles = [
 }
 
 .landing__inn-card {
-  background: $bg-primary;
+  background: var(--bg-primary);
   border-radius: $radius-xl;
   overflow: hidden;
-  box-shadow: $shadow-md;
+  box-shadow: var(--shadow-md);
   transition: transform 0.2s, box-shadow 0.2s;
 
   &:hover {
     transform: translateY(-4px);
-    box-shadow: $shadow-lg;
+    box-shadow: var(--shadow-lg);
   }
 }
 
@@ -476,7 +476,7 @@ const titles = [
   }
 
   p {
-    color: $text-secondary;
+    color: var(--text-secondary);
     font-size: 0.875rem;
     margin: 0 0 $spacing-3;
   }
@@ -484,8 +484,8 @@ const titles = [
 
 .landing__inn-tag {
   display: inline-block;
-  background: rgba($primary-500, 0.1);
-  color: $primary-700;
+  background: rgba(var(--primary-500-rgb), 0.1);
+  color: var(--primary-700);
   padding: 2px $spacing-3;
   border-radius: $radius-full;
   font-size: 0.8125rem;
@@ -517,7 +517,7 @@ const titles = [
   }
 
   p {
-    color: $text-secondary;
+    color: var(--text-secondary);
     font-size: 0.9rem;
     line-height: 1.5;
     margin: 0;
@@ -528,7 +528,7 @@ const titles = [
   width: 48px;
   height: 48px;
   border-radius: $radius-full;
-  background: $primary-600;
+  background: var(--primary-600);
   color: white;
   font-size: 1.25rem;
   font-weight: 800;
@@ -539,7 +539,7 @@ const titles = [
 
 // ── TITLES ────────────────────────────────────────────────────────────────────
 .landing__titles {
-  background: $bg-secondary;
+  background: var(--bg-secondary);
 }
 
 .landing__titles-grid {
@@ -556,7 +556,7 @@ const titles = [
 }
 
 .landing__title-card {
-  background: $bg-primary;
+  background: var(--bg-primary);
   border-radius: $radius-xl;
   padding: $spacing-6;
   text-align: center;
@@ -574,7 +574,7 @@ const titles = [
 
   p {
     font-size: 0.875rem;
-    color: $text-secondary;
+    color: var(--text-secondary);
     line-height: 1.45;
     margin: 0;
   }
@@ -586,7 +586,7 @@ const titles = [
 
 // ── FINAL CTA ─────────────────────────────────────────────────────────────────
 .landing__final-cta {
-  background: linear-gradient(135deg, $primary-700 0%, $primary-500 100%);
+  background: linear-gradient(135deg, var(--primary-700) 0%, var(--primary-500) 100%);
   color: white;
   text-align: center;
 
@@ -607,8 +607,8 @@ const titles = [
 .landing__footer {
   text-align: center;
   padding: $spacing-8 $spacing-4;
-  background: $neutral-900;
-  color: $neutral-400;
+  background: var(--neutral-900);
+  color: var(--neutral-400);
   font-size: 0.875rem;
 
   p { margin: 0; }

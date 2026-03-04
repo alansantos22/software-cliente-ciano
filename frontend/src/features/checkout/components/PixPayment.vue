@@ -232,12 +232,12 @@ function formatCurrency(value: number): string {
     h2 {
       font-size: 1.5rem;
       font-weight: 700;
-      color: $neutral-900;
+      color: var(--neutral-900);
       margin: 0;
     }
 
     p {
-      color: $text-secondary;
+      color: var(--text-secondary);
       font-size: 0.9rem;
       margin: 0;
     }
@@ -247,7 +247,7 @@ function formatCurrency(value: number): string {
     width: 10px;
     height: 10px;
     border-radius: 50%;
-    background: $success;
+    background: var(--color-success);
 
     &.status-dot--pulse {
       animation: pulse-dot 1.5s infinite;
@@ -278,39 +278,39 @@ function formatCurrency(value: number): string {
     gap: $spacing-3;
     padding: $spacing-3 $spacing-5;
     border-radius: $radius-full;
-    background: $secondary-50;
-    border: 2px solid $secondary-200;
+    background: var(--secondary-50);
+    border: 2px solid var(--secondary-200);
     transition: all 0.3s ease;
 
     &.timer--warning {
-      background: $accent-50;
-      border-color: $accent-200;
+      background: var(--accent-50);
+      border-color: var(--accent-200);
 
       .timer__value {
-        color: $warning-dark;
+        color: var(--color-warning-dark);
       }
     }
 
     &.timer--expired {
       background: #fef2f2;
-      border-color: $error-light;
+      border-color: var(--color-error-light);
 
       .timer__value {
-        color: $error;
+        color: var(--color-error);
       }
     }
   }
 
   .timer__label {
     font-size: 0.8rem;
-    color: $text-secondary;
+    color: var(--text-secondary);
     font-weight: 500;
   }
 
   .timer__value {
     font-size: 1.4rem;
     font-weight: 800;
-    color: $success-dark;
+    color: var(--color-success-dark);
     font-variant-numeric: tabular-nums;
     letter-spacing: 0.02em;
   }
@@ -327,7 +327,7 @@ function formatCurrency(value: number): string {
     width: 220px;
     height: 220px;
     background: white;
-    border: 3px solid $neutral-900;
+    border: 3px solid var(--neutral-900);
     border-radius: $radius-lg;
     position: relative;
     padding: 16px;
@@ -337,7 +337,7 @@ function formatCurrency(value: number): string {
       position: absolute;
       width: 48px;
       height: 48px;
-      border: 5px solid $neutral-900;
+      border: 5px solid var(--neutral-900);
       border-radius: 4px;
 
       &--tl { top: 12px; left: 12px; border-right: none; border-bottom: none; }
@@ -350,7 +350,7 @@ function formatCurrency(value: number): string {
         left: 8px;
         right: 8px;
         bottom: 8px;
-        background: $neutral-900;
+        background: var(--neutral-900);
         border-radius: 2px;
       }
     }
@@ -359,7 +359,7 @@ function formatCurrency(value: number): string {
       position: absolute;
       inset: 20px;
       background-image:
-        radial-gradient(circle, #{$neutral-900} 40%, transparent 40%);
+        radial-gradient(circle, #{var(--neutral-900)} 40%, transparent 40%);
       background-size: 9px 9px;
       opacity: 0.75;
     }
@@ -376,7 +376,7 @@ function formatCurrency(value: number): string {
       @include flex-center;
       font-size: 1.2rem;
       box-shadow: 0 0 0 4px white;
-      color: $success-dark;
+      color: var(--color-success-dark);
     }
   }
 
@@ -392,7 +392,7 @@ function formatCurrency(value: number): string {
     .paid-check {
       width: 64px;
       height: 64px;
-      background: $success;
+      background: var(--color-success);
       border-radius: 50%;
       @include flex-center;
       color: white;
@@ -402,7 +402,7 @@ function formatCurrency(value: number): string {
 
     p {
       font-weight: 700;
-      color: $success-dark;
+      color: var(--color-success-dark);
       font-size: 0.9rem;
     }
   }
@@ -420,12 +420,12 @@ function formatCurrency(value: number): string {
     display: block;
     width: 100%;
     padding: $spacing-3 $spacing-4;
-    background: $neutral-100;
+    background: var(--neutral-100);
     border-radius: $radius-md;
     font-size: 0.7rem;
     word-break: break-all;
     text-align: center;
-    color: $neutral-700;
+    color: var(--neutral-700);
     line-height: 1.5;
   }
 
@@ -434,7 +434,7 @@ function formatCurrency(value: number): string {
     align-items: center;
     gap: $spacing-2;
     padding: $spacing-3 $spacing-6;
-    background: $primary-500;
+    background: var(--primary-500);
     color: white;
     border: none;
     border-radius: $radius-lg;
@@ -443,12 +443,12 @@ function formatCurrency(value: number): string {
     cursor: pointer;
     transition: all 0.2s ease;
 
-    &:hover { background: $primary-700; }
+    &:hover { background: var(--primary-700); }
 
     &--copied {
-      background: $success;
+      background: var(--color-success);
 
-      &:hover { background: $success-dark; }
+      &:hover { background: var(--color-success-dark); }
     }
   }
 
@@ -461,11 +461,11 @@ function formatCurrency(value: number): string {
 
     li {
       font-size: 0.85rem;
-      color: $text-secondary;
+      color: var(--text-secondary);
       padding: $spacing-1 0;
       line-height: 1.5;
 
-      strong { color: $neutral-800; }
+      strong { color: var(--neutral-800); }
     }
   }
 
@@ -478,10 +478,10 @@ function formatCurrency(value: number): string {
   }
 
   &__order-card {
-    border: 2px solid $neutral-200;
+    border: 2px solid var(--neutral-200);
     border-radius: $radius-xl;
     padding: $spacing-5;
-    background: $neutral-50;
+    background: var(--neutral-50);
     @include flex-column;
     gap: $spacing-2;
 
@@ -489,7 +489,7 @@ function formatCurrency(value: number): string {
       font-size: 0.75rem;
       text-transform: uppercase;
       letter-spacing: 0.08em;
-      color: $text-tertiary;
+      color: var(--text-tertiary);
       font-weight: 600;
       margin: 0;
     }
@@ -497,31 +497,31 @@ function formatCurrency(value: number): string {
     .order-card__number {
       font-size: 1.1rem;
       font-weight: 700;
-      color: $neutral-900;
+      color: var(--neutral-900);
       margin: 0;
     }
 
     .order-card__amount {
       font-size: 1.5rem;
       font-weight: 800;
-      color: $primary-700;
+      color: var(--primary-700);
       margin-top: $spacing-2;
     }
   }
 
   // ── Referral CTA ──────────────────────────────────────────────────────────
   &__referral {
-    border: 1px solid $neutral-200;
+    border: 1px solid var(--neutral-200);
     border-radius: $radius-xl;
     padding: $spacing-5;
-    background: $neutral-50;
+    background: var(--neutral-50);
     @include flex-column;
     gap: $spacing-3;
 
     .referral__eyebrow {
       font-size: 0.75rem;
       font-weight: 700;
-      color: $text-tertiary;
+      color: var(--text-tertiary);
       text-transform: uppercase;
       letter-spacing: 0.06em;
       margin: 0;
@@ -530,13 +530,13 @@ function formatCurrency(value: number): string {
     h3 {
       font-size: 0.95rem;
       font-weight: 700;
-      color: $neutral-900;
+      color: var(--neutral-900);
       margin: 0;
     }
 
     .referral__desc {
       font-size: 0.825rem;
-      color: $text-secondary;
+      color: var(--text-secondary);
       margin: 0;
       line-height: 1.5;
     }
@@ -550,9 +550,9 @@ function formatCurrency(value: number): string {
   .referral__link {
     font-size: 0.8rem;
     font-weight: 600;
-    color: $primary-700;
+    color: var(--primary-700);
     background: white;
-    border: 1px solid $primary-200;
+    border: 1px solid var(--primary-200);
     border-radius: $radius-md;
     padding: $spacing-2 $spacing-3;
     word-break: break-all;
@@ -564,7 +564,7 @@ function formatCurrency(value: number): string {
     justify-content: center;
     gap: $spacing-2;
     padding: $spacing-3;
-    background: $primary-500;
+    background: var(--primary-500);
     color: white;
     border: none;
     border-radius: $radius-lg;
@@ -574,10 +574,10 @@ function formatCurrency(value: number): string {
     transition: all 0.2s ease;
     text-align: center;
 
-    &:hover { background: $primary-600; }
+    &:hover { background: var(--primary-600); }
 
     &--copied {
-      background: $success;
+      background: var(--color-success);
       color: white;
     }
   }
@@ -588,14 +588,14 @@ function formatCurrency(value: number): string {
     align-items: center;
     gap: $spacing-2;
     font-size: 0.775rem;
-    color: $text-tertiary;
+    color: var(--text-tertiary);
     justify-content: center;
 
     .polling-dot {
       width: 8px;
       height: 8px;
       border-radius: 50%;
-      background: $success;
+      background: var(--color-success);
       animation: pulse-dot 1.2s infinite;
     }
   }

@@ -91,7 +91,7 @@ const titleFilters = computed(() =>
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.1em;
-    color: $text-tertiary;
+    color: var(--text-tertiary);
     min-width: 40px;
   }
 
@@ -107,28 +107,28 @@ const titleFilters = computed(() =>
     gap: $spacing-2;
     padding: $spacing-2 $spacing-4;
     border-radius: $radius-full;
-    border: 1.5px solid $border-default;
-    background: $bg-primary;
-    color: $text-secondary;
+    border: 1.5px solid var(--border-default);
+    background: var(--bg-primary);
+    color: var(--text-secondary);
     font-size: 0.875rem;
     font-weight: 500;
     cursor: pointer;
     transition: all 0.15s ease;
 
     &:hover {
-      border-color: $primary-400;
-      color: $primary-700;
-      background: $primary-50;
+      border-color: var(--primary-400);
+      color: var(--primary-700);
+      background: var(--primary-50);
     }
 
     &--active {
-      border-color: $primary-500;
-      background: $primary-500;
+      border-color: var(--primary-500);
+      background: var(--primary-500);
       color: white;
 
       &:hover {
-        background: $primary-600;
-        border-color: $primary-600;
+        background: var(--primary-600);
+        border-color: var(--primary-600);
         color: white;
       }
 
@@ -155,8 +155,8 @@ const titleFilters = computed(() =>
   }
 
   &__count {
-    background: $neutral-200;
-    color: $text-secondary;
+    background: var(--neutral-200);
+    color: var(--text-secondary);
     font-size: 0.75rem;
     font-weight: 700;
     padding: 0 $spacing-2;

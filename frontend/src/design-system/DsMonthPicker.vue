@@ -221,7 +221,7 @@ watch(() => props.modelValue, () => {
     display: block;
     margin-bottom: $spacing-2;
     font-weight: 500;
-    color: $text-primary;
+    color: var(--text-primary);
   }
 
   &__controls {
@@ -234,15 +234,15 @@ watch(() => props.modelValue, () => {
     @include flex-center;
     width: 36px;
     height: 36px;
-    border: 1px solid $border-default;
+    border: 1px solid var(--border-default);
     border-radius: $radius-md;
-    background: $bg-primary;
+    background: var(--bg-primary);
     cursor: pointer;
     transition: all $transition-fast;
 
     &:hover:not(:disabled) {
-      background: $primary-50;
-      border-color: $primary-500;
+      background: var(--primary-50);
+      border-color: var(--primary-500);
     }
 
     &:disabled {
@@ -254,16 +254,16 @@ watch(() => props.modelValue, () => {
   &__display {
     padding: $spacing-2 $spacing-4;
     min-width: 160px;
-    border: 1px solid $border-default;
+    border: 1px solid var(--border-default);
     border-radius: $radius-md;
-    background: $bg-primary;
+    background: var(--bg-primary);
     text-transform: capitalize;
     font-weight: 500;
     cursor: pointer;
     transition: all $transition-fast;
 
     &:hover {
-      border-color: $primary-500;
+      border-color: var(--primary-500);
     }
   }
 
@@ -273,10 +273,10 @@ watch(() => props.modelValue, () => {
     left: 50%;
     transform: translateX(-50%);
     z-index: $z-dropdown;
-    background: $bg-primary;
-    border: 1px solid $border-light;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-light);
     border-radius: $radius-lg;
-    box-shadow: $shadow-lg;
+    box-shadow: var(--shadow-lg);
     padding: $spacing-4;
     min-width: 280px;
   }
@@ -292,12 +292,12 @@ watch(() => props.modelValue, () => {
       width: 32px;
       height: 32px;
       border: none;
-      background: $neutral-100;
+      background: var(--neutral-100);
       border-radius: $radius-md;
       cursor: pointer;
 
       &:hover {
-        background: $primary-100;
+        background: var(--primary-100);
       }
     }
 
@@ -323,15 +323,15 @@ watch(() => props.modelValue, () => {
     transition: all $transition-fast;
 
     &:hover:not(:disabled) {
-      background: $primary-50;
+      background: var(--primary-50);
     }
 
     &--selected {
-      background: $primary-500;
+      background: var(--primary-500);
       color: white;
 
       &:hover {
-        background: $primary-600 !important;
+        background: var(--primary-600) !important;
       }
     }
 

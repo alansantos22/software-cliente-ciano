@@ -73,6 +73,11 @@
         </div>
 
         <div class="topbar__right">
+          <!-- Theme Toggle -->
+          <button class="topbar__icon-btn" @click="appStore.toggleTheme()" :title="appStore.theme === 'light' ? 'Modo escuro' : 'Modo claro'">
+            <font-awesome-icon :icon="appStore.theme === 'light' ? 'moon' : 'sun'" />
+          </button>
+
           <!-- Notifications -->
           <div class="notif-wrapper">
             <button class="topbar__icon-btn" @click="toggleNotifications" title="Notificações">
@@ -300,7 +305,7 @@ function logout() {
 .app-layout {
   display: flex;
   min-height: 100vh;
-  background: $bg-secondary;
+  background: var(--bg-secondary);
 }
 
 // ============================================================
@@ -323,7 +328,7 @@ function logout() {
 // ============================================================
 .sidebar {
   width: 256px;
-  background: #0f172a;
+  background: var(--sidebar-bg);
   display: flex;
   flex-direction: column;
   transition: width 0.25s ease;
@@ -434,12 +439,12 @@ function logout() {
     }
 
     &--active {
-      background: rgba($primary-500, 0.2);
+      background: rgba(var(--primary-500-rgb), 0.2);
       color: #fff;
       font-weight: 600;
 
       .sidebar__icon {
-        color: $primary-400;
+        color: var(--primary-400);
       }
     }
 
@@ -517,8 +522,8 @@ function logout() {
   justify-content: space-between;
   height: 68px;
   padding: 0 $spacing-6;
-  background: $bg-primary;
-  border-bottom: 1px solid $border-light;
+  background: var(--bg-primary);
+  border-bottom: 1px solid var(--border-light);
   position: sticky;
   top: 0;
   z-index: 40;
@@ -543,15 +548,15 @@ function logout() {
     width: 40px;
     height: 40px;
     background: transparent;
-    border: 1px solid $border-light;
+    border: 1px solid var(--border-light);
     border-radius: 8px;
     cursor: pointer;
-    color: $text-secondary;
+    color: var(--text-secondary);
     font-size: 1rem;
     flex-shrink: 0;
     transition: all 0.15s ease;
 
-    &:hover { background: $neutral-100; }
+    &:hover { background: var(--neutral-100); }
 
     @media (max-width: 768px) { display: flex; }
   }
@@ -566,7 +571,7 @@ function logout() {
   &__page-title {
     font-size: 1.125rem;
     font-weight: 600;
-    color: $text-primary;
+    color: var(--text-primary);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -574,7 +579,7 @@ function logout() {
 
   &__page-subtitle {
     font-size: 0.8125rem;
-    color: $text-tertiary;
+    color: var(--text-tertiary);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -601,13 +606,13 @@ function logout() {
     border: none;
     border-radius: 8px;
     cursor: pointer;
-    color: $text-secondary;
+    color: var(--text-secondary);
     font-size: 1rem;
     transition: all 0.15s ease;
 
     &:hover {
-      background: $neutral-100;
-      color: $text-primary;
+      background: var(--neutral-100);
+      color: var(--text-primary);
     }
   }
 
@@ -618,7 +623,7 @@ function logout() {
     min-width: 16px;
     height: 16px;
     padding: 0 4px;
-    background: $error;
+    background: var(--color-error);
     color: #fff;
     font-size: 0.6875rem;
     font-weight: 700;
@@ -626,7 +631,7 @@ function logout() {
     display: flex;
     align-items: center;
     justify-content: center;
-    border: 2px solid $bg-primary;
+    border: 2px solid var(--bg-primary);
   }
 
   &__user-btn {
@@ -635,14 +640,14 @@ function logout() {
     gap: $spacing-3;
     padding: $spacing-2 $spacing-3;
     background: transparent;
-    border: 1px solid $border-light;
+    border: 1px solid var(--border-light);
     border-radius: 10px;
     cursor: pointer;
     transition: all 0.15s ease;
 
     &:hover {
-      background: $neutral-50;
-      border-color: $neutral-300;
+      background: var(--neutral-50);
+      border-color: var(--neutral-300);
     }
   }
 
@@ -652,7 +657,7 @@ function logout() {
     justify-content: center;
     width: 34px;
     height: 34px;
-    background: linear-gradient(135deg, $primary-500, $primary-700);
+    background: linear-gradient(135deg, var(--primary-500), var(--primary-700));
     color: #fff;
     font-weight: 700;
     font-size: 0.8125rem;
@@ -672,19 +677,19 @@ function logout() {
   &__user-name {
     font-size: 0.875rem;
     font-weight: 600;
-    color: $text-primary;
+    color: var(--text-primary);
     white-space: nowrap;
   }
 
   &__user-role {
     font-size: 0.75rem;
-    color: $text-tertiary;
+    color: var(--text-tertiary);
     white-space: nowrap;
   }
 
   &__chevron {
     font-size: 0.75rem;
-    color: $text-tertiary;
+    color: var(--text-tertiary);
 
     @media (max-width: 640px) { display: none; }
   }
@@ -708,8 +713,8 @@ function logout() {
   top: calc(100% + 8px);
   right: 0;
   width: 360px;
-  background: $bg-primary;
-  border: 1px solid $border-light;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-light);
   border-radius: 14px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.14);
   z-index: 100;
@@ -725,13 +730,13 @@ function logout() {
     align-items: center;
     justify-content: space-between;
     padding: $spacing-4 $spacing-5;
-    border-bottom: 1px solid $border-light;
+    border-bottom: 1px solid var(--border-light);
   }
 
   &__title {
     font-size: 0.9375rem;
     font-weight: 600;
-    color: $text-primary;
+    color: var(--text-primary);
   }
 
   &__mark-all {
@@ -739,7 +744,7 @@ function logout() {
     border: none;
     cursor: pointer;
     font-size: 0.8125rem;
-    color: $primary-500;
+    color: var(--primary-500);
     padding: 0;
     font-weight: 500;
 
@@ -760,11 +765,11 @@ function logout() {
   cursor: pointer;
   transition: background 0.15s ease;
   position: relative;
-  border-bottom: 1px solid $border-light;
+  border-bottom: 1px solid var(--border-light);
 
   &:last-child { border-bottom: none; }
 
-  &:hover { background: $neutral-50; }
+  &:hover { background: var(--neutral-50); }
 
   &--read {
     opacity: 0.6;
@@ -783,18 +788,18 @@ function logout() {
   }
 
   &--payment &__icon {
-    background: rgba($success, 0.12);
-    color: $success;
+    background: rgba(var(--success-rgb), 0.12);
+    color: var(--color-success);
   }
 
   &--network &__icon {
-    background: rgba($primary-500, 0.12);
-    color: $primary-500;
+    background: rgba(var(--primary-500-rgb), 0.12);
+    color: var(--primary-500);
   }
 
   &--warning &__icon {
-    background: rgba($warning, 0.14);
-    color: $warning;
+    background: rgba(var(--warning-rgb), 0.14);
+    color: var(--color-warning);
   }
 
   &__body {
@@ -805,7 +810,7 @@ function logout() {
   &__title {
     font-size: 0.875rem;
     font-weight: 600;
-    color: $text-primary;
+    color: var(--text-primary);
     margin: 0 0 2px;
     white-space: nowrap;
     overflow: hidden;
@@ -814,21 +819,21 @@ function logout() {
 
   &__desc {
     font-size: 0.8125rem;
-    color: $text-secondary;
+    color: var(--text-secondary);
     margin: 0 0 4px;
     line-height: 1.4;
   }
 
   &__time {
     font-size: 0.75rem;
-    color: $text-tertiary;
+    color: var(--text-tertiary);
   }
 
   &__dot {
     width: 8px;
     height: 8px;
     border-radius: 50%;
-    background: $primary-500;
+    background: var(--primary-500);
     flex-shrink: 0;
     margin-top: 6px;
   }
@@ -840,7 +845,7 @@ function logout() {
 :deep(.ds-dropdown-item__icon) {
   width: 14px;
   margin-right: $spacing-2;
-  color: $text-tertiary;
+  color: var(--text-tertiary);
 }
 
 :deep(.ds-dropdown-item) {
@@ -851,7 +856,7 @@ function logout() {
 :deep(.ds-dropdown-divider) {
   margin: 6px 0;
   border: none;
-  border-top: 1px solid $border-light;
+  border-top: 1px solid var(--border-light);
 }
 
 // ============================================================

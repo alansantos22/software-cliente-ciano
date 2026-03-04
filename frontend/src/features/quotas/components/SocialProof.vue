@@ -112,7 +112,7 @@ const trustMetrics = [
     font-weight: 700;
     letter-spacing: 0.12em;
     text-transform: uppercase;
-    color: $primary-600;
+    color: var(--primary-600);
     margin-bottom: $spacing-3;
   }
 
@@ -124,7 +124,7 @@ const trustMetrics = [
 
   &__subtitle {
     font-size: 0.9375rem;
-    color: $text-secondary;
+    color: var(--text-secondary);
     margin: 0;
   }
 
@@ -144,7 +144,7 @@ const trustMetrics = [
     display: grid;
     grid-template-columns: repeat(4, 1fr);
     gap: $spacing-4;
-    background: linear-gradient(135deg, $primary-900, #0a2f35);
+    background: linear-gradient(135deg, var(--primary-900), #0a2f35);
     border-radius: 16px;
     padding: $spacing-6 $spacing-8;
 
@@ -157,8 +157,8 @@ const trustMetrics = [
 
 // ─── Testimonial Card ─────────────────────────────────────
 .testimonial-card {
-  background: $bg-primary;
-  border: 1px solid $border-light;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-light);
   border-radius: 18px;
   padding: $spacing-6;
   position: relative;
@@ -175,7 +175,7 @@ const trustMetrics = [
   &__quote {
     font-size: 4rem;
     line-height: 1;
-    color: $primary-100;
+    color: var(--primary-100);
     font-family: Georgia, serif;
     height: 1.5rem;
     overflow: visible;
@@ -184,7 +184,7 @@ const trustMetrics = [
 
   &__text {
     font-size: 0.9375rem;
-    color: $text-secondary;
+    color: var(--text-secondary);
     line-height: 1.7;
     flex: 1;
     margin: 0;
@@ -200,7 +200,7 @@ const trustMetrics = [
     width: 40px;
     height: 40px;
     border-radius: 50%;
-    background: linear-gradient(135deg, $primary-500, $secondary-500);
+    background: linear-gradient(135deg, var(--primary-500), var(--secondary-500));
     color: white;
     display: flex;
     align-items: center;
@@ -223,7 +223,7 @@ const trustMetrics = [
   &__detail {
     display: block;
     font-size: 0.75rem;
-    color: $text-tertiary;
+    color: var(--text-tertiary);
   }
 
   &__badge {
@@ -240,19 +240,19 @@ const trustMetrics = [
     align-items: baseline;
     gap: $spacing-2;
     padding: $spacing-3 $spacing-4;
-    background: linear-gradient(135deg, rgba($secondary-500,0.07), rgba($primary-500,0.05));
+    background: linear-gradient(135deg, rgba(var(--secondary-500-rgb), 0.07), rgba(var(--primary-500-rgb), 0.05));
     border-radius: 10px;
   }
 
   &__stat-value {
     font-size: 1.125rem;
     font-weight: 700;
-    color: $secondary-700;
+    color: var(--secondary-700);
   }
 
   &__stat-label {
     font-size: 0.75rem;
-    color: $text-secondary;
+    color: var(--text-secondary);
   }
 }
 
@@ -266,7 +266,7 @@ const trustMetrics = [
   &__value {
     font-size: 1.625rem;
     font-weight: 800;
-    color: $primary-300;
+    color: var(--primary-300);
   }
 
   &__label {

@@ -350,25 +350,25 @@ defineExpose({ selectedQuotas });
     h2 {
       font-size: 1.5rem;
       font-weight: 700;
-      color: $neutral-900;
+      color: var(--neutral-900);
       margin-bottom: $spacing-1;
     }
   }
 
   &__subtitle {
-    color: $text-secondary;
+    color: var(--text-secondary);
     font-size: 0.9rem;
     margin: 0;
   }
 
   // ── Microcopy ──────────────────────────────────────────────────────────────
   &__microcopy {
-    background: linear-gradient(135deg, $primary-50 0%, $accent-50 100%);
-    border: 1px solid $primary-200;
+    background: linear-gradient(135deg, var(--primary-50) 0%, var(--accent-50) 100%);
+    border: 1px solid var(--primary-200);
     border-radius: $radius-lg;
     padding: $spacing-4;
     font-size: 0.9rem;
-    color: $neutral-700;
+    color: var(--neutral-700);
     line-height: 1.7;
 
     .microcopy__total {
@@ -389,18 +389,18 @@ defineExpose({ selectedQuotas });
     justify-content: center;
     gap: $spacing-6;
     padding: $spacing-6;
-    background: $neutral-50;
+    background: var(--neutral-50);
     border-radius: $radius-xl;
-    border: 2px solid $neutral-200;
+    border: 2px solid var(--neutral-200);
   }
 
   .counter-btn {
     width: 52px;
     height: 52px;
     border-radius: 50%;
-    border: 2px solid $primary-500;
+    border: 2px solid var(--primary-500);
     background: white;
-    color: $primary-600;
+    color: var(--primary-600);
     font-size: 1.5rem;
     font-weight: 700;
     cursor: pointer;
@@ -408,7 +408,7 @@ defineExpose({ selectedQuotas });
     transition: all 0.15s ease;
 
     &:hover:not(:disabled) {
-      background: $primary-500;
+      background: var(--primary-500);
       color: white;
       transform: scale(1.1);
     }
@@ -416,16 +416,16 @@ defineExpose({ selectedQuotas });
     &:disabled {
       opacity: 0.35;
       cursor: not-allowed;
-      border-color: $neutral-300;
+      border-color: var(--neutral-300);
     }
 
     &--plus {
-      background: $primary-500;
+      background: var(--primary-500);
       color: white;
 
       &:hover:not(:disabled) {
-        background: $primary-700;
-        border-color: $primary-700;
+        background: var(--primary-700);
+        border-color: var(--primary-700);
       }
     }
   }
@@ -439,27 +439,27 @@ defineExpose({ selectedQuotas });
   .counter-value {
     font-size: 3.5rem;
     font-weight: 800;
-    color: $primary-600;
+    color: var(--primary-600);
     line-height: 1;
     cursor: text;
     border-bottom: 2px dashed transparent;
     transition: border-color 0.15s ease;
 
     &:hover {
-      border-bottom-color: $primary-300;
+      border-bottom-color: var(--primary-300);
     }
   }
 
   .counter-input {
     font-size: 3.5rem;
     font-weight: 800;
-    color: $primary-600;
+    color: var(--primary-600);
     line-height: 1;
     width: 90px;
     text-align: center;
     background: transparent;
     border: none;
-    border-bottom: 2px solid $primary-500;
+    border-bottom: 2px solid var(--primary-500);
     outline: none;
     padding: 0;
     appearance: textfield;
@@ -472,7 +472,7 @@ defineExpose({ selectedQuotas });
 
   .counter-label {
     font-size: 0.8rem;
-    color: $text-tertiary;
+    color: var(--text-tertiary);
     text-transform: uppercase;
     letter-spacing: 0.05em;
   }
@@ -488,12 +488,12 @@ defineExpose({ selectedQuotas });
   .price-value {
     font-size: 2rem;
     font-weight: 800;
-    color: $primary-700;
+    color: var(--primary-700);
   }
 
   .price-installment {
     font-size: 0.8rem;
-    color: $text-tertiary;
+    color: var(--text-tertiary);
   }
 
   // ── Presets ────────────────────────────────────────────────────────────────
@@ -507,7 +507,7 @@ defineExpose({ selectedQuotas });
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.08em;
-    color: $text-tertiary;
+    color: var(--text-tertiary);
     margin: 0;
   }
 
@@ -523,7 +523,7 @@ defineExpose({ selectedQuotas });
     align-items: center;
     gap: $spacing-3;
     padding: $spacing-3 $spacing-4;
-    border: 2px solid $neutral-200;
+    border: 2px solid var(--neutral-200);
     border-radius: $radius-lg;
     background: white;
     cursor: pointer;
@@ -559,13 +559,13 @@ defineExpose({ selectedQuotas });
 
     .preset-count {
       font-size: 0.8rem;
-      color: $text-tertiary;
+      color: var(--text-tertiary);
     }
 
     .preset-price {
       font-weight: 700;
       font-size: 0.875rem;
-      color: $neutral-700;
+      color: var(--neutral-700);
     }
   }
 
@@ -585,7 +585,7 @@ defineExpose({ selectedQuotas });
   .benefits-title {
     font-size: 1rem;
     font-weight: 700;
-    color: $neutral-700;
+    color: var(--neutral-700);
     margin-bottom: $spacing-2;
     text-transform: uppercase;
     letter-spacing: 0.05em;
@@ -594,7 +594,7 @@ defineExpose({ selectedQuotas });
 
 // ── Benefit tier ──────────────────────────────────────────────────────────────
 .benefit-tier {
-  border: 2px solid $neutral-200;
+  border: 2px solid var(--neutral-200);
   border-radius: $radius-lg;
   overflow: hidden;
   transition: all 0.35s ease;
@@ -613,7 +613,7 @@ defineExpose({ selectedQuotas });
   }
 
   &--target {
-    border-color: color-mix(in srgb, var(--c) 40%, $neutral-300);
+    border-color: color-mix(in srgb, var(--c) 40%, var(--neutral-300));
     border-style: dashed;
   }
 
@@ -622,7 +622,7 @@ defineExpose({ selectedQuotas });
     align-items: center;
     justify-content: space-between;
     padding: $spacing-3 $spacing-4;
-    background: $neutral-50;
+    background: var(--neutral-50);
     gap: $spacing-3;
     flex-wrap: wrap;
   }
@@ -640,13 +640,13 @@ defineExpose({ selectedQuotas });
   .tier-label {
     font-weight: 700;
     font-size: 0.9rem;
-    color: var(--c, #{$neutral-700});
+    color: var(--c, #{var(--neutral-700)});
   }
 
   .tier-min {
     font-size: 0.75rem;
-    color: $text-tertiary;
-    background: $neutral-100;
+    color: var(--text-tertiary);
+    background: var(--neutral-100);
     padding: 1px 6px;
     border-radius: $radius-full;
   }
@@ -670,11 +670,11 @@ defineExpose({ selectedQuotas });
       align-items: flex-start;
       gap: $spacing-2;
       font-size: 0.825rem;
-      color: $neutral-700;
+      color: var(--neutral-700);
     }
 
     .benefit-check {
-      color: var(--c, #{$success});
+      color: var(--c, #{var(--color-success)});
       flex-shrink: 0;
       font-size: 0.875rem;
     }
@@ -690,12 +690,12 @@ defineExpose({ selectedQuotas });
 
   &--unlocked {
     background: color-mix(in srgb, var(--c) 15%, white);
-    color: var(--c, #{$success-dark});
+    color: var(--c, #{var(--color-success-dark)});
   }
 
   &--locked {
-    background: $neutral-100;
-    color: $text-tertiary;
+    background: var(--neutral-100);
+    color: var(--text-tertiary);
   }
 }
 

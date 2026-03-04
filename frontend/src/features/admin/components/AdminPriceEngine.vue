@@ -215,11 +215,11 @@ function executeAction() {
 
 .price-engine {
   background: linear-gradient(135deg, #001f2e 0%, #002a3a 100%);
-  border: 1px solid rgba($primary-500, 0.3);
+  border: 1px solid rgba(var(--primary-500-rgb), 0.3);
   border-radius: $radius-lg;
   padding: $spacing-5 $spacing-6;
   color: white;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.18), inset 0 1px 0 rgba($primary-500, 0.15);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.18), inset 0 1px 0 rgba(var(--primary-500-rgb), 0.15);
 
   @media (max-width: 768px) {
     padding: $spacing-4;
@@ -245,9 +245,9 @@ function executeAction() {
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    background: rgba($primary-500, 0.2);
-    border: 1px solid rgba($primary-500, 0.4);
-    color: $primary-300;
+    background: rgba(var(--primary-500-rgb), 0.2);
+    border: 1px solid rgba(var(--primary-500-rgb), 0.4);
+    color: var(--primary-300);
     border-radius: $radius-full;
     font-size: 0.75rem;
     font-weight: 700;
@@ -264,7 +264,7 @@ function executeAction() {
   &__price {
     font-size: 2rem;
     font-weight: 800;
-    color: $primary-300;
+    color: var(--primary-300);
     line-height: 1;
     text-align: right;
   }
@@ -309,9 +309,9 @@ function executeAction() {
     border-radius: $radius-full;
     transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
 
-    &--safe    { background: linear-gradient(90deg, $primary-700, $primary-400); }
-    &--warning { background: linear-gradient(90deg, $warning-dark, $warning-light); }
-    &--critical { background: linear-gradient(90deg, $error-dark, $error-light); }
+    &--safe    { background: linear-gradient(90deg, var(--primary-700), var(--primary-400)); }
+    &--warning { background: linear-gradient(90deg, var(--color-warning-dark), var(--color-warning-light)); }
+    &--critical { background: linear-gradient(90deg, var(--color-error-dark), var(--color-error-light)); }
   }
 
   &__thermo-label-inline {
@@ -350,17 +350,17 @@ function executeAction() {
     transition: all 0.2s;
 
     &--force {
-      background: rgba($error, 0.15);
-      border: 1px solid rgba($error, 0.5);
-      color: $error-light;
-      &:hover { background: rgba($error, 0.3); }
+      background: rgba(var(--error-rgb), 0.15);
+      border: 1px solid rgba(var(--error-rgb), 0.5);
+      color: var(--color-error-light);
+      &:hover { background: rgba(var(--error-rgb), 0.3); }
     }
 
     &--adjust {
-      background: rgba($primary-500, 0.15);
-      border: 1px solid rgba($primary-500, 0.4);
-      color: $primary-300;
-      &:hover { background: rgba($primary-500, 0.28); }
+      background: rgba(var(--primary-500-rgb), 0.15);
+      border: 1px solid rgba(var(--primary-500-rgb), 0.4);
+      color: var(--primary-300);
+      &:hover { background: rgba(var(--primary-500-rgb), 0.28); }
     }
 
     &--cancel {
@@ -371,10 +371,10 @@ function executeAction() {
     }
 
     &--confirm {
-      background: $primary-600;
-      border: 1px solid $primary-500;
+      background: var(--primary-600);
+      border: 1px solid var(--primary-500);
       color: white;
-      &:hover:not(:disabled) { background: $primary-500; }
+      &:hover:not(:disabled) { background: var(--primary-500); }
       &:disabled { opacity: 0.4; cursor: not-allowed; }
     }
   }
@@ -386,13 +386,13 @@ function executeAction() {
     margin-top: $spacing-2;
 
     &--danger {
-      background: rgba($error, 0.1);
-      border: 1px solid rgba($error, 0.35);
+      background: rgba(var(--error-rgb), 0.1);
+      border: 1px solid rgba(var(--error-rgb), 0.35);
     }
 
     &--warning {
-      background: rgba($primary-500, 0.08);
-      border: 1px solid rgba($primary-500, 0.3);
+      background: rgba(var(--primary-500-rgb), 0.08);
+      border: 1px solid rgba(var(--primary-500-rgb), 0.3);
     }
   }
 
@@ -416,7 +416,7 @@ function executeAction() {
       background: rgba(white, 0.1);
       border-radius: 4px;
       padding: 1px 5px;
-      color: $primary-300;
+      color: var(--primary-300);
     }
   }
 
@@ -432,8 +432,8 @@ function executeAction() {
     outline: none;
 
     &:focus {
-      border-color: $primary-400;
-      box-shadow: 0 0 0 2px rgba($primary-500, 0.25);
+      border-color: var(--primary-400);
+      box-shadow: 0 0 0 2px rgba(var(--primary-500-rgb), 0.25);
     }
 
     &::placeholder { color: rgba(white, 0.3); }
@@ -448,7 +448,7 @@ function executeAction() {
   &__success {
     margin-top: $spacing-3;
     font-size: 0.875rem;
-    color: $secondary-400;
+    color: var(--secondary-400);
     font-weight: 600;
   }
 }
@@ -464,7 +464,7 @@ function executeAction() {
 }
 
 // Urgency classes
-.urgency--ok       { color: $secondary-400; }
-.urgency--warning  { color: $warning-light; }
-.urgency--critical { color: $error-light; }
+.urgency--ok       { color: var(--secondary-400); }
+.urgency--warning  { color: var(--color-warning-light); }
+.urgency--critical { color: var(--color-error-light); }
 </style>

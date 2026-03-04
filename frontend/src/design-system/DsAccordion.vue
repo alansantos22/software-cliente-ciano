@@ -76,7 +76,7 @@ defineExpose({ isOpen, toggle });
 @use '@/assets/scss/mixins' as *;
 
 .ds-accordion {
-  border: 1px solid $border-light;
+  border: 1px solid var(--border-light);
   border-radius: $radius-lg;
   overflow: hidden;
 
@@ -89,17 +89,17 @@ defineExpose({ isOpen, toggle });
   &__header {
     @include flex-between;
     padding: $spacing-4;
-    background: $bg-primary;
+    background: var(--bg-primary);
     cursor: pointer;
     user-select: none;
     transition: background $transition-fast;
 
     &:hover {
-      background: $bg-secondary;
+      background: var(--bg-secondary);
     }
 
     &--open {
-      border-bottom: 1px solid $border-light;
+      border-bottom: 1px solid var(--border-light);
     }
 
     &:focus-visible {
@@ -109,7 +109,7 @@ defineExpose({ isOpen, toggle });
 
   &__title {
     font-weight: 500;
-    color: $text-primary;
+    color: var(--text-primary);
   }
 
   &__icon {
@@ -117,7 +117,7 @@ defineExpose({ isOpen, toggle });
     width: 24px;
     height: 24px;
     font-size: 1.25rem;
-    color: $text-secondary;
+    color: var(--text-secondary);
     transition: transform $transition-fast;
   }
 
@@ -128,7 +128,7 @@ defineExpose({ isOpen, toggle });
 
   &__body {
     padding: $spacing-4;
-    color: $text-secondary;
+    color: var(--text-secondary);
     line-height: 1.6;
   }
 }

@@ -106,11 +106,11 @@ function togglePassword() {
     display: block;
     margin-bottom: $spacing-2;
     font-weight: 500;
-    color: $text-primary;
+    color: var(--text-primary);
   }
 
   &__required {
-    color: $error;
+    color: var(--color-error);
     margin-left: 2px;
   }
 
@@ -130,7 +130,7 @@ function togglePassword() {
     position: absolute;
     display: flex;
     align-items: center;
-    color: $text-tertiary;
+    color: var(--text-tertiary);
   }
 
   &__prefix {
@@ -163,21 +163,21 @@ function togglePassword() {
   &__error {
     margin-top: $spacing-1;
     font-size: 0.875rem;
-    color: $error;
+    color: var(--color-error);
   }
 
   &__hint {
     margin-top: $spacing-1;
     font-size: 0.875rem;
-    color: $text-tertiary;
+    color: var(--text-tertiary);
   }
 
   &--error {
     .ds-input__field {
-      border-color: $error;
+      border-color: var(--color-error);
 
       &:focus {
-        box-shadow: 0 0 0 3px rgba($error, 0.2);
+        box-shadow: 0 0 0 3px rgba(var(--error-rgb), 0.2);
       }
     }
   }

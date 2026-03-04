@@ -187,13 +187,13 @@ const tiers = [
     left: calc(50% + 32px);
     right: calc(-50% + 32px);
     height: 3px;
-    background: $border-light;
+    background: var(--border-light);
     z-index: 0;
     transition: background 0.3s;
   }
 
   &--unlocked .tier-node__connector {
-    background: linear-gradient(90deg, var(--color), $border-light);
+    background: linear-gradient(90deg, var(--color), var(--border-light));
   }
 
   &__bubble {
@@ -202,8 +202,8 @@ const tiers = [
     width: 64px;
     height: 64px;
     border-radius: 50%;
-    background: color-mix(in srgb, var(--color) 12%, $bg-primary);
-    border: 3px solid color-mix(in srgb, var(--color) 40%, $border-light);
+    background: color-mix(in srgb, var(--color) 12%, var(--bg-primary));
+    border: 3px solid color-mix(in srgb, var(--color) 40%, var(--border-light));
     display: flex;
     align-items: center;
     justify-content: center;
@@ -213,7 +213,7 @@ const tiers = [
     .tier-node:hover &,
     .tier-node--active & {
       border-color: var(--color);
-      background: color-mix(in srgb, var(--color) 22%, $bg-primary);
+      background: color-mix(in srgb, var(--color) 22%, var(--bg-primary));
       transform: scale(1.15);
       box-shadow: 0 0 0 6px color-mix(in srgb, var(--color) 15%, transparent);
     }
@@ -232,7 +232,7 @@ const tiers = [
   &__req {
     display: block;
     font-size: 0.75rem;
-    color: $text-tertiary;
+    color: var(--text-tertiary);
   }
 
   // ─── Tooltip popup card ──────────────────────────────
@@ -242,8 +242,8 @@ const tiers = [
     left: 50%;
     transform: translateX(-50%);
     width: 240px;
-    background: $bg-primary;
-    border: 1px solid $border-light;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-light);
     border-top: 3px solid var(--color);
     border-radius: 14px;
     padding: $spacing-4;
@@ -266,7 +266,7 @@ const tiers = [
 
     &-req {
       font-size: 0.75rem;
-      color: $text-secondary;
+      color: var(--text-secondary);
       margin: 2px 0 0;
     }
 
@@ -280,7 +280,7 @@ const tiers = [
 
       li {
         font-size: 0.8125rem;
-        color: $text-secondary;
+        color: var(--text-secondary);
         display: flex;
         align-items: flex-start;
         gap: 6px;
@@ -291,17 +291,17 @@ const tiers = [
   &__perk {
     margin-top: $spacing-3;
     padding: $spacing-2 $spacing-3;
-    background: linear-gradient(135deg, rgba($accent-500,0.1), rgba($primary-500,0.07));
+    background: linear-gradient(135deg, rgba(var(--accent-500-rgb), 0.1), rgba(var(--primary-500-rgb), 0.07));
     border-radius: 8px;
     font-size: 0.8125rem;
     font-weight: 600;
-    color: $accent-700;
+    color: var(--accent-700);
     text-align: center;
   }
 }
 
 .tier-check {
-  color: $success;
+  color: var(--color-success);
   font-size: 0.75rem;
   flex-shrink: 0;
 }
@@ -338,7 +338,7 @@ const tiers = [
     align-items: center;
     justify-content: center;
     font-size: 1.5rem;
-    background: color-mix(in srgb, var(--color) 14%, $bg-primary);
+    background: color-mix(in srgb, var(--color) 14%, var(--bg-primary));
     flex-shrink: 0;
   }
 
@@ -346,7 +346,7 @@ const tiers = [
     width: 3px;
     flex: 1;
     min-height: 24px;
-    background: $border-light;
+    background: var(--border-light);
     margin: 4px 0;
   }
 
@@ -364,7 +364,7 @@ const tiers = [
       padding: 0;
       margin: $spacing-2 0 0;
       font-size: 0.8125rem;
-      color: $text-secondary;
+      color: var(--text-secondary);
       display: flex;
       flex-direction: column;
       gap: 3px;
@@ -373,7 +373,7 @@ const tiers = [
 
   &__req {
     font-size: 0.8125rem;
-    color: $text-secondary;
+    color: var(--text-secondary);
     margin: 0;
   }
 
@@ -381,7 +381,7 @@ const tiers = [
     margin-top: $spacing-2;
     font-size: 0.8125rem;
     font-weight: 600;
-    color: $accent-700;
+    color: var(--accent-700);
   }
 }
 </style>

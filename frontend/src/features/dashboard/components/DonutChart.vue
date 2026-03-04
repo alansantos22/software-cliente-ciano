@@ -157,7 +157,7 @@ function pct(value: number): string {
     transform: rotate(90deg);
     transform-origin: 60px 60px;
     font-size: 9px;
-    fill: $text-tertiary;
+    fill: var(--text-tertiary);
     font-family: inherit;
     text-transform: uppercase;
     letter-spacing: 0.5px;
@@ -167,7 +167,7 @@ function pct(value: number): string {
     transform: rotate(90deg);
     transform-origin: 60px 60px;
     font-size: 11px;
-    fill: $text-primary;
+    fill: var(--text-primary);
     font-weight: 700;
     font-family: inherit;
   }
@@ -194,7 +194,7 @@ function pct(value: number): string {
 
     &--hovered,
     &:hover {
-      background: $neutral-100;
+      background: var(--neutral-100);
     }
   }
 
@@ -214,19 +214,19 @@ function pct(value: number): string {
 
   &__legend-label {
     font-size: 0.8125rem;
-    color: $text-secondary;
+    color: var(--text-secondary);
   }
 
   &__legend-value {
     font-size: 0.9375rem;
     font-weight: 600;
-    color: $text-primary;
+    color: var(--text-primary);
   }
 
   &__legend-pct {
     font-size: 0.8125rem;
     font-weight: 700;
-    color: $text-tertiary;
+    color: var(--text-tertiary);
     min-width: 38px;
     text-align: right;
   }

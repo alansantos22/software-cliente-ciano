@@ -642,12 +642,12 @@ onMounted(async () => {
       font-size: 1.75rem;
       font-weight: 700;
       margin-bottom: $spacing-1;
-      color: $text-primary;
+      color: var(--text-primary);
     }
   }
 
   &__subtitle {
-    color: $text-secondary;
+    color: var(--text-secondary);
     margin: 0;
     font-size: 0.95rem;
   }
@@ -666,19 +666,19 @@ onMounted(async () => {
 
 // ─── Etapa 1: Trigger Card ────────────────────────────────────
 .trigger-card {
-  border: 2px solid rgba($primary-500, 0.2);
-  background: linear-gradient(135deg, rgba($primary-500, 0.03) 0%, rgba($secondary-500, 0.03) 100%);
+  border: 2px solid rgba(var(--primary-500-rgb), 0.2);
+  background: linear-gradient(135deg, rgba(var(--primary-500-rgb), 0.03) 0%, rgba(var(--secondary-500-rgb), 0.03) 100%);
 
   &__title {
     font-size: 1.1rem;
     font-weight: 700;
-    color: $text-primary;
+    color: var(--text-primary);
     margin-bottom: $spacing-1;
   }
 
   &__subtitle {
     font-size: 0.875rem;
-    color: $text-secondary;
+    color: var(--text-secondary);
     margin: 0;
     max-width: 640px;
   }
@@ -716,7 +716,7 @@ onMounted(async () => {
     label {
       font-size: 0.875rem;
       font-weight: 600;
-      color: $text-secondary;
+      color: var(--text-secondary);
     }
   }
 
@@ -726,25 +726,25 @@ onMounted(async () => {
     gap: $spacing-3;
     flex-wrap: wrap;
     padding: $spacing-3 $spacing-4;
-    background: rgba($primary-500, 0.06);
-    border: 1px solid rgba($primary-500, 0.18);
+    background: rgba(var(--primary-500-rgb), 0.06);
+    border: 1px solid rgba(var(--primary-500-rgb), 0.18);
     border-radius: $radius-lg;
     font-size: 0.875rem;
-    color: $text-secondary;
+    color: var(--text-secondary);
     align-self: flex-start;
   }
 }
 
 .profit-preview {
   &__item {
-    strong { font-weight: 700; color: $text-primary; }
+    strong { font-weight: 700; color: var(--text-primary); }
     &--highlight strong {
-      color: $success-dark;
+      color: var(--color-success-dark);
       font-size: 1rem;
     }
   }
   &__separator {
-    color: $text-tertiary;
+    color: var(--text-tertiary);
     font-size: 1rem;
   }
 }
@@ -752,7 +752,7 @@ onMounted(async () => {
 // ─── Etapa 2: Distribuição ────────────────────────────────────
 .distribution-meta {
   font-size: 0.875rem;
-  color: $text-secondary;
+  color: var(--text-secondary);
   margin-top: 2px;
 }
 
@@ -778,7 +778,7 @@ onMounted(async () => {
 
   &__subtitle {
     font-size: 0.875rem;
-    color: $text-secondary;
+    color: var(--text-secondary);
     margin: 0;
   }
 
@@ -812,7 +812,7 @@ onMounted(async () => {
     width: 36px;
     height: 36px;
     border-radius: 50%;
-    background: linear-gradient(135deg, $primary-500, $secondary-500);
+    background: linear-gradient(135deg, var(--primary-500), var(--secondary-500));
     color: white;
     @include flex-center;
     font-size: 0.75rem;
@@ -824,18 +824,18 @@ onMounted(async () => {
     @include flex-column;
     gap: 2px;
     strong { font-size: 0.875rem; }
-    span { font-size: 0.75rem; color: $text-tertiary; }
+    span { font-size: 0.75rem; color: var(--text-tertiary); }
   }
 
   &__name {
     font-size: 0.875rem;
     font-weight: 500;
-    color: $text-primary;
+    color: var(--text-primary);
   }
 }
 
 .amount-cell {
-  color: $success-dark;
+  color: var(--color-success-dark);
   font-weight: 700;
   font-variant-numeric: tabular-nums;
 
@@ -850,7 +850,7 @@ onMounted(async () => {
 .competencia-cell {
   font-size: 0.875rem;
   font-weight: 500;
-  color: $text-secondary;
+  color: var(--text-secondary);
 }
 
 .actions-cell {
@@ -866,14 +866,14 @@ onMounted(async () => {
   gap: $spacing-2;
 
   &__icon {
-    color: $primary-400;
+    color: var(--primary-400);
     font-size: 0.75rem;
     flex-shrink: 0;
   }
 
   &__key {
     font-size: 0.8rem;
-    color: $text-secondary;
+    color: var(--text-secondary);
     font-family: monospace;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -892,12 +892,12 @@ onMounted(async () => {
 .detail-row {
   @include flex-between;
   padding: $spacing-2 0;
-  border-bottom: 1px solid $neutral-200;
+  border-bottom: 1px solid var(--neutral-200);
 
-  span { color: $text-secondary; font-size: 0.875rem; }
-  strong { color: $text-primary; }
+  span { color: var(--text-secondary); font-size: 0.875rem; }
+  strong { color: var(--text-primary); }
 
-  &--error strong { color: $error; }
+  &--error strong { color: var(--color-error); }
 }
 
 // ─── Wrapper da Etapa 3 ──────────────────────────────────────

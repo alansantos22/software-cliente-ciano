@@ -222,7 +222,7 @@ function getTargetLevel(total: number): string {
 
   &__header {
     background: white;
-    border-bottom: 1px solid $neutral-200;
+    border-bottom: 1px solid var(--neutral-200);
     box-shadow: 0 1px 8px rgba(0, 0, 0, 0.04);
     position: sticky;
     top: 0;
@@ -249,7 +249,7 @@ function getTargetLevel(total: number): string {
 .checkout-header__top {
   @include flex-between;
   padding: $spacing-3 $spacing-6;
-  border-bottom: 1px solid $neutral-100;
+  border-bottom: 1px solid var(--neutral-100);
 
   @media (max-width: 576px) {
     padding: $spacing-3 $spacing-4;
@@ -262,7 +262,7 @@ function getTargetLevel(total: number): string {
   gap: $spacing-2;
   font-weight: 700;
   font-size: 0.9rem;
-  color: $primary-700;
+  color: var(--primary-700);
 
   .brand-icon {
     font-size: 1.1rem;
@@ -274,21 +274,21 @@ function getTargetLevel(total: number): string {
   align-items: center;
   gap: $spacing-1;
   font-size: 0.775rem;
-  color: $success-dark;
+  color: var(--color-success-dark);
   font-weight: 600;
 }
 
 // ─── Progress bar ─────────────────────────────────────────────────────────────
 .checkout-view__progress {
   height: 4px;
-  background: $neutral-200;
+  background: var(--neutral-200);
   position: relative;
   overflow: hidden;
 }
 
 .progress-bar {
   height: 100%;
-  background: linear-gradient(90deg, $primary-500 0%, $secondary-400 100%);
+  background: linear-gradient(90deg, var(--primary-500) 0%, var(--secondary-400) 100%);
   transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
 
@@ -320,17 +320,17 @@ function getTargetLevel(total: number): string {
   align-items: center;
   gap: $spacing-2;
   font-size: 0.8rem;
-  color: $text-tertiary;
+  color: var(--text-tertiary);
   font-weight: 500;
   transition: color 0.3s ease;
 
   &--active {
-    color: $primary-600;
+    color: var(--primary-600);
 
     .step-label__num {
-      background: $primary-500;
+      background: var(--primary-500);
       color: white;
-      border-color: $primary-500;
+      border-color: var(--primary-500);
     }
 
     .step-label__text {
@@ -339,12 +339,12 @@ function getTargetLevel(total: number): string {
   }
 
   &--done {
-    color: $success-dark;
+    color: var(--color-success-dark);
 
     .step-label__num {
-      background: $success;
+      background: var(--color-success);
       color: white;
-      border-color: $success;
+      border-color: var(--color-success);
     }
   }
 
@@ -352,7 +352,7 @@ function getTargetLevel(total: number): string {
     width: 22px;
     height: 22px;
     border-radius: 50%;
-    border: 2px solid $neutral-300;
+    border: 2px solid var(--neutral-300);
     @include flex-center;
     font-size: 0.7rem;
     font-weight: 700;

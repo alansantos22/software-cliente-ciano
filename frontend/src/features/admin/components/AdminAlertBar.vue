@@ -93,25 +93,25 @@ function formatCurrency(value: number): string {
 
 .admin-alert-bar {
   background: linear-gradient(135deg, #e8f4fd, #d0eaf8);
-  border: 1px solid $info;
-  border-left: 4px solid $info;
+  border: 1px solid var(--color-info);
+  border-left: 4px solid var(--color-info);
 
   &--urgent {
     background: linear-gradient(135deg, #fff3cd, #ffe8a1);
-    border-color: $warning;
-    border-left-color: $warning;
+    border-color: var(--color-warning);
+    border-left-color: var(--color-warning);
 
     .admin-alert-bar__message { color: #7a5a00; }
-    .admin-alert-bar__cta { background: $warning; }
+    .admin-alert-bar__cta { background: var(--color-warning); }
   }
 
   &--overdue {
     background: linear-gradient(135deg, #fdecea, #fcc);
-    border-color: $error;
-    border-left-color: $error;
+    border-color: var(--color-error);
+    border-left-color: var(--color-error);
 
     .admin-alert-bar__message { color: #8b0000; strong { color: #5a0000; } }
-    .admin-alert-bar__cta { background: $error; }
+    .admin-alert-bar__cta { background: var(--color-error); }
   }
   border-radius: $radius-md;
   margin-bottom: $spacing-5;
@@ -152,7 +152,7 @@ function formatCurrency(value: number): string {
 
   &__cta {
     padding: $spacing-2 $spacing-4;
-    background: $info;
+    background: var(--color-info);
     color: white;
     border: none;
     border-radius: $radius-md;
@@ -163,7 +163,7 @@ function formatCurrency(value: number): string {
     transition: background 0.2s;
 
     &:hover {
-      background: $warning-dark;
+      background: var(--color-warning-dark);
     }
   }
 

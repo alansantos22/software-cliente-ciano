@@ -500,8 +500,8 @@ onMounted(async () => {
     align-items: center;
     gap: $spacing-6;
     margin-bottom: $spacing-6;
-    background: $neutral-50;
-    border: 1px solid $neutral-200;
+    background: var(--neutral-50);
+    border: 1px solid var(--neutral-200);
     border-radius: $radius-xl;
     padding: $spacing-5 $spacing-6;
 
@@ -588,12 +588,12 @@ onMounted(async () => {
   gap: $spacing-4;
   padding: $spacing-5;
   border-radius: $radius-xl;
-  border: 1.5px solid $neutral-200;
-  background: #fff;
+  border: 1.5px solid var(--neutral-200);
+  background: var(--bg-primary);
   position: relative;
   transition: box-shadow 0.2s;
 
-  &:hover { box-shadow: $shadow-md; }
+  &:hover { box-shadow: var(--shadow-md); }
 
   &__icon {
     display: flex;
@@ -617,14 +617,14 @@ onMounted(async () => {
     font-size: 0.75rem;
     text-transform: uppercase;
     letter-spacing: 0.07em;
-    color: $text-tertiary;
+    color: var(--text-tertiary);
     font-weight: 600;
   }
 
   &__value {
     font-size: 1.375rem;
     font-weight: 700;
-    color: $text-primary;
+    color: var(--text-primary);
     line-height: 1.2;
 
     &--big { font-size: 1.625rem; }
@@ -633,48 +633,48 @@ onMounted(async () => {
   &__value-unit {
     font-size: 0.875rem;
     font-weight: 500;
-    color: $text-tertiary;
+    color: var(--text-tertiary);
     margin-left: 4px;
   }
 
   &__sub {
     font-size: 0.75rem;
-    color: $text-tertiary;
+    color: var(--text-tertiary);
   }
 
   &--patrimony {
-    .kpi-card__icon { background: rgba($primary-500, 0.1); color: $primary-600; }
+    .kpi-card__icon { background: rgba(var(--primary-500-rgb), 0.1); color: var(--primary-600); }
   }
 
   &--wallet {
-    .kpi-card__icon { background: rgba($success, 0.1); color: $success-dark; }
+    .kpi-card__icon { background: rgba(var(--success-rgb), 0.1); color: var(--color-success-dark); }
   }
 
   &--highlight {
-    border-color: rgba($success, 0.4);
-    background: linear-gradient(135deg, rgba($success, 0.04) 0%, #fff 100%);
-    .kpi-card__value { color: $success-dark; }
+    border-color: rgba(var(--success-rgb), 0.4);
+    background: linear-gradient(135deg, rgba(var(--success-rgb), 0.04) 0%, var(--bg-primary) 100%);
+    .kpi-card__value { color: var(--color-success-dark); }
   }
 
   &--locked {
-    border-color: $neutral-300;
-    background: $neutral-50;
+    border-color: var(--neutral-300);
+    background: var(--neutral-50);
     opacity: 0.85;
 
     .kpi-card__icon {
-      background: rgba($neutral-400, 0.15);
-      color: $neutral-500;
+      background: rgba(var(--neutral-400-rgb), 0.15);
+      color: var(--neutral-500);
     }
   }
 
   &__value--muted {
-    color: $neutral-400;
+    color: var(--neutral-400);
     letter-spacing: 0.25em;
     font-size: 1.25rem;
   }
 
   &__sub--info {
-    color: $primary-600;
+    color: var(--primary-600);
     font-weight: 500;
   }
 
@@ -682,8 +682,8 @@ onMounted(async () => {
     position: absolute;
     top: $spacing-3;
     right: $spacing-3;
-    background: $neutral-200;
-    color: $neutral-600;
+    background: var(--neutral-200);
+    color: var(--neutral-600);
     font-size: 0.7rem;
     font-weight: 600;
     padding: 2px 7px;
@@ -694,12 +694,12 @@ onMounted(async () => {
   }
 
   &--network {
-    .kpi-card__icon { background: rgba($accent-500, 0.12); color: $accent-700; }
+    .kpi-card__icon { background: rgba(var(--accent-500-rgb), 0.12); color: var(--accent-700); }
   }
 
   &--network-warn {
-    border-color: rgba($warning, 0.4);
-    background: linear-gradient(135deg, rgba($warning, 0.04) 0%, #fff 100%);
+    border-color: rgba(var(--warning-rgb), 0.4);
+    background: linear-gradient(135deg, rgba(var(--warning-rgb), 0.04) 0%, var(--bg-primary) 100%);
   }
 
   &--lifetime {
@@ -707,13 +707,13 @@ onMounted(async () => {
   }
 
   &--loss {
-    border-color: rgba($error, 0.3);
-    background: linear-gradient(135deg, rgba($error, 0.04) 0%, #fff 100%);
-    .kpi-card__icon { background: rgba($error, 0.1); }
+    border-color: rgba(var(--error-rgb), 0.3);
+    background: linear-gradient(135deg, rgba(var(--error-rgb), 0.04) 0%, var(--bg-primary) 100%);
+    .kpi-card__icon { background: rgba(var(--error-rgb), 0.1); }
   }
 
-  &__value--danger { color: $error !important; }
-  &__sub--danger { color: $error; font-weight: 500; }
+  &__value--danger { color: var(--color-error) !important; }
+  &__sub--danger { color: var(--color-error); font-weight: 500; }
 }
 
 // ── Sales Cards ─────────────────────────────────────────────
@@ -734,11 +734,11 @@ onMounted(async () => {
   gap: $spacing-4;
   padding: $spacing-5;
   border-radius: $radius-xl;
-  border: 1.5px solid $neutral-200;
-  background: #fff;
+  border: 1.5px solid var(--neutral-200);
+  background: var(--bg-primary);
   transition: box-shadow 0.2s;
 
-  &:hover { box-shadow: $shadow-md; }
+  &:hover { box-shadow: var(--shadow-md); }
 
   &__icon {
     display: flex;
@@ -749,7 +749,7 @@ onMounted(async () => {
     border-radius: 10px;
     font-size: 1.1rem;
     flex-shrink: 0;
-    background: rgba($primary-500, 0.08);
+    background: rgba(var(--primary-500-rgb), 0.08);
   }
 
   &__body {
@@ -761,19 +761,19 @@ onMounted(async () => {
     font-size: 0.75rem;
     text-transform: uppercase;
     letter-spacing: 0.07em;
-    color: $text-tertiary;
+    color: var(--text-tertiary);
     font-weight: 600;
   }
 
   &__value {
     font-size: 1.25rem;
     font-weight: 700;
-    color: $text-primary;
+    color: var(--text-primary);
   }
 
   &__sub {
     font-size: 0.75rem;
-    color: $text-tertiary;
+    color: var(--text-tertiary);
   }
 }
 
@@ -795,13 +795,13 @@ onMounted(async () => {
   border-radius: $radius-md;
   transition: background 0.15s;
 
-  &:hover { background: $neutral-50; }
+  &:hover { background: var(--neutral-50); }
 
   &__avatar {
     width: 38px;
     height: 38px;
     border-radius: 50%;
-    background: $neutral-300;
+    background: var(--neutral-300);
     color: #fff;
     font-size: 0.8125rem;
     font-weight: 700;
@@ -811,8 +811,8 @@ onMounted(async () => {
     flex-shrink: 0;
 
     &--system {
-      background: rgba($primary-500, 0.1);
-      color: $primary-600;
+      background: rgba(var(--primary-500-rgb), 0.1);
+      color: var(--primary-600);
       font-size: 1rem;
     }
   }
@@ -827,7 +827,7 @@ onMounted(async () => {
   &__title {
     font-size: 0.875rem;
     font-weight: 500;
-    color: $text-primary;
+    color: var(--text-primary);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -835,13 +835,13 @@ onMounted(async () => {
 
   &__source {
     font-size: 0.75rem;
-    color: $primary-600;
+    color: var(--primary-600);
     font-style: italic;
   }
 
   &__date {
     font-size: 0.6875rem;
-    color: $text-tertiary;
+    color: var(--text-tertiary);
   }
 
   &__right {
@@ -864,11 +864,11 @@ onMounted(async () => {
 .earnings-footer {
   @include flex-between;
   padding-top: $spacing-3;
-  border-top: 1px solid $neutral-200;
+  border-top: 1px solid var(--neutral-200);
   font-size: 0.9375rem;
 
   strong {
-    color: $primary-700;
+    color: var(--primary-700);
     font-size: 1.125rem;
     font-weight: 700;
   }
@@ -876,7 +876,7 @@ onMounted(async () => {
 
 // ── Quick links ──────────────────────────────────────────────
 .view-all {
-  color: $primary-600;
+  color: var(--primary-600);
   text-decoration: none;
   font-size: 0.875rem;
   display: flex;
@@ -891,15 +891,15 @@ onMounted(async () => {
   align-items: center;
   gap: $spacing-3;
   padding: $spacing-4 $spacing-5;
-  background: $bg-primary;
+  background: var(--bg-primary);
   border-radius: $radius-lg;
-  box-shadow: $shadow-md;
+  box-shadow: var(--shadow-md);
   transition: all 0.2s ease;
 
   &:hover {
     transform: translateY(-2px);
-    box-shadow: $shadow-lg;
-    .quick-link__arrow { transform: translateX(4px); color: $primary-600; }
+    box-shadow: var(--shadow-lg);
+    .quick-link__arrow { transform: translateX(4px); color: var(--primary-600); }
   }
 
   &__icon {
@@ -912,29 +912,29 @@ onMounted(async () => {
     font-size: 1.125rem;
     flex-shrink: 0;
 
-    &--network  { background: rgba($primary-500, 0.1); color: $primary-600; }
-    &--quotas   { background: rgba($success, 0.1);     color: $success-dark; }
-    &--referral { background: rgba($accent-500, 0.1);  color: #a07400; }
+    &--network  { background: rgba(var(--primary-500-rgb), 0.1); color: var(--primary-600); }
+    &--quotas   { background: rgba(var(--success-rgb), 0.1);     color: var(--color-success-dark); }
+    &--referral { background: rgba(var(--accent-500-rgb), 0.1);  color: #a07400; }
   }
 
   &__text {
     flex: 1;
-    color: $text-primary;
+    color: var(--text-primary);
     font-weight: 500;
     font-size: 0.9375rem;
   }
 
   &__arrow {
-    color: $text-tertiary;
+    color: var(--text-tertiary);
     font-size: 0.875rem;
     transition: all 0.2s ease;
   }
 }
 
 // ── Utilities ────────────────────────────────────────────────
-.text-success { color: $success; }
-.text-muted   { color: $text-tertiary; }
-.text-warning { color: $warning; }
+.text-success { color: var(--color-success); }
+.text-muted   { color: var(--text-tertiary); }
+.text-warning { color: var(--color-warning); }
 
 // ── Referral Card ────────────────────────────────────────────
 .dashboard-view__referral {
@@ -946,8 +946,8 @@ onMounted(async () => {
   align-items: center;
   gap: $spacing-5;
   padding: $spacing-5 $spacing-6;
-  background: linear-gradient(135deg, rgba($accent-500, 0.08) 0%, rgba($primary-500, 0.06) 100%);
-  border: 1.5px solid rgba($accent-500, 0.25);
+  background: linear-gradient(135deg, rgba(var(--accent-500-rgb), 0.08) 0%, rgba(var(--primary-500-rgb), 0.06) 100%);
+  border: 1.5px solid rgba(var(--accent-500-rgb), 0.25);
   border-radius: $radius-xl;
   flex-wrap: wrap;
 
@@ -955,8 +955,8 @@ onMounted(async () => {
     width: 48px;
     height: 48px;
     border-radius: 12px;
-    background: rgba($accent-500, 0.15);
-    color: $accent-700;
+    background: rgba(var(--accent-500-rgb), 0.15);
+    color: var(--accent-700);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -976,7 +976,7 @@ onMounted(async () => {
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.08em;
-    color: $text-tertiary;
+    color: var(--text-tertiary);
   }
 
   &__code-row {
@@ -989,24 +989,24 @@ onMounted(async () => {
   &__code {
     font-size: 1.25rem;
     font-weight: 800;
-    color: $accent-800;
+    color: var(--accent-800);
     letter-spacing: 0.12em;
     font-family: 'Courier New', monospace;
-    background: rgba($accent-500, 0.12);
+    background: rgba(var(--accent-500-rgb), 0.12);
     padding: 2px 10px;
     border-radius: $radius-md;
-    border: 1px solid rgba($accent-500, 0.3);
+    border: 1px solid rgba(var(--accent-500-rgb), 0.3);
   }
 
   &__link {
     font-size: 0.8125rem;
-    color: $text-secondary;
+    color: var(--text-secondary);
     font-style: italic;
   }
 
   &__desc {
     font-size: 0.8125rem;
-    color: $text-tertiary;
+    color: var(--text-tertiary);
     margin: 0;
   }
 
@@ -1015,7 +1015,7 @@ onMounted(async () => {
     align-items: center;
     gap: $spacing-2;
     padding: $spacing-3 $spacing-5;
-    background: $accent-600;
+    background: var(--accent-600);
     color: white;
     border: none;
     border-radius: $radius-lg;
@@ -1025,11 +1025,11 @@ onMounted(async () => {
     transition: all 0.2s ease;
     flex-shrink: 0;
 
-    &:hover { background: $accent-700; transform: translateY(-1px); }
+    &:hover { background: var(--accent-700); transform: translateY(-1px); }
 
     &--copied {
-      background: $success;
-      &:hover { background: $success-dark; }
+      background: var(--color-success);
+      &:hover { background: var(--color-success-dark); }
     }
   }
 }

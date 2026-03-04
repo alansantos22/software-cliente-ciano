@@ -148,10 +148,10 @@ function formatCurrency(value: number): string {
 @use '@/assets/scss/mixins' as *;
 
 .profit-simulator {
-  background: linear-gradient(135deg, $neutral-900 0%, #0a2f35 100%);
+  background: linear-gradient(135deg, var(--neutral-900) 0%, #0a2f35 100%);
   border-radius: 24px;
   padding: $spacing-10 $spacing-8;
-  color: $text-inverse;
+  color: var(--text-inverse);
 
   @media (max-width: 768px) {
     padding: $spacing-8 $spacing-5;
@@ -168,7 +168,7 @@ function formatCurrency(value: number): string {
     font-weight: 700;
     letter-spacing: 0.12em;
     text-transform: uppercase;
-    color: $primary-300;
+    color: var(--primary-300);
     margin-bottom: $spacing-3;
   }
 
@@ -234,7 +234,7 @@ function formatCurrency(value: number): string {
   &__value {
     font-size: 1rem;
     font-weight: 700;
-    color: $primary-300;
+    color: var(--primary-300);
   }
 
   &__track-labels {
@@ -263,9 +263,9 @@ function formatCurrency(value: number): string {
     width: 22px;
     height: 22px;
     border-radius: 50%;
-    background: linear-gradient(135deg, $primary-400, $primary-600);
+    background: linear-gradient(135deg, var(--primary-400), var(--primary-600));
     cursor: pointer;
-    box-shadow: 0 2px 8px rgba($primary-500, 0.5);
+    box-shadow: 0 2px 8px rgba(var(--primary-500-rgb), 0.5);
     border: 2px solid rgba(255,255,255,0.3);
     transition: transform 0.15s ease;
   }
@@ -278,9 +278,9 @@ function formatCurrency(value: number): string {
     width: 22px;
     height: 22px;
     border-radius: 50%;
-    background: linear-gradient(135deg, $primary-400, $primary-600);
+    background: linear-gradient(135deg, var(--primary-400), var(--primary-600));
     cursor: pointer;
-    box-shadow: 0 2px 8px rgba($primary-500, 0.5);
+    box-shadow: 0 2px 8px rgba(var(--primary-500-rgb), 0.5);
     border: 2px solid rgba(255,255,255,0.3);
   }
 }
@@ -297,8 +297,8 @@ function formatCurrency(value: number): string {
   transition: background 0.2s;
 
   &--total {
-    background: linear-gradient(135deg, rgba($primary-500,0.25), rgba($secondary-500,0.15));
-    border-color: rgba($primary-400, 0.4);
+    background: linear-gradient(135deg, rgba(var(--primary-500-rgb), 0.25), rgba(var(--secondary-500-rgb), 0.15));
+    border-color: rgba(var(--primary-400-rgb), 0.4);
   }
 
   &__icon {
@@ -324,7 +324,7 @@ function formatCurrency(value: number): string {
 
     &--big {
       font-size: 1.5rem;
-      color: $primary-300;
+      color: var(--primary-300);
     }
   }
 }
@@ -333,8 +333,8 @@ function formatCurrency(value: number): string {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: rgba($accent-500, 0.12);
-  border: 1px solid rgba($accent-500, 0.3);
+  background: rgba(var(--accent-500-rgb), 0.12);
+  border: 1px solid rgba(var(--accent-500-rgb), 0.3);
   border-radius: 10px;
   padding: $spacing-3 $spacing-5;
   margin-top: $spacing-2;
@@ -347,7 +347,7 @@ function formatCurrency(value: number): string {
   &__value {
     font-size: 1.25rem;
     font-weight: 800;
-    color: $accent-300;
+    color: var(--accent-300);
   }
 }
 </style>

@@ -84,9 +84,9 @@ watch(() => props.modelValue, (isOpen) => {
 }
 
 .ds-modal {
-  background: $bg-primary;
+  background: var(--bg-primary);
   border-radius: $radius-xl;
-  box-shadow: $shadow-xl;
+  box-shadow: var(--shadow-xl);
   max-height: 90vh;
   display: flex;
   flex-direction: column;
@@ -123,7 +123,7 @@ watch(() => props.modelValue, (isOpen) => {
   &__header {
     @include flex-between;
     padding: $spacing-4 $spacing-6;
-    border-bottom: 1px solid $border-light;
+    border-bottom: 1px solid var(--border-light);
   }
 
   &__title {
@@ -140,13 +140,13 @@ watch(() => props.modelValue, (isOpen) => {
     border: none;
     border-radius: $radius-full;
     cursor: pointer;
-    color: $text-secondary;
+    color: var(--text-secondary);
     font-size: 1rem;
     transition: background $transition-fast;
 
     &:hover {
-      background: $neutral-100;
-      color: $text-primary;
+      background: var(--neutral-100);
+      color: var(--text-primary);
     }
   }
 
@@ -158,8 +158,8 @@ watch(() => props.modelValue, (isOpen) => {
 
   &__footer {
     padding: $spacing-4 $spacing-6;
-    border-top: 1px solid $border-light;
-    background: $bg-secondary;
+    border-top: 1px solid var(--border-light);
+    background: var(--bg-secondary);
   }
 }
 

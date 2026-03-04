@@ -49,13 +49,13 @@ withDefaults(defineProps<Props>(), {});
     margin: 0 0 $spacing-2;
     font-size: 1.25rem;
     font-weight: 600;
-    color: $text-primary;
+    color: var(--text-primary);
   }
 
   &__description {
     margin: 0;
     max-width: 320px;
-    color: $text-secondary;
+    color: var(--text-secondary);
     line-height: 1.5;
   }
 

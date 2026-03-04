@@ -417,11 +417,11 @@ onMounted(async () => {
   font-size: 1.75rem;
   font-weight: 700;
   margin: 0 0 $spacing-1;
-  color: $text-primary;
+  color: var(--text-primary);
 }
 
 .admin-cmd__subtitle {
-  color: $text-secondary;
+  color: var(--text-secondary);
   font-size: 0.875rem;
   margin: 0;
 
@@ -432,18 +432,18 @@ onMounted(async () => {
 }
 
 .admin-cmd__header-link {
-  color: $primary-600;
+  color: var(--primary-600);
   font-size: 0.875rem;
   font-weight: 500;
   text-decoration: none;
   padding: $spacing-2 $spacing-4;
-  border: 1px solid $primary-300;
+  border: 1px solid var(--primary-300);
   border-radius: $radius-md;
   transition: all 0.2s;
 
   &:hover {
-    background: $primary-50;
-    border-color: $primary-500;
+    background: var(--primary-50);
+    border-color: var(--primary-500);
   }
 }
 
@@ -461,7 +461,7 @@ onMounted(async () => {
     content: '';
     flex: 1;
     height: 1px;
-    background: $border-light;
+    background: var(--border-light);
   }
 
   &__label {
@@ -469,7 +469,7 @@ onMounted(async () => {
     font-weight: 700;
     letter-spacing: 0.08em;
     text-transform: uppercase;
-    color: $text-tertiary;
+    color: var(--text-tertiary);
     white-space: nowrap;
     padding: 0 $spacing-2;
   }
@@ -501,8 +501,8 @@ onMounted(async () => {
 .kpi-dividend {
   @include card;
   background: linear-gradient(135deg, #fff8e1, #fff3cd);
-  border: 1px solid rgba($accent-500, 0.4);
-  box-shadow: 0 2px 8px rgba($accent-500, 0.12);
+  border: 1px solid rgba(var(--accent-500-rgb), 0.4);
+  box-shadow: 0 2px 8px rgba(var(--accent-500-rgb), 0.12);
   display: flex;
   flex-direction: column;
   gap: $spacing-1;
@@ -520,26 +520,26 @@ onMounted(async () => {
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    color: $accent-800;
+    color: var(--accent-800);
   }
 
   &__value {
     font-size: 1.45rem;
     font-weight: 800;
-    color: $accent-900;
+    color: var(--accent-900);
     margin: $spacing-1 0;
     font-variant-numeric: tabular-nums;
   }
 
   &__subtitle {
     font-size: 0.78rem;
-    color: $accent-700;
+    color: var(--accent-700);
     margin: 0;
   }
 
   &__bar {
     height: 6px;
-    background: rgba($accent-500, 0.2);
+    background: rgba(var(--accent-500-rgb), 0.2);
     border-radius: $radius-full;
     margin-top: $spacing-2;
     overflow: hidden;
@@ -547,7 +547,7 @@ onMounted(async () => {
 
   &__bar-fill {
     height: 100%;
-    background: linear-gradient(90deg, $accent-500, $accent-700);
+    background: linear-gradient(90deg, var(--accent-500), var(--accent-700));
     border-radius: $radius-full;
     transition: width 0.8s ease;
     max-width: 100%;
@@ -555,7 +555,7 @@ onMounted(async () => {
 
   &__bar-label {
     font-size: 0.72rem;
-    color: $accent-700;
+    color: var(--accent-700);
     margin-top: 4px;
   }
 }
@@ -595,13 +595,13 @@ onMounted(async () => {
     height: 10px;
     border-radius: 2px;
 
-    &--novas    { background: $primary-500; }
-    &--recompra { background: $secondary-500; }
+    &--novas    { background: var(--primary-500); }
+    &--recompra { background: var(--secondary-500); }
   }
 
   &__text {
     font-size: 0.78rem;
-    color: $text-secondary;
+    color: var(--text-secondary);
     font-weight: 400;
     margin-right: $spacing-2;
   }
@@ -633,14 +633,14 @@ onMounted(async () => {
     left: 28px;
     right: 0;
     height: 1px;
-    background: $border-light;
+    background: var(--border-light);
     opacity: 0.7;
   }
 }
 
 .stacked-chart__guide-label {
   font-size: 0.65rem;
-  color: $text-tertiary;
+  color: var(--text-tertiary);
   width: 26px;
   text-align: right;
   position: relative;
@@ -673,7 +673,7 @@ onMounted(async () => {
 .stacked-chart__bar-total {
   font-size: 0.7rem;
   font-weight: 700;
-  color: $text-secondary;
+  color: var(--text-secondary);
 }
 
 .stacked-chart__bar {
@@ -695,13 +695,13 @@ onMounted(async () => {
 .stacked-chart__segment {
   min-height: 2px;
 
-  &--recompra { background: $secondary-500; opacity: 0.85; }
-  &--novas    { background: $primary-500; }
+  &--recompra { background: var(--secondary-500); opacity: 0.85; }
+  &--novas    { background: var(--primary-500); }
 }
 
 .stacked-chart__month {
   font-size: 0.72rem;
-  color: $text-tertiary;
+  color: var(--text-tertiary);
   font-weight: 600;
 }
 
@@ -740,13 +740,13 @@ onMounted(async () => {
   &__icon-name {
     font-size: 0.82rem;
     font-weight: 500;
-    color: $text-primary;
+    color: var(--text-primary);
     white-space: nowrap;
   }
 
   &__progress {
     height: 20px;
-    background: $neutral-100;
+    background: var(--neutral-100);
     border-radius: $radius-md;
     overflow: hidden;
   }
@@ -762,7 +762,7 @@ onMounted(async () => {
     text-align: right;
     font-weight: 700;
     font-size: 0.875rem;
-    color: $text-primary;
+    color: var(--text-primary);
   }
 }
 
@@ -774,13 +774,13 @@ onMounted(async () => {
 
   &__hint {
     font-size: 0.75rem;
-    color: $text-tertiary;
+    color: var(--text-tertiary);
     font-weight: 400;
   }
 }
 
 .view-all {
-  color: $primary-600;
+  color: var(--primary-600);
   text-decoration: none;
   font-size: 0.875rem;
   white-space: nowrap;

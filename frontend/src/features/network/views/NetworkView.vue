@@ -247,7 +247,7 @@ const userTitle = computed(() => 'gold' as const);
   }
 
   &__subtitle {
-    color: $text-secondary;
+    color: var(--text-secondary);
     margin: 0;
   }
 
@@ -288,14 +288,14 @@ const userTitle = computed(() => 'gold' as const);
     @include flex-center;
     flex-direction: column;
     padding: $spacing-12;
-    color: $text-tertiary;
+    color: var(--text-tertiary);
 
     p { margin-top: $spacing-3; font-size: 0.9375rem; }
   }
 
   &__empty-icon {
     font-size: 2.5rem;
-    color: $success-light;
+    color: var(--color-success-light);
   }
 }
 

@@ -46,7 +46,7 @@ const show = ref(false);
     position: absolute;
     z-index: 1000;
     padding: $spacing-2 $spacing-3;
-    background: $neutral-900;
+    background: var(--neutral-900);
     color: white;
     font-size: 0.8125rem;
     border-radius: 6px;
@@ -68,7 +68,7 @@ const show = ref(false);
         top: 100%;
         left: 50%;
         transform: translateX(-50%);
-        border-top-color: $neutral-900;
+        border-top-color: var(--neutral-900);
       }
     }
 
@@ -81,7 +81,7 @@ const show = ref(false);
         bottom: 100%;
         left: 50%;
         transform: translateX(-50%);
-        border-bottom-color: $neutral-900;
+        border-bottom-color: var(--neutral-900);
       }
     }
 
@@ -94,7 +94,7 @@ const show = ref(false);
         left: 100%;
         top: 50%;
         transform: translateY(-50%);
-        border-left-color: $neutral-900;
+        border-left-color: var(--neutral-900);
       }
     }
 
@@ -107,7 +107,7 @@ const show = ref(false);
         right: 100%;
         top: 50%;
         transform: translateY(-50%);
-        border-right-color: $neutral-900;
+        border-right-color: var(--neutral-900);
       }
     }
   }

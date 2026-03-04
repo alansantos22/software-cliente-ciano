@@ -70,25 +70,25 @@ const statusDetail = computed(() => {
   border: 1.5px solid;
 
   &--active {
-    background: rgba($success, 0.06);
-    border-color: rgba($success, 0.3);
-    .status-widget__icon { color: $success; background: rgba($success, 0.12); }
-    .status-widget__title { color: $success-dark; }
+    background: rgba(var(--success-rgb), 0.06);
+    border-color: rgba(var(--success-rgb), 0.3);
+    .status-widget__icon { color: var(--color-success); background: rgba(var(--success-rgb), 0.12); }
+    .status-widget__title { color: var(--color-success-dark); }
   }
 
   &--warning {
-    background: rgba($warning, 0.08);
-    border-color: rgba($warning, 0.4);
-    .status-widget__icon { color: $warning; background: rgba($warning, 0.12); }
-    .status-widget__title { color: color.adjust($warning, $lightness: -10%); }
+    background: rgba(var(--warning-rgb), 0.08);
+    border-color: rgba(var(--warning-rgb), 0.4);
+    .status-widget__icon { color: var(--color-warning); background: rgba(var(--warning-rgb), 0.12); }
+    .status-widget__title { color: var(--color-warning-dark); }
   }
 
   &--critical {
-    background: rgba($error, 0.08);
-    border-color: rgba($error, 0.4);
+    background: rgba(var(--error-rgb), 0.08);
+    border-color: rgba(var(--error-rgb), 0.4);
     animation: none;
-    .status-widget__icon { color: $error; background: rgba($error, 0.12); }
-    .status-widget__title { color: $error; }
+    .status-widget__icon { color: var(--color-error); background: rgba(var(--error-rgb), 0.12); }
+    .status-widget__title { color: var(--color-error); }
   }
 
   &__icon {
@@ -124,7 +124,7 @@ const statusDetail = computed(() => {
 
   &__detail {
     font-size: 0.75rem;
-    color: $text-secondary;
+    color: var(--text-secondary);
   }
 
   &__cta {
@@ -135,7 +135,7 @@ const statusDetail = computed(() => {
     padding: $spacing-1 $spacing-3;
     border: none;
     border-radius: $radius-sm;
-    background: $error;
+    background: var(--color-error);
     color: #fff;
     font-size: 0.8125rem;
     font-weight: 600;
@@ -143,8 +143,8 @@ const statusDetail = computed(() => {
     transition: background 0.2s;
 
     .status-widget--warning & {
-      background: $warning;
-      color: $neutral-900;
+      background: var(--color-warning);
+      color: var(--neutral-900);
     }
 
     &:hover {

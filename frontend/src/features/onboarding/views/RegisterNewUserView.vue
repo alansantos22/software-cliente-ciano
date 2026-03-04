@@ -291,14 +291,14 @@ function resetForm() {
   &__title {
     font-size: 1.75rem;
     font-weight: 800;
-    color: $text-primary;
+    color: var(--text-primary);
     margin: 0 0 $spacing-2;
     letter-spacing: -0.02em;
   }
 
   &__subtitle {
     font-size: 0.9375rem;
-    color: $text-secondary;
+    color: var(--text-secondary);
     margin: 0;
     line-height: 1.5;
   }
@@ -315,10 +315,10 @@ function resetForm() {
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.06em;
-    color: $text-secondary;
+    color: var(--text-secondary);
     margin: $spacing-4 0 0;
     padding-bottom: $spacing-2;
-    border-bottom: 1px solid $border-light;
+    border-bottom: 1px solid var(--border-light);
   }
 
   &__row {
@@ -345,23 +345,23 @@ function resetForm() {
   &__label {
     font-size: 0.875rem;
     font-weight: 600;
-    color: $text-primary;
+    color: var(--text-primary);
   }
 
   &__select {
     height: 44px;
     padding: 0 $spacing-3;
-    border: 1.5px solid $border-default;
+    border: 1.5px solid var(--border-default);
     border-radius: 10px;
-    background: $bg-primary;
-    color: $text-primary;
+    background: var(--bg-primary);
+    color: var(--text-primary);
     font-size: 0.9375rem;
     transition: border-color 0.2s;
     appearance: auto;
 
     &:focus {
       outline: none;
-      border-color: $primary-500;
+      border-color: var(--primary-500);
     }
   }
 
@@ -376,11 +376,11 @@ function resetForm() {
   // ── Success ──
   &__id {
     font-family: monospace;
-    background: rgba($primary-500, 0.1);
+    background: rgba(var(--primary-500-rgb), 0.1);
     padding: 2px $spacing-2;
     border-radius: $radius-sm;
     font-weight: 700;
-    color: $primary-700;
+    color: var(--primary-700);
   }
 
   &__success-actions {

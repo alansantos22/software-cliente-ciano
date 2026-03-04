@@ -107,39 +107,7 @@ $shadow-md: 0 4px 6px $shadow-color;
 $shadow-lg: 0 10px 15px $shadow-color;
 $shadow-xl: 0 20px 25px $shadow-color;
 
-// === CSS CUSTOM PROPERTIES (for runtime theming) ===
-:root {
-  // Primary
-  --color-primary: #{$primary-500};
-  --color-primary-light: #{$primary-300};
-  --color-primary-dark: #{$primary-700};
-
-  // Secondary
-  --color-secondary: #{$secondary-500};
-  --color-secondary-light: #{$secondary-300};
-  --color-secondary-dark: #{$secondary-700};
-
-  // Accent
-  --color-accent: #{$accent-500};
-  --color-accent-light: #{$accent-300};
-  --color-accent-dark: #{$accent-700};
-
-  // Semantic
-  --color-success: #{$success};
-  --color-warning: #{$warning};
-  --color-error: #{$error};
-  --color-info: #{$info};
-
-  // Backgrounds
-  --bg-primary: #{$bg-primary};
-  --bg-secondary: #{$bg-secondary};
-  --bg-tertiary: #{$bg-tertiary};
-
-  // Text
-  --text-primary: #{$text-primary};
-  --text-secondary: #{$text-secondary};
-  --text-tertiary: #{$text-tertiary};
-
-  // Borders
-  --border-color: #{$border-default};
-}
+// === NOTE: CSS Custom Properties moved to _theme.scss ===
+// Theme tokens (light/dark) are defined there.
+// These SCSS variables above remain as compile-time references
+// for any SCSS functions that need real color values (e.g., rgba()).

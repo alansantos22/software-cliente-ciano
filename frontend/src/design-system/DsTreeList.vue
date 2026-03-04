@@ -141,15 +141,15 @@ function toggleExpand(node: TreeNode) {
     transition: background $transition-fast;
 
     &:hover {
-      background: $neutral-100;
+      background: var(--neutral-100);
     }
 
     &--selected {
-      background: $primary-100;
-      color: $primary-700;
+      background: var(--primary-100);
+      color: var(--primary-700);
 
       &:hover {
-        background: $primary-200;
+        background: var(--primary-200);
       }
     }
   }
@@ -162,11 +162,11 @@ function toggleExpand(node: TreeNode) {
     border: none;
     cursor: pointer;
     font-size: 0.625rem;
-    color: $text-tertiary;
+    color: var(--text-tertiary);
     transition: color $transition-fast;
 
     &:hover {
-      color: $primary-600;
+      color: var(--primary-600);
     }
   }
 

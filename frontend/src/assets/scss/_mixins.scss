@@ -99,7 +99,7 @@ $breakpoint-2xl: 1400px;
 // === FOCUS STYLES ===
 @mixin focus-ring {
   outline: none;
-  box-shadow: 0 0 0 3px rgba($primary-500, 0.4);
+  box-shadow: 0 0 0 3px var(--focus-ring);
 }
 
 @mixin focus-visible {
@@ -131,9 +131,9 @@ $breakpoint-2xl: 1400px;
 
 // === CARDS ===
 @mixin card {
-  background: $bg-primary;
+  background: var(--bg-primary);
   border-radius: $radius-lg;
-  box-shadow: $shadow-md;
+  box-shadow: var(--shadow-md);
   padding: $spacing-4;
 }
 
@@ -142,7 +142,7 @@ $breakpoint-2xl: 1400px;
   
   &:hover {
     transform: translateY(-2px);
-    box-shadow: $shadow-lg;
+    box-shadow: var(--shadow-lg);
   }
 }
 
@@ -151,24 +151,24 @@ $breakpoint-2xl: 1400px;
   width: 100%;
   padding: $spacing-2 $spacing-3;
   font-size: 1rem;
-  border: 1px solid $border-default;
+  border: 1px solid var(--border-default);
   border-radius: $radius-md;
-  background: $bg-primary;
+  background: var(--input-bg);
   transition: border-color $transition-fast, box-shadow $transition-fast;
   
   &:focus {
     outline: none;
-    border-color: $primary-500;
-    box-shadow: 0 0 0 3px rgba($primary-500, 0.2);
+    border-color: var(--primary-500);
+    box-shadow: 0 0 0 3px var(--focus-ring-subtle);
   }
   
   &:disabled {
-    background: $neutral-100;
+    background: var(--input-disabled-bg);
     cursor: not-allowed;
   }
   
   &::placeholder {
-    color: $text-tertiary;
+    color: var(--text-tertiary);
   }
 }
 
@@ -180,16 +180,16 @@ $breakpoint-2xl: 1400px;
   }
   
   &::-webkit-scrollbar-track {
-    background: $neutral-100;
+    background: var(--scrollbar-track);
     border-radius: $radius-full;
   }
   
   &::-webkit-scrollbar-thumb {
-    background: $neutral-400;
+    background: var(--scrollbar-thumb);
     border-radius: $radius-full;
     
     &:hover {
-      background: $neutral-500;
+      background: var(--scrollbar-thumb-hover);
     }
   }
 }
@@ -211,7 +211,7 @@ $breakpoint-2xl: 1400px;
 @mixin overlay($opacity: 0.5) {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, $opacity);
+  background: var(--overlay-bg);
   z-index: $z-modal-backdrop;
 }
 
@@ -219,9 +219,9 @@ $breakpoint-2xl: 1400px;
 @mixin skeleton {
   background: linear-gradient(
     90deg,
-    $neutral-200 25%,
-    $neutral-100 50%,
-    $neutral-200 75%
+    var(--skeleton-from) 25%,
+    var(--skeleton-to) 50%,
+    var(--skeleton-from) 75%
   );
   background-size: 200% 100%;
   animation: skeleton-loading 1.5s infinite;

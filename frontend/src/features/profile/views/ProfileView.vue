@@ -362,14 +362,14 @@ function showFeedback(type: typeof feedback.type, message: string) {
     font-size: 1.5rem;
     font-weight: 700;
     color: white;
-    background: $primary-500;
+    background: var(--primary-500);
     flex-shrink: 0;
     border: 3px solid transparent;
 
-    &--socio { background: $level-socio; }
-    &--platinum { background: #8e8e8e; border-color: $level-platinum; color: $neutral-800; }
-    &--vip { background: $level-vip; border-color: darken($level-vip, 10%); }
-    &--imperial { background: $level-imperial; border-color: lighten($level-imperial, 15%); }
+    &--socio { background: var(--level-socio); }
+    &--platinum { background: #8e8e8e; border-color: var(--level-platinum); color: var(--neutral-800); }
+    &--vip { background: var(--level-vip); border-color: #e6ad06; }
+    &--imperial { background: var(--level-imperial); border-color: #a020a0; }
   }
 
   &__identity {
@@ -381,7 +381,7 @@ function showFeedback(type: typeof feedback.type, message: string) {
   &__name {
     font-size: 1.375rem;
     font-weight: 700;
-    color: $text-primary;
+    color: var(--text-primary);
     margin: 0;
   }
 
@@ -405,7 +405,7 @@ function showFeedback(type: typeof feedback.type, message: string) {
 
   &__referral-label {
     font-size: 0.8125rem;
-    color: $text-tertiary;
+    color: var(--text-tertiary);
     font-weight: 500;
   }
 
@@ -415,12 +415,12 @@ function showFeedback(type: typeof feedback.type, message: string) {
     gap: $spacing-2;
 
     code {
-      background: $bg-tertiary;
+      background: var(--bg-tertiary);
       padding: $spacing-1 $spacing-3;
       border-radius: $radius-md;
       font-size: 0.9375rem;
       font-weight: 600;
-      color: $primary-700;
+      color: var(--primary-700);
       letter-spacing: 0.5px;
     }
   }
@@ -432,11 +432,11 @@ function showFeedback(type: typeof feedback.type, message: string) {
     gap: $spacing-3;
     font-size: 1rem;
     font-weight: 600;
-    color: $text-primary;
+    color: var(--text-primary);
   }
 
   &__section-icon {
-    color: $primary-500;
+    color: var(--primary-500);
     font-size: 1.125rem;
   }
 
@@ -488,23 +488,23 @@ function showFeedback(type: typeof feedback.type, message: string) {
     flex-direction: column;
     gap: $spacing-1;
     padding: $spacing-4;
-    background: $bg-secondary;
+    background: var(--bg-secondary);
     border-radius: $radius-md;
   }
 
   &__info-label {
     font-size: 0.8125rem;
-    color: $text-tertiary;
+    color: var(--text-tertiary);
     font-weight: 500;
   }
 
   &__info-value {
     font-size: 1.125rem;
     font-weight: 600;
-    color: $text-primary;
+    color: var(--text-primary);
 
     &--highlight {
-      color: $primary-600;
+      color: var(--primary-600);
     }
   }
 }

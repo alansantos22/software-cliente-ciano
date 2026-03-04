@@ -89,7 +89,7 @@ function handleClick() {
 
     &:hover {
       transform: translateY(-2px);
-      box-shadow: $shadow-lg;
+      box-shadow: var(--shadow-lg);
     }
   }
 
@@ -101,7 +101,7 @@ function handleClick() {
   &__label {
     font-size: 0.875rem;
     font-weight: 500;
-    color: $text-tertiary;
+    color: var(--text-tertiary);
     text-transform: uppercase;
     letter-spacing: 0.025em;
   }
@@ -113,18 +113,18 @@ function handleClick() {
   &__value {
     font-size: 2rem;
     font-weight: 700;
-    color: $text-primary;
+    color: var(--text-primary);
     line-height: 1.2;
 
     &--currency {
-      color: $primary-600;
+      color: var(--primary-600);
     }
   }
 
   &__subtitle {
     margin-top: $spacing-2;
     font-size: 0.875rem;
-    color: $text-secondary;
+    color: var(--text-secondary);
   }
 
   &__trend {
@@ -138,13 +138,13 @@ function handleClick() {
     font-weight: 500;
 
     &--up {
-      background: rgba($success, 0.15);
-      color: $success-dark;
+      background: rgba(var(--success-rgb), 0.15);
+      color: var(--color-success-dark);
     }
 
     &--down {
-      background: rgba($error, 0.15);
-      color: $error-dark;
+      background: rgba(var(--error-rgb), 0.15);
+      color: var(--color-error-dark);
     }
 
     &-icon {

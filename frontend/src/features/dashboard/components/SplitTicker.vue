@@ -95,22 +95,22 @@ function formatCurrency(value: number): string {
 }
 
 .split-ticker {
-  background: linear-gradient(135deg, $neutral-900 0%, #0d1f2d 100%);
-  border-bottom: 2px solid $primary-700;
+  background: linear-gradient(135deg, var(--neutral-900) 0%, #0d1f2d 100%);
+  border-bottom: 2px solid var(--primary-700);
   border-radius: $radius-lg $radius-lg;
   margin: 0 0 $spacing-6;
   transition: border-color 0.3s;
 
   &--warning {
-    border-bottom-color: $warning;
-    .split-ticker__bar-fill { background: $warning; }
+    border-bottom-color: var(--color-warning);
+    .split-ticker__bar-fill { background: var(--color-warning); }
   }
 
   &--critical {
-    border-bottom-color: $error;
+    border-bottom-color: var(--color-error);
     border-bottom-width: 3px;
     .split-ticker__bar-fill {
-      background: linear-gradient(90deg, $warning, $error);
+      background: linear-gradient(90deg, var(--color-warning), var(--color-error));
       animation: shimmer 1.5s infinite linear;
       background-size: 400px 100%;
     }
@@ -143,7 +143,7 @@ function formatCurrency(value: number): string {
     font-size: 0.6875rem;
     text-transform: uppercase;
     letter-spacing: 0.08em;
-    color: $neutral-400;
+    color: var(--neutral-400);
   }
 
   &__price {
@@ -159,7 +159,7 @@ function formatCurrency(value: number): string {
     width: 8px;
     height: 8px;
     border-radius: 50%;
-    background: $success;
+    background: var(--color-success);
     animation: pulse-dot 1.6s ease-in-out infinite;
     flex-shrink: 0;
   }
@@ -167,8 +167,8 @@ function formatCurrency(value: number): string {
   &__trend {
     font-size: 0.75rem;
     font-weight: 600;
-    color: $success-light;
-    background: rgba($success, 0.15);
+    color: var(--color-success-light);
+    background: rgba(var(--success-rgb), 0.15);
     padding: 2px 6px;
     border-radius: 4px;
   }
@@ -187,7 +187,7 @@ function formatCurrency(value: number): string {
 
   &__progress-label {
     font-size: 0.8125rem;
-    color: $neutral-300;
+    color: var(--neutral-300);
   }
 
   &__progress-value {
@@ -205,7 +205,7 @@ function formatCurrency(value: number): string {
 
   &__bar-fill {
     height: 100%;
-    background: linear-gradient(90deg, $primary-400, $primary-200);
+    background: linear-gradient(90deg, var(--primary-400), var(--primary-200));
     border-radius: 999px;
     transition: width 0.8s ease;
   }
@@ -213,10 +213,10 @@ function formatCurrency(value: number): string {
   &__microcopy {
     margin-top: $spacing-1;
     font-size: 0.75rem;
-    color: $neutral-400;
+    color: var(--neutral-400);
 
     strong {
-      color: $accent-400;
+      color: var(--accent-400);
       font-weight: 600;
     }
   }
@@ -231,7 +231,7 @@ function formatCurrency(value: number): string {
     align-items: center;
     gap: $spacing-2;
     padding: $spacing-2 $spacing-5;
-    background: linear-gradient(135deg, $primary-500, $primary-700);
+    background: linear-gradient(135deg, var(--primary-500), var(--primary-700));
     color: #fff;
     border: none;
     border-radius: $radius-md;
@@ -243,7 +243,7 @@ function formatCurrency(value: number): string {
 
     &:hover {
       transform: translateY(-1px);
-      box-shadow: 0 4px 16px rgba($primary-500, 0.45);
+      box-shadow: 0 4px 16px rgba(var(--primary-500-rgb), 0.45);
     }
 
     &:active {

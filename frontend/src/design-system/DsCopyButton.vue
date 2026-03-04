@@ -65,25 +65,25 @@ async function copy() {
   gap: $spacing-2;
   padding: $spacing-2;
   background: transparent;
-  border: 1px solid $border-default;
+  border: 1px solid var(--border-default);
   border-radius: $radius-md;
   cursor: pointer;
   transition: all $transition-fast;
-  color: $text-secondary;
+  color: var(--text-secondary);
 
   &:hover {
-    background: $neutral-100;
-    border-color: $primary-500;
-    color: $primary-600;
+    background: var(--neutral-100);
+    border-color: var(--primary-500);
+    color: var(--primary-600);
   }
 
   &--copied {
-    background: $success;
-    border-color: $success;
+    background: var(--color-success);
+    border-color: var(--color-success);
     color: white;
 
     &:hover {
-      background: $success-dark;
+      background: var(--color-success-dark);
     }
   }
 

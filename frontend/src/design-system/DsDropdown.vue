@@ -74,10 +74,10 @@ defineExpose({ close, isOpen });
     top: calc(100% + $spacing-2);
     z-index: $z-dropdown;
     min-width: 180px;
-    background: $bg-primary;
+    background: var(--bg-primary);
     border-radius: $radius-lg;
-    box-shadow: $shadow-lg;
-    border: 1px solid $border-light;
+    box-shadow: var(--shadow-lg);
+    border: 1px solid var(--border-light);
     padding: $spacing-2;
     overflow: hidden;
 
@@ -100,20 +100,20 @@ defineExpose({ close, isOpen });
   border-radius: $radius-md;
   cursor: pointer;
   transition: background $transition-fast;
-  color: $text-primary;
+  color: var(--text-primary);
   text-decoration: none;
   font-size: 0.9375rem;
 
   &:hover {
-    background: $neutral-100;
+    background: var(--neutral-100);
   }
 }
 
 :deep(.ds-dropdown-item--danger) {
-  color: $error;
+  color: var(--color-error);
 
   &:hover {
-    background: rgba($error, 0.1);
+    background: rgba(var(--error-rgb), 0.1);
   }
 }
 

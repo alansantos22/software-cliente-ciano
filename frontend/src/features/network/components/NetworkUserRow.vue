@@ -216,13 +216,13 @@ const sanitizedPhone = computed(() =>
     left: calc(var(--depth, 0) * 20px - 12px);
     width: 2px;
     height: 100%;
-    background: $neutral-200;
+    background: var(--neutral-200);
     pointer-events: none;
   }
 
   &__children {
     margin-left: 20px;
-    border-left: 2px solid $neutral-200;
+    border-left: 2px solid var(--neutral-200);
     padding-left: 0;
   }
 }
@@ -235,13 +235,13 @@ const sanitizedPhone = computed(() =>
   padding: $spacing-3 $spacing-4;
   border-radius: $radius-md;
   margin-bottom: $spacing-1;
-  background: $bg-primary;
-  border: 1.5px solid $border-light;
+  background: var(--bg-primary);
+  border: 1.5px solid var(--border-light);
   transition: box-shadow 0.15s ease, border-color 0.15s ease;
 
   &:hover {
-    box-shadow: $shadow-md;
-    border-color: $border-default;
+    box-shadow: var(--shadow-md);
+    border-color: var(--border-default);
 
     .user-row__actions {
       opacity: 1;
@@ -250,7 +250,7 @@ const sanitizedPhone = computed(() =>
 
   // Status variants
   &--inactive {
-    background: $neutral-50;
+    background: var(--neutral-50);
     opacity: 0.75;
 
     .user-row__avatar {
@@ -259,8 +259,8 @@ const sanitizedPhone = computed(() =>
   }
 
   &--expiring {
-    border-left: 3px solid $warning;
-    background: $accent-50;
+    border-left: 3px solid var(--color-warning);
+    background: var(--accent-50);
   }
 
   // ── Toggle ────────────────────────────────────────────────────────────────
@@ -268,18 +268,18 @@ const sanitizedPhone = computed(() =>
     width: 24px;
     height: 24px;
     border: none;
-    background: $neutral-100;
+    background: var(--neutral-100);
     border-radius: $radius-sm;
     @include flex-center;
     cursor: pointer;
-    color: $text-secondary;
+    color: var(--text-secondary);
     flex-shrink: 0;
     font-size: 0.6875rem;
     transition: background 0.15s;
 
     &:hover {
-      background: $primary-100;
-      color: $primary-700;
+      background: var(--primary-100);
+      color: var(--primary-700);
     }
   }
 
@@ -294,7 +294,7 @@ const sanitizedPhone = computed(() =>
     width: 44px;
     height: 44px;
     border-radius: 50%;
-    background: linear-gradient(135deg, $primary-400, $secondary-400);
+    background: linear-gradient(135deg, var(--primary-400), var(--secondary-400));
     color: white;
     @include flex-center;
     font-weight: 700;
@@ -302,9 +302,9 @@ const sanitizedPhone = computed(() =>
     flex-shrink: 0;
     border: 3px solid transparent;
 
-    &--active  { border-color: $success; }
-    &--expiring { border-color: $warning; }
-    &--inactive { border-color: $neutral-400; background: linear-gradient(135deg, $neutral-400, $neutral-500); }
+    &--active  { border-color: var(--color-success); }
+    &--expiring { border-color: var(--color-warning); }
+    &--inactive { border-color: var(--neutral-400); background: linear-gradient(135deg, var(--neutral-400), var(--neutral-500)); }
   }
 
   &__status-dot {
@@ -316,9 +316,9 @@ const sanitizedPhone = computed(() =>
     border-radius: 50%;
     border: 2px solid white;
 
-    .user-row__avatar--active   & { background: $success; }
-    .user-row__avatar--expiring & { background: $warning; }
-    .user-row__avatar--inactive & { background: $neutral-400; }
+    .user-row__avatar--active   & { background: var(--color-success); }
+    .user-row__avatar--expiring & { background: var(--color-warning); }
+    .user-row__avatar--inactive & { background: var(--neutral-400); }
   }
 
   // ── Info ──────────────────────────────────────────────────────────────────
@@ -338,7 +338,7 @@ const sanitizedPhone = computed(() =>
 
   &__name {
     font-weight: 600;
-    color: $text-primary;
+    color: var(--text-primary);
     font-size: 0.9375rem;
     white-space: nowrap;
     overflow: hidden;
@@ -350,7 +350,7 @@ const sanitizedPhone = computed(() =>
 
       &:hover,
       &:focus-visible {
-        color: $primary-500;
+        color: var(--primary-500);
         text-decoration: underline;
       }
     }
@@ -374,9 +374,9 @@ const sanitizedPhone = computed(() =>
     border-radius: $radius-full;
     font-size: 0.6875rem;
     font-weight: 500;
-    background: $primary-50;
-    color: $primary-700;
-    border: 1px solid $primary-200;
+    background: var(--primary-50);
+    color: var(--primary-700);
+    border: 1px solid var(--primary-200);
     flex-shrink: 0;
   }
 
@@ -384,7 +384,7 @@ const sanitizedPhone = computed(() =>
     display: flex;
     gap: $spacing-3;
     font-size: 0.75rem;
-    color: $text-tertiary;
+    color: var(--text-tertiary);
     flex-wrap: wrap;
   }
 
@@ -423,12 +423,12 @@ const sanitizedPhone = computed(() =>
     &-value {
       font-size: 1rem;
       font-weight: 700;
-      color: $primary-700;
+      color: var(--primary-700);
     }
 
     &-label {
       font-size: 0.6875rem;
-      color: $text-tertiary;
+      color: var(--text-tertiary);
       white-space: nowrap;
     }
 
@@ -440,7 +440,7 @@ const sanitizedPhone = computed(() =>
   &__team-bar {
     width: 80px;
     height: 5px;
-    background: $neutral-200;
+    background: var(--neutral-200);
     border-radius: $radius-full;
     overflow: hidden;
     margin-bottom: 2px;
@@ -448,7 +448,7 @@ const sanitizedPhone = computed(() =>
 
   &__team-fill {
     height: 100%;
-    background: linear-gradient(90deg, $primary-400, $secondary-400);
+    background: linear-gradient(90deg, var(--primary-400), var(--secondary-400));
     border-radius: $radius-full;
     transition: width 0.6s ease;
   }
@@ -464,9 +464,9 @@ const sanitizedPhone = computed(() =>
     font-weight: 600;
     white-space: nowrap;
 
-    &--active   { background: $secondary-50;  color: $success-dark;  }
-    &--expiring { background: $accent-100;    color: $warning-dark;  }
-    &--inactive { background: $neutral-200;   color: $text-tertiary; }
+    &--active   { background: var(--secondary-50);  color: var(--color-success-dark);  }
+    &--expiring { background: var(--accent-100);    color: var(--color-warning-dark);  }
+    &--inactive { background: var(--neutral-200);   color: var(--text-tertiary); }
   }
 
   // ── Actions ───────────────────────────────────────────────────────────────

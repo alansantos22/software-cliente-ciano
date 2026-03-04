@@ -46,38 +46,38 @@ withDefaults(defineProps<Props>(), {
 
   // === VARIANTS ===
   &--default {
-    background: $neutral-200;
-    color: $text-secondary;
+    background: var(--neutral-200);
+    color: var(--text-secondary);
   }
 
   &--primary {
-    background: $primary-100;
-    color: $primary-700;
+    background: var(--primary-100);
+    color: var(--primary-700);
   }
 
   &--secondary {
-    background: $secondary-100;
-    color: $secondary-700;
+    background: var(--secondary-100);
+    color: var(--secondary-700);
   }
 
   &--success {
-    background: rgba($success, 0.15);
-    color: $success-dark;
+    background: rgba(var(--success-rgb), 0.15);
+    color: var(--color-success-dark);
   }
 
   &--warning {
-    background: rgba($warning, 0.15);
-    color: $warning-dark;
+    background: rgba(var(--warning-rgb), 0.15);
+    color: var(--color-warning-dark);
   }
 
   &--error {
-    background: rgba($error, 0.15);
-    color: $error-dark;
+    background: rgba(var(--error-rgb), 0.15);
+    color: var(--color-error-dark);
   }
 
   &--info {
-    background: rgba($info, 0.15);
-    color: $info-dark;
+    background: rgba(var(--info-rgb), 0.15);
+    color: var(--color-info-dark);
   }
 }
 </style>

@@ -453,13 +453,13 @@ function scrollTo(id: string) {
   font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: $primary-600;
+  color: var(--primary-600);
   margin-bottom: $spacing-3;
 }
 
 .section-sub {
   font-size: 0.9375rem;
-  color: $text-secondary;
+  color: var(--text-secondary);
   margin: 0;
 
   &--note {
@@ -508,7 +508,7 @@ function scrollTo(id: string) {
     &--1 {
       width: 600px;
       height: 600px;
-      background: $primary-500;
+      background: var(--primary-500);
       top: -200px;
       right: -100px;
     }
@@ -516,7 +516,7 @@ function scrollTo(id: string) {
     &--2 {
       width: 400px;
       height: 400px;
-      background: $secondary-500;
+      background: var(--secondary-500);
       bottom: -100px;
       left: -80px;
     }
@@ -535,10 +535,10 @@ function scrollTo(id: string) {
     font-weight: 700;
     letter-spacing: 0.14em;
     text-transform: uppercase;
-    color: $primary-300;
+    color: var(--primary-300);
     margin-bottom: $spacing-4;
     padding: 4px 14px;
-    border: 1px solid rgba($primary-300, 0.3);
+    border: 1px solid rgba(var(--primary-300-rgb), 0.3);
     border-radius: 999px;
   }
 
@@ -551,7 +551,7 @@ function scrollTo(id: string) {
   }
 
   &__headline-highlight {
-    color: $primary-300;
+    color: var(--primary-300);
     display: inline-block;
   }
 
@@ -616,8 +616,8 @@ function scrollTo(id: string) {
   position: relative;
   text-align: center;
   padding: $spacing-6;
-  background: $bg-primary;
-  border: 1px solid $border-light;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-light);
   border-radius: 18px;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 
@@ -638,7 +638,7 @@ function scrollTo(id: string) {
       height: 0;
       border-top: 8px solid transparent;
       border-bottom: 8px solid transparent;
-      border-left: 12px solid $border-light;
+      border-left: 12px solid var(--border-light);
       z-index: 2;
     }
   }
@@ -648,7 +648,7 @@ function scrollTo(id: string) {
     width: 64px;
     height: 64px;
     margin: 0 auto $spacing-4;
-    background: linear-gradient(135deg, rgba($primary-500,0.12), rgba($secondary-500,0.08));
+    background: linear-gradient(135deg, rgba(var(--primary-500-rgb), 0.12), rgba(var(--secondary-500-rgb), 0.08));
     border-radius: 18px;
     display: flex;
     align-items: center;
@@ -662,7 +662,7 @@ function scrollTo(id: string) {
     right: -8px;
     width: 22px;
     height: 22px;
-    background: $primary-500;
+    background: var(--primary-500);
     color: #fff;
     border-radius: 50%;
     font-size: 0.6875rem;
@@ -670,7 +670,7 @@ function scrollTo(id: string) {
     display: flex;
     align-items: center;
     justify-content: center;
-    border: 2px solid $bg-primary;
+    border: 2px solid var(--bg-primary);
   }
 
   &__title {
@@ -681,7 +681,7 @@ function scrollTo(id: string) {
 
   &__desc {
     font-size: 0.875rem;
-    color: $text-secondary;
+    color: var(--text-secondary);
     line-height: 1.6;
     margin: 0;
   }
@@ -698,8 +698,8 @@ function scrollTo(id: string) {
   display: flex;
   align-items: center;
   gap: $spacing-3;
-  background: linear-gradient(90deg, rgba($warning,0.12), rgba($accent-500,0.08));
-  border: 1px solid rgba($warning, 0.35);
+  background: linear-gradient(90deg, rgba(var(--warning-rgb), 0.12), rgba(var(--accent-500-rgb), 0.08));
+  border: 1px solid rgba(var(--warning-rgb), 0.35);
   border-radius: 12px;
   padding: $spacing-3 $spacing-5;
   margin-bottom: $spacing-8;
@@ -712,7 +712,7 @@ function scrollTo(id: string) {
   }
 
   &__timer {
-    color: $warning-dark;
+    color: var(--color-warning-dark);
     font-variant-numeric: tabular-nums;
     font-family: monospace;
     font-size: 1.0625rem;
@@ -723,8 +723,8 @@ function scrollTo(id: string) {
     margin-left: auto;
     font-size: 0.75rem;
     font-weight: 600;
-    color: $warning-dark;
-    background: rgba($warning, 0.15);
+    color: var(--color-warning-dark);
+    background: rgba(var(--warning-rgb), 0.15);
     padding: 2px 10px;
     border-radius: 999px;
 
@@ -743,8 +743,8 @@ function scrollTo(id: string) {
 
 .pkg-card {
   position: relative;
-  background: $bg-primary;
-  border: 1px solid $border-light;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-light);
   border-radius: 20px;
   padding: $spacing-6;
   display: flex;
@@ -758,8 +758,8 @@ function scrollTo(id: string) {
   }
 
   &--featured {
-    border: 2px solid $primary-500;
-    box-shadow: 0 8px 30px rgba($primary-500, 0.15);
+    border: 2px solid var(--primary-500);
+    box-shadow: 0 8px 30px rgba(var(--primary-500-rgb), 0.15);
   }
 
   &__ribbon {
@@ -767,7 +767,7 @@ function scrollTo(id: string) {
     top: -14px;
     left: 50%;
     transform: translateX(-50%);
-    background: linear-gradient(135deg, $warning, #c49a00);
+    background: linear-gradient(135deg, var(--color-warning), #c49a00);
     color: white;
     padding: 5px 16px;
     border-radius: 999px;
@@ -801,7 +801,7 @@ function scrollTo(id: string) {
 
   &__subtitle {
     font-size: 0.8125rem;
-    color: $text-secondary;
+    color: var(--text-secondary);
     text-align: center;
     margin: -$spacing-2 0 0;
   }
@@ -809,8 +809,8 @@ function scrollTo(id: string) {
   &__price-block {
     text-align: center;
     padding: $spacing-4 0;
-    border-top: 1px solid $border-light;
-    border-bottom: 1px solid $border-light;
+    border-top: 1px solid var(--border-light);
+    border-bottom: 1px solid var(--border-light);
   }
 
   &__quotas {
@@ -819,25 +819,25 @@ function scrollTo(id: string) {
     justify-content: center;
     gap: 4px;
     margin-bottom: 4px;
-    color: $text-secondary;
+    color: var(--text-secondary);
     font-size: 0.875rem;
   }
 
   &__quotas-num {
     font-size: 2rem;
     font-weight: 800;
-    color: $primary-600;
+    color: var(--primary-600);
   }
 
   &__price {
     font-size: 1.875rem;
     font-weight: 800;
-    color: $neutral-900;
+    color: var(--neutral-900);
   }
 
   &__per-quota {
     font-size: 0.75rem;
-    color: $text-tertiary;
+    color: var(--text-tertiary);
     margin-top: 2px;
   }
 
@@ -854,13 +854,13 @@ function scrollTo(id: string) {
       align-items: flex-start;
       gap: $spacing-2;
       font-size: 0.875rem;
-      color: $text-secondary;
+      color: var(--text-secondary);
       line-height: 1.5;
     }
   }
 
   &__check {
-    color: $success;
+    color: var(--color-success);
     font-size: 0.8125rem;
     flex-shrink: 0;
     margin-top: 1px;
@@ -903,7 +903,7 @@ function scrollTo(id: string) {
   &__backdrop {
     position: absolute;
     inset: 0;
-    background: radial-gradient(circle at 70% 30%, rgba($primary-500,0.25), transparent 60%);
+    background: radial-gradient(circle at 70% 30%, rgba(var(--primary-500-rgb), 0.25), transparent 60%);
     pointer-events: none;
   }
 

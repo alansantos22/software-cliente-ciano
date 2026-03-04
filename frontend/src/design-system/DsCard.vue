@@ -30,26 +30,26 @@ withDefaults(defineProps<Props>(), {
 @use '@/assets/scss/mixins' as *;
 
 .ds-card {
-  background: $bg-primary;
+  background: var(--bg-primary);
   border-radius: $radius-lg;
   overflow: hidden;
 
   &--default {
-    box-shadow: $shadow-md;
+    box-shadow: var(--shadow-md);
   }
 
   &--elevated {
-    box-shadow: $shadow-xl;
+    box-shadow: var(--shadow-xl);
   }
 
   &--outlined {
     box-shadow: none;
-    border: 1px solid $border-default;
+    border: 1px solid var(--border-default);
   }
 
   &__header {
     padding: $spacing-4 $spacing-6;
-    border-bottom: 1px solid $border-light;
+    border-bottom: 1px solid var(--border-light);
     font-weight: 600;
   }
 
@@ -59,8 +59,8 @@ withDefaults(defineProps<Props>(), {
 
   &__footer {
     padding: $spacing-4 $spacing-6;
-    border-top: 1px solid $border-light;
-    background: $bg-secondary;
+    border-top: 1px solid var(--border-light);
+    background: var(--bg-secondary);
   }
 }
 </style>

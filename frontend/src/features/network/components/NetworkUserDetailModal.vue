@@ -215,9 +215,9 @@ function formatCurrency(value: number): string {
     flex-shrink: 0;
     border: 3px solid transparent;
 
-    &--active   { background: $success; border-color: rgba($success, 0.3); }
-    &--expiring { background: $warning; border-color: rgba($warning, 0.3); }
-    &--inactive { background: $neutral-400; border-color: rgba($neutral-400, 0.3); }
+    &--active   { background: var(--color-success); border-color: rgba(var(--success-rgb), 0.3); }
+    &--expiring { background: var(--color-warning); border-color: rgba(var(--warning-rgb), 0.3); }
+    &--inactive { background: var(--neutral-400); border-color: rgba(var(--neutral-400-rgb), 0.3); }
   }
 
   &__hero-info {
@@ -229,7 +229,7 @@ function formatCurrency(value: number): string {
   &__name {
     font-size: 1.125rem;
     font-weight: 700;
-    color: $text-primary;
+    color: var(--text-primary);
     margin: 0;
   }
 
@@ -256,8 +256,8 @@ function formatCurrency(value: number): string {
     border-radius: $radius-full;
     font-size: 0.7rem;
     font-weight: 600;
-    background: rgba($primary-500, 0.1);
-    color: $primary-500;
+    background: rgba(var(--primary-500-rgb), 0.1);
+    color: var(--primary-500);
     text-transform: uppercase;
     letter-spacing: 0.04em;
   }
@@ -273,16 +273,16 @@ function formatCurrency(value: number): string {
     font-weight: 600;
 
     &--active {
-      background: rgba($success, 0.1);
-      color: $success;
+      background: rgba(var(--success-rgb), 0.1);
+      color: var(--color-success);
     }
     &--expiring {
-      background: rgba($warning, 0.1);
-      color: $warning;
+      background: rgba(var(--warning-rgb), 0.1);
+      color: var(--color-warning);
     }
     &--inactive {
-      background: rgba($error, 0.1);
-      color: $error;
+      background: rgba(var(--error-rgb), 0.1);
+      color: var(--color-error);
     }
   }
 
@@ -298,7 +298,7 @@ function formatCurrency(value: number): string {
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.06em;
-    color: $text-secondary;
+    color: var(--text-secondary);
     margin: 0;
   }
 
@@ -311,19 +311,19 @@ function formatCurrency(value: number): string {
 
   &__label {
     font-size: 0.875rem;
-    color: $text-secondary;
+    color: var(--text-secondary);
   }
 
   &__value {
     font-size: 0.875rem;
     font-weight: 600;
-    color: $text-primary;
+    color: var(--text-primary);
     display: flex;
     align-items: center;
     gap: $spacing-2;
 
     &--danger {
-      color: $error;
+      color: var(--color-error);
     }
   }
 
@@ -345,7 +345,7 @@ function formatCurrency(value: number): string {
   }
 
   &__metric {
-    background: $bg-secondary;
+    background: var(--bg-secondary);
     border-radius: $radius-md;
     padding: $spacing-3;
     display: flex;
@@ -358,12 +358,12 @@ function formatCurrency(value: number): string {
   &__metric-value {
     font-size: 1.125rem;
     font-weight: 700;
-    color: $primary-500;
+    color: var(--primary-500);
   }
 
   &__metric-label {
     font-size: 0.75rem;
-    color: $text-secondary;
+    color: var(--text-secondary);
     font-weight: 500;
   }
 }

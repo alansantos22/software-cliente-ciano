@@ -17,14 +17,21 @@
         </div>
         <div class="settings-view__theme-toggle">
           <button
-            :class="['settings-view__theme-btn', { 'settings-view__theme-btn--active': appStore.theme === 'light' }]"
+            :class="['settings-view__theme-btn', { 'settings-view__theme-btn--active': !hasManualTheme }]"
+            @click="setAutoTheme"
+          >
+            <font-awesome-icon icon="desktop" />
+            Auto
+          </button>
+          <button
+            :class="['settings-view__theme-btn', { 'settings-view__theme-btn--active': hasManualTheme && appStore.theme === 'light' }]"
             @click="appStore.setTheme('light')"
           >
             <font-awesome-icon icon="sun" />
             {{ t('settings.light') }}
           </button>
           <button
-            :class="['settings-view__theme-btn', { 'settings-view__theme-btn--active': appStore.theme === 'dark' }]"
+            :class="['settings-view__theme-btn', { 'settings-view__theme-btn--active': hasManualTheme && appStore.theme === 'dark' }]"
             @click="appStore.setTheme('dark')"
           >
             <font-awesome-icon icon="moon" />
@@ -149,13 +156,25 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive } from 'vue';
+import { ref, reactive, computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useAppStore } from '@/shared/stores/app.store';
 import { DsCard, DsInput, DsButton, DsAlert } from '@/design-system';
 
 const { t, locale } = useI18n();
 const appStore = useAppStore();
+
+// === Tema ===
+const hasManualTheme = computed(() => !!localStorage.getItem('theme'));
+
+function setAutoTheme() {
+  localStorage.removeItem('theme');
+  const systemDark = window.matchMedia?.('(prefers-color-scheme: dark)').matches;
+  appStore.setTheme(systemDark ? 'dark' : 'light');
+  // Re-remove localStorage since setTheme saves it
+  localStorage.removeItem('theme');
+  showFeedback('success', t('settings.themeAuto') || 'Tema automático ativado');
+}
 
 // === Idioma ===
 const languages = [
@@ -282,11 +301,11 @@ function showFeedback(type: typeof feedback.type, message: string) {
     gap: $spacing-3;
     font-size: 1rem;
     font-weight: 600;
-    color: $text-primary;
+    color: var(--text-primary);
   }
 
   &__section-icon {
-    color: $primary-500;
+    color: var(--primary-500);
     font-size: 1.125rem;
   }
 
@@ -306,18 +325,18 @@ function showFeedback(type: typeof feedback.type, message: string) {
   &__option-label {
     font-weight: 600;
     font-size: 0.9375rem;
-    color: $text-primary;
+    color: var(--text-primary);
   }
 
   &__option-desc {
     font-size: 0.8125rem;
-    color: $text-tertiary;
+    color: var(--text-tertiary);
   }
 
   // ── Theme Toggle ──
   &__theme-toggle {
     display: flex;
-    border: 1px solid $border-default;
+    border: 1px solid var(--border-default);
     border-radius: $radius-lg;
     overflow: hidden;
   }
@@ -331,19 +350,19 @@ function showFeedback(type: typeof feedback.type, message: string) {
     cursor: pointer;
     font-size: 0.875rem;
     font-weight: 500;
-    color: $text-secondary;
+    color: var(--text-secondary);
     transition: all 0.2s ease;
 
     &:hover {
-      background: $bg-tertiary;
+      background: var(--bg-tertiary);
     }
 
     &--active {
-      background: $primary-500;
+      background: var(--primary-500);
       color: white;
 
       &:hover {
-        background: $primary-600;
+        background: var(--primary-600);
       }
     }
   }
@@ -359,20 +378,20 @@ function showFeedback(type: typeof feedback.type, message: string) {
     @include flex-center;
     gap: $spacing-2;
     padding: $spacing-3 $spacing-4;
-    background: $bg-secondary;
+    background: var(--bg-secondary);
     border: 2px solid transparent;
     border-radius: $radius-lg;
     cursor: pointer;
     transition: all 0.2s ease;
 
     &:hover {
-      border-color: $primary-300;
-      background: $primary-50;
+      border-color: var(--primary-300);
+      background: var(--primary-50);
     }
 
     &--active {
-      border-color: $primary-500;
-      background: $primary-50;
+      border-color: var(--primary-500);
+      background: var(--primary-50);
     }
   }
 
@@ -383,7 +402,7 @@ function showFeedback(type: typeof feedback.type, message: string) {
   &__lang-name {
     font-size: 0.875rem;
     font-weight: 500;
-    color: $text-primary;
+    color: var(--text-primary);
   }
 
   // ── Form ──
@@ -417,7 +436,7 @@ function showFeedback(type: typeof feedback.type, message: string) {
     @include flex-between;
     gap: $spacing-4;
     padding: $spacing-4 0;
-    border-bottom: 1px solid $border-light;
+    border-bottom: 1px solid var(--border-light);
 
     &:last-child {
       border-bottom: none;
@@ -439,7 +458,7 @@ function showFeedback(type: typeof feedback.type, message: string) {
     position: absolute;
 
     &:checked + .settings-view__toggle-slider {
-      background: $primary-500;
+      background: var(--primary-500);
 
       &::before {
         transform: translateX(20px);
@@ -447,14 +466,14 @@ function showFeedback(type: typeof feedback.type, message: string) {
     }
 
     &:focus + .settings-view__toggle-slider {
-      box-shadow: 0 0 0 3px rgba($primary-500, 0.2);
+      box-shadow: 0 0 0 3px rgba(var(--primary-500-rgb), 0.2);
     }
   }
 
   &__toggle-slider {
     width: 44px;
     height: 24px;
-    background: $neutral-300;
+    background: var(--neutral-300);
     border-radius: $radius-full;
     transition: background 0.2s ease;
     position: relative;
@@ -469,7 +488,7 @@ function showFeedback(type: typeof feedback.type, message: string) {
       background: white;
       border-radius: $radius-full;
       transition: transform 0.2s ease;
-      box-shadow: $shadow-sm;
+      box-shadow: var(--shadow-sm);
     }
   }
 }

@@ -62,27 +62,27 @@ const icon = computed(() => {
   border-left: 4px solid;
 
   &--info {
-    background: rgba($info, 0.1);
-    border-color: $info;
-    color: $info-dark;
+    background: rgba(var(--info-rgb), 0.1);
+    border-color: var(--color-info);
+    color: var(--color-info-dark);
   }
 
   &--success {
-    background: rgba($success, 0.1);
-    border-color: $success;
-    color: $success-dark;
+    background: rgba(var(--success-rgb), 0.1);
+    border-color: var(--color-success);
+    color: var(--color-success-dark);
   }
 
   &--warning {
-    background: rgba($warning, 0.1);
-    border-color: $warning;
-    color: $warning-dark;
+    background: rgba(var(--warning-rgb), 0.1);
+    border-color: var(--color-warning);
+    color: var(--color-warning-dark);
   }
 
   &--error {
-    background: rgba($error, 0.1);
-    border-color: $error;
-    color: $error-dark;
+    background: rgba(var(--error-rgb), 0.1);
+    border-color: var(--color-error);
+    color: var(--color-error-dark);
   }
 
   &__icon {

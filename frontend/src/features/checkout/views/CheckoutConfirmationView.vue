@@ -311,14 +311,14 @@ async function copyLink() {
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.1em;
-    color: $success-dark;
+    color: var(--color-success-dark);
     margin: 0;
   }
 
   .hero__title {
     font-size: 2rem;
     font-weight: 800;
-    color: $neutral-900;
+    color: var(--neutral-900);
     line-height: 1.2;
     margin: 0;
 
@@ -328,7 +328,7 @@ async function copyLink() {
   }
 
   .hero__subtitle {
-    color: $text-secondary;
+    color: var(--text-secondary);
     font-size: 0.9rem;
     margin: 0;
     line-height: 1.6;
@@ -351,7 +351,7 @@ async function copyLink() {
     align-items: center;
     gap: $spacing-2;
     padding: $spacing-5;
-    border: 2px solid $neutral-200;
+    border: 2px solid var(--neutral-200);
     border-radius: $radius-xl;
     background: white;
     text-align: center;
@@ -363,7 +363,7 @@ async function copyLink() {
 
     &__icon {
       font-size: 1.4rem;
-      color: $neutral-500;
+      color: var(--neutral-500);
 
       .impact-card--level & {
         color: var(--c);
@@ -375,19 +375,19 @@ async function copyLink() {
       font-weight: 600;
       text-transform: uppercase;
       letter-spacing: 0.05em;
-      color: $text-tertiary;
+      color: var(--text-tertiary);
     }
 
     &__value {
       font-size: 1.25rem;
       font-weight: 800;
-      color: $neutral-900;
+      color: var(--neutral-900);
     }
   }
 
   // ── Benefits ──────────────────────────────────────────────────────────────
   &__benefits {
-    border: 2px solid $neutral-200;
+    border: 2px solid var(--neutral-200);
     border-radius: $radius-xl;
     padding: $spacing-5;
     background: white;
@@ -396,7 +396,7 @@ async function copyLink() {
     h3 {
       font-size: 1rem;
       font-weight: 700;
-      color: $neutral-800;
+      color: var(--neutral-800);
       margin-bottom: $spacing-4;
     }
 
@@ -413,7 +413,7 @@ async function copyLink() {
       align-items: flex-start;
       gap: $spacing-3;
       font-size: 0.875rem;
-      color: $neutral-700;
+      color: var(--neutral-700);
     }
 
     .benefit-check {
@@ -424,8 +424,8 @@ async function copyLink() {
 
   // ── Referral ──────────────────────────────────────────────────────────────
   &__referral {
-    background: $neutral-900;
-    border: 1px solid $neutral-800;
+    background: var(--neutral-900);
+    border: 1px solid var(--neutral-800);
     border-radius: $radius-2xl;
     padding: $spacing-6;
     width: 100%;
@@ -440,7 +440,7 @@ async function copyLink() {
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.1em;
-      color: $primary-400;
+      color: var(--primary-400);
       margin: 0;
     }
 
@@ -453,7 +453,7 @@ async function copyLink() {
 
     p {
       font-size: 0.875rem;
-      color: $neutral-400;
+      color: var(--neutral-400);
       line-height: 1.6;
       margin: 0;
     }
@@ -465,12 +465,12 @@ async function copyLink() {
   }
 
   .referral__link-display {
-    background: $neutral-800;
-    border: 1px solid $neutral-700;
+    background: var(--neutral-800);
+    border: 1px solid var(--neutral-700);
     border-radius: $radius-lg;
     padding: $spacing-3 $spacing-4;
     font-size: 0.875rem;
-    color: $neutral-300;
+    color: var(--neutral-300);
 
     strong { font-weight: 800; color: white; }
   }
@@ -482,7 +482,7 @@ async function copyLink() {
     gap: $spacing-2;
     width: 100%;
     padding: $spacing-4;
-    background: $primary-500;
+    background: var(--primary-500);
     color: white;
     border: none;
     border-radius: $radius-lg;
@@ -491,8 +491,8 @@ async function copyLink() {
     cursor: pointer;
     transition: all 0.2s ease;
 
-    &:hover { background: $primary-600; transform: translateY(-1px); }
-    &--copied { background: $success; color: white; }
+    &:hover { background: var(--primary-600); transform: translateY(-1px); }
+    &--copied { background: var(--color-success); color: white; }
   }
 
   // ── Actions ───────────────────────────────────────────────────────────────

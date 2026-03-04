@@ -25,7 +25,27 @@ export const useAppStore = defineStore('app', () => {
   function setTheme(newTheme: 'light' | 'dark') {
     theme.value = newTheme;
     localStorage.setItem('theme', newTheme);
-    document.documentElement.setAttribute('data-theme', newTheme);
+    applyTheme(newTheme);
+  }
+
+  function toggleTheme() {
+    setTheme(theme.value === 'light' ? 'dark' : 'light');
+  }
+
+  function applyTheme(t: 'light' | 'dark') {
+    const root = document.documentElement;
+    // Add transition class for smooth switching
+    root.setAttribute('data-theme-transition', '');
+    root.setAttribute('data-theme', t);
+    // Remove transition class after animation completes
+    setTimeout(() => root.removeAttribute('data-theme-transition'), 350);
+  }
+
+  function detectSystemTheme(): 'light' | 'dark' {
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      return 'dark';
+    }
+    return 'light';
   }
 
   function loadPreferences() {
@@ -37,8 +57,25 @@ export const useAppStore = defineStore('app', () => {
     }
 
     if (storedTheme) {
+      // User has explicit preference — use it
       theme.value = storedTheme;
       document.documentElement.setAttribute('data-theme', storedTheme);
+    } else {
+      // No stored preference — detect from OS
+      const systemTheme = detectSystemTheme();
+      theme.value = systemTheme;
+      document.documentElement.setAttribute('data-theme', systemTheme);
+    }
+
+    // Listen for OS theme changes (applies only when user hasn't set a manual preference)
+    if (window.matchMedia) {
+      window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+        if (!localStorage.getItem('theme')) {
+          const newTheme = e.matches ? 'dark' : 'light';
+          theme.value = newTheme;
+          applyTheme(newTheme);
+        }
+      });
     }
   }
 
@@ -53,6 +90,7 @@ export const useAppStore = defineStore('app', () => {
     toggleSidebar,
     setLocale,
     setTheme,
+    toggleTheme,
     loadPreferences,
   };
 });

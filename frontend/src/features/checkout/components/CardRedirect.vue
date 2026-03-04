@@ -98,17 +98,17 @@ function formatCurrency(value: number): string {
     h2 {
       font-size: 1.3rem;
       font-weight: 700;
-      color: $neutral-900;
+      color: var(--neutral-900);
       margin: 0;
     }
 
     p {
-      color: $text-secondary;
+      color: var(--text-secondary);
       font-size: 0.9rem;
       line-height: 1.6;
       margin: 0;
 
-      strong { color: $neutral-800; }
+      strong { color: var(--neutral-800); }
     }
   }
 
@@ -123,8 +123,8 @@ function formatCurrency(value: number): string {
   .spinner {
     position: absolute;
     inset: 0;
-    border: 4px solid $neutral-200;
-    border-top-color: $primary-500;
+    border: 4px solid var(--neutral-200);
+    border-top-color: var(--primary-500);
     border-radius: 50%;
     animation: spin 1s linear infinite;
   }
@@ -132,16 +132,16 @@ function formatCurrency(value: number): string {
   .spinner-lock {
     font-size: 1.3rem;
     z-index: 1;
-    color: $primary-600;
+    color: var(--primary-600);
   }
 
   // ── Summary ───────────────────────────────────────────────────────────────
   &__summary {
-    border: 2px solid $neutral-200;
+    border: 2px solid var(--neutral-200);
     border-radius: $radius-xl;
     padding: $spacing-4;
     width: 100%;
-    background: $neutral-50;
+    background: var(--neutral-50);
     @include flex-column;
     gap: $spacing-2;
   }
@@ -149,19 +149,19 @@ function formatCurrency(value: number): string {
   .summary-row {
     @include flex-between;
     font-size: 0.875rem;
-    color: $text-secondary;
+    color: var(--text-secondary);
 
-    strong { color: $neutral-800; font-weight: 600; }
+    strong { color: var(--neutral-800); font-weight: 600; }
 
     &--total {
       padding-top: $spacing-2;
-      border-top: 1px solid $neutral-200;
+      border-top: 1px solid var(--neutral-200);
       margin-top: $spacing-1;
 
       strong {
         font-size: 1.15rem;
         font-weight: 800;
-        color: $primary-700;
+        color: var(--primary-700);
       }
     }
   }
@@ -179,17 +179,17 @@ function formatCurrency(value: number): string {
     align-items: center;
     gap: $spacing-1;
     padding: $spacing-2 $spacing-3;
-    background: $secondary-50;
-    border: 1px solid $secondary-200;
+    background: var(--secondary-50);
+    border: 1px solid var(--secondary-200);
     border-radius: $radius-full;
     font-size: 0.75rem;
     font-weight: 600;
-    color: $success-dark;
+    color: var(--color-success-dark);
   }
 
   &__note {
     font-size: 0.775rem !important;
-    color: $text-tertiary !important;
+    color: var(--text-tertiary) !important;
   }
 }
 

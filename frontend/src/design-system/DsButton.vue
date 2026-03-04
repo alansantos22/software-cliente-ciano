@@ -60,53 +60,53 @@ const emit = defineEmits<{
 
   // === VARIANTS ===
   &--primary {
-    background: $primary-500;
+    background: var(--primary-500);
     color: white;
 
     &:hover:not(:disabled) {
-      background: $primary-600;
+      background: var(--primary-600);
     }
 
     &:active:not(:disabled) {
-      background: $primary-700;
+      background: var(--primary-700);
     }
   }
 
   &--secondary {
-    background: $secondary-500;
+    background: var(--secondary-500);
     color: white;
 
     &:hover:not(:disabled) {
-      background: $secondary-600;
+      background: var(--secondary-600);
     }
   }
 
   &--outline {
     background: transparent;
-    color: $primary-600;
-    border: 2px solid $primary-500;
+    color: var(--primary-600);
+    border: 2px solid var(--primary-500);
 
     &:hover:not(:disabled) {
-      background: $primary-50;
+      background: var(--primary-50);
     }
   }
 
   &--ghost {
     background: transparent;
-    color: $text-secondary;
+    color: var(--text-secondary);
 
     &:hover:not(:disabled) {
-      background: $neutral-100;
-      color: $text-primary;
+      background: var(--neutral-100);
+      color: var(--text-primary);
     }
   }
 
   &--danger {
-    background: $error;
+    background: var(--color-error);
     color: white;
 
     &:hover:not(:disabled) {
-      background: $error-dark;
+      background: var(--color-error-dark);
     }
   }
 

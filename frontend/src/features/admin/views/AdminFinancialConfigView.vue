@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="governance-panel">
 
     <!-- Header -->
@@ -775,12 +775,12 @@ onMounted(async () => { await mockDelay(300); });
   }
 
   &__title {
-    font-size: 1.75rem; font-weight: 700; color: $text-primary;
+    font-size: 1.75rem; font-weight: 700; color: var(--text-primary);
     margin: 0 0 $spacing-1; display: flex; align-items: center; gap: $spacing-2;
-    svg { color: $primary-600; }
+    svg { color: var(--primary-600); }
   }
 
-  &__subtitle { color: $text-secondary; margin: 0; font-size: 0.9rem; }
+  &__subtitle { color: var(--text-secondary); margin: 0; font-size: 0.9rem; }
   &__actions { display: flex; gap: $spacing-3; flex-wrap: wrap; }
   &__alert { margin: 0; }
 
@@ -807,15 +807,15 @@ onMounted(async () => { await mockDelay(300); });
   display: flex; align-items: center; gap: $spacing-2;
   padding: $spacing-3 $spacing-4; border: none; border-radius: 10px;
   background: transparent; cursor: pointer; text-align: left;
-  font-size: 0.9rem; font-weight: 500; color: $text-secondary;
+  font-size: 0.9rem; font-weight: 500; color: var(--text-secondary);
   transition: background 0.15s, color 0.15s; position: relative; white-space: nowrap;
 
-  &:hover:not(.gov-tab--active) { background: $bg-tertiary; color: $text-primary; }
-  &--active { background: rgba($primary-500, 0.1); color: $primary-700; font-weight: 600; }
+  &:hover:not(.gov-tab--active) { background: var(--bg-tertiary); color: var(--text-primary); }
+  &--active { background: rgba(var(--primary-500-rgb), 0.1); color: var(--primary-700); font-weight: 600; }
 
   &__icon { font-size: 1rem; flex-shrink: 0; }
   &__label { flex: 1; }
-  &__dot { width: 8px; height: 8px; border-radius: 50%; background: $warning; flex-shrink: 0; }
+  &__dot { width: 8px; height: 8px; border-radius: 50%; background: var(--color-warning); flex-shrink: 0; }
 }
 
 // Tab Content
@@ -830,10 +830,10 @@ onMounted(async () => { await mockDelay(300); });
 .gov-card {
   &__title {
     font-size: 1.05rem; font-weight: 600; margin: 0 0 $spacing-1;
-    display: flex; align-items: center; gap: $spacing-2; color: $text-primary;
-    svg { color: $primary-600; }
+    display: flex; align-items: center; gap: $spacing-2; color: var(--text-primary);
+    svg { color: var(--primary-600); }
   }
-  &__desc { font-size: 0.85rem; color: $text-secondary; margin: 0; font-weight: 400; }
+  &__desc { font-size: 0.85rem; color: var(--text-secondary); margin: 0; font-weight: 400; }
 }
 
 // Config Grid & Items
@@ -848,14 +848,14 @@ onMounted(async () => { await mockDelay(300); });
 
   &__label-row {
     display: flex; align-items: center; gap: $spacing-1;
-    label { font-size: 0.875rem; font-weight: 500; color: $text-primary; line-height: 1.4; }
+    label { font-size: 0.875rem; font-weight: 500; color: var(--text-primary); line-height: 1.4; }
   }
 }
 
 .info-icon {
-  font-size: 0.8rem; color: $text-tertiary; cursor: default;
+  font-size: 0.8rem; color: var(--text-tertiary); cursor: default;
   line-height: 1; transition: color 0.15s;
-  &:hover { color: $primary-500; }
+  &:hover { color: var(--primary-500); }
 }
 
 // Closing Day
@@ -864,23 +864,23 @@ onMounted(async () => { await mockDelay(300); });
 
 .radio-item {
   display: flex; align-items: center; gap: $spacing-2; cursor: pointer;
-  padding: $spacing-2 $spacing-3; border-radius: 8px; border: 1px solid $border-light;
+  padding: $spacing-2 $spacing-3; border-radius: 8px; border: 1px solid var(--border-light);
   font-size: 0.875rem; transition: all 0.15s; user-select: none;
-  input[type="radio"] { width: 15px; height: 15px; accent-color: $primary-600; flex-shrink: 0; }
-  &--active { background: rgba($primary-500,0.07); border-color: $primary-400; color: $primary-700; }
+  input[type="radio"] { width: 15px; height: 15px; accent-color: var(--primary-600); flex-shrink: 0; }
+  &--active { background: rgba(var(--primary-500-rgb), 0.07); border-color: var(--primary-400); color: var(--primary-700); }
 }
 
 .closing-day-input {
   display: flex; align-items: flex-start; gap: $spacing-3; flex-wrap: wrap;
-  &__note { font-size: 0.75rem; color: $text-tertiary; max-width: 360px; padding-top: 10px; line-height: 1.5; }
+  &__note { font-size: 0.75rem; color: var(--text-tertiary); max-width: 360px; padding-top: 10px; line-height: 1.5; }
 }
 
 .closing-day-preview {
   display: inline-flex; align-items: center; gap: $spacing-2;
-  background: $bg-tertiary; border: 1px solid $border-light;
+  background: var(--bg-tertiary); border: 1px solid var(--border-light);
   border-radius: 8px; padding: $spacing-2 $spacing-3; font-size: 0.875rem; width: fit-content;
-  &__label { color: $text-secondary; }
-  &__value { color: $primary-700; }
+  &__label { color: var(--text-secondary); }
+  &__value { color: var(--primary-700); }
 }
 
 // Career
@@ -893,8 +893,8 @@ onMounted(async () => { await mockDelay(300); });
 .rule-row {
   display: grid; grid-template-columns: 120px 1fr;
   grid-template-rows: auto auto; gap: $spacing-2 $spacing-4;
-  padding: $spacing-4; border: 1px solid $border-light;
-  border-radius: 10px; background: $bg-secondary; align-items: center;
+  padding: $spacing-4; border: 1px solid var(--border-light);
+  border-radius: 10px; background: var(--bg-secondary); align-items: center;
   @media (max-width: 700px) { grid-template-columns: 1fr; }
 
   &__badge {
@@ -906,34 +906,34 @@ onMounted(async () => { await mockDelay(300); });
   &__builder { display: flex; align-items: center; flex-wrap: wrap; gap: $spacing-2; }
 
   &__connector {
-    font-size: 0.8rem; font-weight: 600; color: $text-tertiary;
+    font-size: 0.8rem; font-weight: 600; color: var(--text-tertiary);
     text-transform: uppercase; letter-spacing: 0.04em; flex-shrink: 0;
   }
 
   &__preview {
     grid-column: 1 / -1; display: flex; align-items: center; gap: $spacing-2;
-    font-size: 0.82rem; color: $text-secondary;
-    background: rgba($primary-500, 0.06); border: 1px dashed rgba($primary-500, 0.3);
+    font-size: 0.82rem; color: var(--text-secondary);
+    background: rgba(var(--primary-500-rgb), 0.06); border: 1px dashed rgba(var(--primary-500-rgb), 0.3);
     border-radius: 6px; padding: $spacing-2 $spacing-3; width: fit-content;
-    em { font-style: normal; color: $primary-700; }
+    em { font-style: normal; color: var(--primary-700); }
   }
 
-  &__preview-icon { color: $primary-400; font-size: 0.75rem; }
+  &__preview-icon { color: var(--primary-400); font-size: 0.75rem; }
 }
 
 .rule-input {
   width: 64px; height: 36px; padding: 0 $spacing-2;
-  border: 1px solid $border-default; border-radius: 6px;
-  font-size: 0.9rem; font-family: inherit; color: $text-primary;
+  border: 1px solid var(--border-default); border-radius: 6px;
+  font-size: 0.9rem; font-family: inherit; color: var(--text-primary);
   text-align: center; background: white; transition: border-color 0.15s, box-shadow 0.15s;
-  &:focus { outline: none; border-color: $primary-500; box-shadow: 0 0 0 2px rgba($primary-500,0.2); }
+  &:focus { outline: none; border-color: var(--primary-500); box-shadow: 0 0 0 2px rgba(var(--primary-500-rgb), 0.2); }
 }
 
 .rule-select {
-  height: 36px; padding: 0 $spacing-3; border: 1px solid $border-default;
-  border-radius: 6px; font-size: 0.875rem; font-family: inherit; color: $text-primary;
+  height: 36px; padding: 0 $spacing-3; border: 1px solid var(--border-default);
+  border-radius: 6px; font-size: 0.875rem; font-family: inherit; color: var(--text-primary);
   background: white; cursor: pointer; transition: border-color 0.15s, box-shadow 0.15s;
-  &:focus { outline: none; border-color: $primary-500; box-shadow: 0 0 0 2px rgba($primary-500,0.2); }
+  &:focus { outline: none; border-color: var(--primary-500); box-shadow: 0 0 0 2px rgba(var(--primary-500-rgb), 0.2); }
   &--level { min-width: 130px; }
 }
 
@@ -941,8 +941,8 @@ onMounted(async () => { await mockDelay(300); });
 .movement-rules { display: flex; flex-direction: column; gap: $spacing-4; }
 
 .movement-rule-row {
-  padding: $spacing-4; border: 1px solid $border-light;
-  border-radius: 10px; background: $bg-secondary;
+  padding: $spacing-4; border: 1px solid var(--border-light);
+  border-radius: 10px; background: var(--bg-secondary);
 
   &__title {
     display: flex; align-items: center; gap: $spacing-2;
@@ -956,26 +956,26 @@ onMounted(async () => { await mockDelay(300); });
   }
 
   &__summary {
-    font-size: 0.875rem; color: $text-secondary;
-    background: rgba($primary-500,0.07); border-left: 3px solid $primary-400;
+    font-size: 0.875rem; color: var(--text-secondary);
+    background: rgba(var(--primary-500-rgb), 0.07); border-left: 3px solid var(--primary-400);
     padding: $spacing-2 $spacing-3; border-radius: 0 6px 6px 0;
-    strong { color: $primary-700; }
-    &--none { background: $bg-tertiary; border-left-color: $border-default; color: $text-tertiary; }
+    strong { color: var(--primary-700); }
+    &--none { background: var(--bg-tertiary); border-left-color: var(--border-default); color: var(--text-tertiary); }
   }
 }
 
 .movement-rule-field {
   display: flex; flex-direction: column; gap: $spacing-2;
-  label { font-size: 0.85rem; font-weight: 500; color: $text-primary; }
+  label { font-size: 0.85rem; font-weight: 500; color: var(--text-primary); }
 }
 
 // Audit Footer
 .audit-footer {
   display: flex; align-items: center; gap: $spacing-2;
-  font-size: 0.8rem; color: $text-tertiary;
-  border-top: 1px solid $border-light; padding-top: $spacing-4;
-  &__icon { color: $text-tertiary; }
-  strong  { color: $text-secondary; }
+  font-size: 0.8rem; color: var(--text-tertiary);
+  border-top: 1px solid var(--border-light); padding-top: $spacing-4;
+  &__icon { color: var(--text-tertiary); }
+  strong  { color: var(--text-secondary); }
 }
 
 // Confirm Modal
@@ -989,36 +989,36 @@ onMounted(async () => { await mockDelay(300); });
 
   &__no-changes {
     display: flex; flex-direction: column; align-items: center;
-    gap: $spacing-3; padding: $spacing-6 0; text-align: center; color: $text-secondary;
-    &-icon { font-size: 2.5rem; color: $success; }
+    gap: $spacing-3; padding: $spacing-6 0; text-align: center; color: var(--text-secondary);
+    &-icon { font-size: 2.5rem; color: var(--color-success); }
     p { margin: 0; }
   }
 
   &__warning {
     display: flex; align-items: center; gap: $spacing-2;
-    font-size: 0.9rem; color: $text-secondary; margin: 0;
+    font-size: 0.9rem; color: var(--text-secondary); margin: 0;
   }
-  &__warn-icon { color: $warning; flex-shrink: 0; }
+  &__warn-icon { color: var(--color-warning); flex-shrink: 0; }
 
   &__pin-section {
     display: flex; flex-direction: column; gap: $spacing-2;
-    padding: $spacing-4; background: rgba($primary-500,0.05);
-    border: 1px solid rgba($primary-500,0.2); border-radius: 10px;
+    padding: $spacing-4; background: rgba(var(--primary-500-rgb), 0.05);
+    border: 1px solid rgba(var(--primary-500-rgb), 0.2); border-radius: 10px;
   }
 
   &__pin-label {
-    font-size: 0.875rem; font-weight: 500; color: $text-primary;
+    font-size: 0.875rem; font-weight: 500; color: var(--text-primary);
     display: flex; align-items: center; gap: $spacing-2;
   }
 
   &__pin-error {
     display: flex; align-items: center; gap: $spacing-2;
-    font-size: 0.82rem; color: $error; margin: 0;
+    font-size: 0.82rem; color: var(--color-error); margin: 0;
   }
 
   &__pin-hint {
-    font-size: 0.78rem; color: $text-tertiary; margin: 0;
-    code { background: $bg-tertiary; padding: 1px 5px; border-radius: 4px; font-family: monospace; color: $primary-700; }
+    font-size: 0.78rem; color: var(--text-tertiary); margin: 0;
+    code { background: var(--bg-tertiary); padding: 1px 5px; border-radius: 4px; font-family: monospace; color: var(--primary-700); }
   }
 
   &__footer { display: flex; justify-content: flex-end; gap: $spacing-3; }
@@ -1028,25 +1028,25 @@ onMounted(async () => { await mockDelay(300); });
 .diff-list {
   display: flex; flex-direction: column; gap: $spacing-2;
   max-height: 280px; overflow-y: auto; padding: $spacing-3;
-  background: $bg-secondary; border: 1px solid $border-light; border-radius: 8px;
+  background: var(--bg-secondary); border: 1px solid var(--border-light); border-radius: 8px;
 }
 
 .diff-row {
   display: flex; align-items: center; gap: $spacing-3;
   font-size: 0.875rem; flex-wrap: wrap;
-  &__field { font-weight: 500; color: $text-primary; min-width: 180px; flex-shrink: 0; }
-  &__old   { color: $error; font-size: 0.85rem; s { text-decoration-color: rgba($error,0.6); } }
-  &__arrow { color: $text-tertiary; font-size: 0.7rem; flex-shrink: 0; }
-  &__new   { color: $success-dark; font-weight: 600; font-size: 0.85rem; }
+  &__field { font-weight: 500; color: var(--text-primary); min-width: 180px; flex-shrink: 0; }
+  &__old   { color: var(--color-error); font-size: 0.85rem; s { text-decoration-color: rgba(var(--error-rgb), 0.6); } }
+  &__arrow { color: var(--text-tertiary); font-size: 0.7rem; flex-shrink: 0; }
+  &__new   { color: var(--color-success-dark); font-weight: 600; font-size: 0.85rem; }
 }
 
 // PIN Input
 .pin-input {
   width: 120px; height: 44px; padding: 0 $spacing-3;
-  border: 1.5px solid $border-default; border-radius: 8px;
+  border: 1.5px solid var(--border-default); border-radius: 8px;
   font-size: 1.4rem; font-family: monospace; letter-spacing: 0.4em;
-  text-align: center; color: $text-primary; background: white;
+  text-align: center; color: var(--text-primary); background: white;
   transition: border-color 0.15s, box-shadow 0.15s;
-  &:focus { outline: none; border-color: $primary-500; box-shadow: 0 0 0 3px rgba($primary-500,0.18); }
+  &:focus { outline: none; border-color: var(--primary-500); box-shadow: 0 0 0 3px rgba(var(--primary-500-rgb), 0.18); }
 }
 </style>

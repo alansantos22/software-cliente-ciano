@@ -197,10 +197,10 @@ function emitSelection() {
 @use '@/assets/scss/mixins' as *;
 
 .ds-table-wrapper {
-  background: $bg-primary;
+  background: var(--bg-primary);
   border-radius: $radius-lg;
   overflow: hidden;
-  border: 1px solid $border-light;
+  border: 1px solid var(--border-light);
 }
 
 .ds-table {
@@ -213,12 +213,12 @@ function emitSelection() {
   }
 
   thead {
-    background: $bg-secondary;
-    border-bottom: 2px solid $border-default;
+    background: var(--bg-secondary);
+    border-bottom: 2px solid var(--border-default);
 
     th {
       font-weight: 600;
-      color: $text-secondary;
+      color: var(--text-secondary);
       font-size: 0.875rem;
       text-transform: uppercase;
       letter-spacing: 0.025em;
@@ -227,7 +227,7 @@ function emitSelection() {
 
   tbody {
     tr {
-      border-bottom: 1px solid $border-light;
+      border-bottom: 1px solid var(--border-light);
 
       &:last-child {
         border-bottom: none;
@@ -235,17 +235,17 @@ function emitSelection() {
     }
 
     td {
-      color: $text-primary;
+      color: var(--text-primary);
       font-size: 0.9375rem;
     }
   }
 
   &--striped tbody tr:nth-child(even) {
-    background: $bg-secondary;
+    background: var(--bg-secondary);
   }
 
   &--hoverable tbody tr:hover {
-    background: $primary-50;
+    background: var(--primary-50);
   }
 
   &__checkbox-col {
@@ -258,7 +258,7 @@ function emitSelection() {
     user-select: none;
 
     &:hover {
-      color: $primary-600;
+      color: var(--primary-600);
     }
   }
 
@@ -273,26 +273,26 @@ function emitSelection() {
   }
 
   &__row-selected {
-    background: $primary-50 !important;
+    background: var(--primary-50) !important;
   }
 
   &__loading,
   &__empty {
     text-align: center;
     padding: $spacing-8 !important;
-    color: $text-tertiary;
+    color: var(--text-tertiary);
   }
 
   &__pagination {
     @include flex-between;
     padding: $spacing-3 $spacing-4;
-    border-top: 1px solid $border-light;
-    background: $bg-secondary;
+    border-top: 1px solid var(--border-light);
+    background: var(--bg-secondary);
   }
 
   &__pagination-info {
     font-size: 0.875rem;
-    color: $text-secondary;
+    color: var(--text-secondary);
   }
 
   &__pagination-controls {
@@ -304,15 +304,15 @@ function emitSelection() {
       @include flex-center;
       width: 32px;
       height: 32px;
-      border: 1px solid $border-default;
+      border: 1px solid var(--border-default);
       border-radius: $radius-md;
-      background: $bg-primary;
+      background: var(--bg-primary);
       cursor: pointer;
       transition: all $transition-fast;
 
       &:hover:not(:disabled) {
-        background: $primary-50;
-        border-color: $primary-500;
+        background: var(--primary-50);
+        border-color: var(--primary-500);
       }
 
       &:disabled {
@@ -323,7 +323,7 @@ function emitSelection() {
 
     span {
       font-size: 0.875rem;
-      color: $text-secondary;
+      color: var(--text-secondary);
     }
   }
 }

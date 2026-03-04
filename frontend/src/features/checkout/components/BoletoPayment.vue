@@ -170,12 +170,12 @@ function formatCurrency(value: number): string {
     h2 {
       font-size: 1.5rem;
       font-weight: 700;
-      color: $neutral-900;
+      color: var(--neutral-900);
       margin: 0;
     }
 
     p {
-      color: $text-secondary;
+      color: var(--text-secondary);
       font-size: 0.9rem;
       margin: 0;
     }
@@ -183,7 +183,7 @@ function formatCurrency(value: number): string {
 
   &__icon {
     font-size: 2.5rem;
-    color: $neutral-600;
+    color: var(--neutral-600);
   }
 
   // ── Código de barras ──────────────────────────────────────────────────────
@@ -196,7 +196,7 @@ function formatCurrency(value: number): string {
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.08em;
-      color: $text-tertiary;
+      color: var(--text-tertiary);
       margin: 0;
     }
   }
@@ -206,15 +206,15 @@ function formatCurrency(value: number): string {
     align-items: center;
     gap: $spacing-3;
     padding: $spacing-4;
-    background: $neutral-100;
+    background: var(--neutral-100);
     border-radius: $radius-lg;
-    border: 1px solid $neutral-200;
+    border: 1px solid var(--neutral-200);
 
     code {
       flex: 1;
       font-size: 0.8rem;
       word-break: break-all;
-      color: $neutral-700;
+      color: var(--neutral-700);
     }
   }
 
@@ -223,7 +223,7 @@ function formatCurrency(value: number): string {
     align-items: center;
     gap: $spacing-2;
     padding: $spacing-2 $spacing-4;
-    background: $primary-500;
+    background: var(--primary-500);
     color: white;
     border: none;
     border-radius: $radius-md;
@@ -234,8 +234,8 @@ function formatCurrency(value: number): string {
     transition: background 0.2s;
     flex-shrink: 0;
 
-    &:hover { background: $primary-700; }
-    &--copied { background: $success; }
+    &:hover { background: var(--primary-700); }
+    &--copied { background: var(--color-success); }
   }
 
   // ── Barcode visual ────────────────────────────────────────────────────────
@@ -244,7 +244,7 @@ function formatCurrency(value: number): string {
     align-items: stretch;
     height: 60px;
     background: white;
-    border: 1px solid $neutral-200;
+    border: 1px solid var(--neutral-200);
     border-radius: $radius-md;
     padding: $spacing-2 $spacing-4;
     gap: 2px;
@@ -252,14 +252,14 @@ function formatCurrency(value: number): string {
   }
 
   .barcode-line {
-    background: $neutral-900;
+    background: var(--neutral-900);
     flex-shrink: 0;
     border-radius: 1px;
   }
 
   // ── Order info ────────────────────────────────────────────────────────────
   &__order-info {
-    border: 2px solid $neutral-200;
+    border: 2px solid var(--neutral-200);
     border-radius: $radius-xl;
     overflow: hidden;
   }
@@ -267,13 +267,13 @@ function formatCurrency(value: number): string {
   .info-row {
     @include flex-between;
     padding: $spacing-4 $spacing-5;
-    border-bottom: 1px solid $neutral-100;
+    border-bottom: 1px solid var(--neutral-100);
     font-size: 0.875rem;
 
     &:last-child { border-bottom: none; }
 
-    span { color: $text-secondary; }
-    strong { color: $neutral-800; font-weight: 600; }
+    span { color: var(--text-secondary); }
+    strong { color: var(--neutral-800); font-weight: 600; }
   }
 
   // ── Actions ───────────────────────────────────────────────────────────────
@@ -291,17 +291,17 @@ function formatCurrency(value: number): string {
 
   // ── Referral ──────────────────────────────────────────────────────────────
   &__referral {
-    border: 1px solid $neutral-200;
+    border: 1px solid var(--neutral-200);
     border-radius: $radius-xl;
     padding: $spacing-5;
-    background: $neutral-50;
+    background: var(--neutral-50);
     @include flex-column;
     gap: $spacing-3;
 
     .referral__eyebrow {
       font-size: 0.75rem;
       font-weight: 700;
-      color: $text-tertiary;
+      color: var(--text-tertiary);
       text-transform: uppercase;
       letter-spacing: 0.06em;
       margin: 0;
@@ -310,7 +310,7 @@ function formatCurrency(value: number): string {
     h3 {
       font-size: 0.95rem;
       font-weight: 700;
-      color: $neutral-900;
+      color: var(--neutral-900);
       margin: 0;
     }
   }
@@ -325,9 +325,9 @@ function formatCurrency(value: number): string {
   .referral__link {
     font-size: 0.8rem;
     font-weight: 600;
-    color: $primary-700;
+    color: var(--primary-700);
     background: white;
-    border: 1px solid $primary-200;
+    border: 1px solid var(--primary-200);
     border-radius: $radius-md;
     padding: $spacing-2 $spacing-3;
   }
@@ -337,7 +337,7 @@ function formatCurrency(value: number): string {
     align-items: center;
     gap: $spacing-2;
     padding: $spacing-3 $spacing-4;
-    background: $primary-500;
+    background: var(--primary-500);
     color: white;
     border: none;
     border-radius: $radius-lg;
@@ -346,8 +346,8 @@ function formatCurrency(value: number): string {
     cursor: pointer;
     transition: background 0.2s;
 
-    &:hover { background: $primary-600; }
-    &--copied { background: $success; color: white; }
+    &:hover { background: var(--primary-600); }
+    &--copied { background: var(--color-success); color: white; }
   }
 }
 </style>

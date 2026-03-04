@@ -8,6 +8,7 @@
 @use 'typography';
 @use 'spacing';
 @use 'mixins';
+@use 'theme';
 
 // === ROOT STYLES ===
 html {
@@ -18,8 +19,8 @@ body {
   font-family: typography.$font-family-base;
   font-size: typography.$font-size-base;
   line-height: typography.$line-height-normal;
-  color: colors.$text-primary;
-  background-color: colors.$bg-secondary;
+  color: var(--text-primary);
+  background-color: var(--bg-secondary);
 }
 
 // === UTILITY CLASSES ===
@@ -52,23 +53,23 @@ body {
 }
 
 .text-primary {
-  color: colors.$primary-500;
+  color: var(--primary-500);
 }
 
 .text-secondary {
-  color: colors.$text-secondary;
+  color: var(--text-secondary);
 }
 
 .text-success {
-  color: colors.$success;
+  color: var(--color-success);
 }
 
 .text-warning {
-  color: colors.$warning;
+  color: var(--color-warning);
 }
 
 .text-error {
-  color: colors.$error;
+  color: var(--color-error);
 }
 
 // === SPACING UTILITIES ===
@@ -165,11 +166,11 @@ body {
 
 // === LINK STYLES ===
 a:not([class]) {
-  color: colors.$text-link;
+  color: var(--text-link);
   transition: color spacing.$transition-fast;
   
   &:hover {
-    color: colors.$text-link-hover;
+    color: var(--text-link-hover);
     text-decoration: underline;
   }
 }

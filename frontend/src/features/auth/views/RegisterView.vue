@@ -307,7 +307,7 @@ async function handleRegister() {
 // ═══════════════════════════════════════════════════════════════
 .register-page {
   min-height: 100vh;
-  background: $bg-secondary;
+  background: var(--bg-secondary);
   @include flex-center;
   padding: $spacing-8 $spacing-4;
 }
@@ -316,7 +316,7 @@ async function handleRegister() {
 // PAINEL — Formulário
 // ═══════════════════════════════════════════════════════════════
 .register-panel {
-  background: $bg-primary;
+  background: var(--bg-primary);
   border-radius: 20px;
   box-shadow: 0 8px 40px rgba(0, 0, 0, 0.08);
   padding: $spacing-8;
@@ -342,7 +342,7 @@ async function handleRegister() {
   &__brand-name {
     font-size: 1.5rem;
     font-weight: 800;
-    color: $primary-700;
+    color: var(--primary-700);
     letter-spacing: -0.03em;
   }
 
@@ -356,7 +356,7 @@ async function handleRegister() {
   &__title {
     font-size: 1.625rem;
     font-weight: 700;
-    color: $text-primary;
+    color: var(--text-primary);
     line-height: 1.25;
     margin: 0;
     letter-spacing: -0.02em;
@@ -364,7 +364,7 @@ async function handleRegister() {
 
   &__subtitle {
     font-size: 0.9375rem;
-    color: $text-secondary;
+    color: var(--text-secondary);
     margin: 0;
     line-height: 1.5;
   }
@@ -374,22 +374,22 @@ async function handleRegister() {
     display: flex;
     align-items: center;
     gap: $spacing-2;
-    color: $text-tertiary;
+    color: var(--text-tertiary);
     font-size: 0.8125rem;
     justify-content: center;
 
-    svg { color: $success; }
+    svg { color: var(--color-success); }
   }
 
   // ── Rodapé ──
   &__footer {
     text-align: center;
-    color: $text-secondary;
+    color: var(--text-secondary);
     font-size: 0.9rem;
     margin: 0;
 
     a {
-      color: $primary-600;
+      color: var(--primary-600);
       text-decoration: none;
       font-weight: 600;
 
@@ -427,42 +427,42 @@ async function handleRegister() {
   &__label {
     font-size: 0.875rem;
     font-weight: 600;
-    color: $text-primary;
+    color: var(--text-primary);
   }
 
   &__select {
     height: 44px;
     padding: 0 $spacing-3;
-    border: 1.5px solid $border-default;
+    border: 1.5px solid var(--border-default);
     border-radius: 10px;
-    background: $bg-primary;
-    color: $text-primary;
+    background: var(--bg-primary);
+    color: var(--text-primary);
     font-size: 0.9375rem;
     transition: border-color 0.2s;
     appearance: auto;
 
     &:focus {
       outline: none;
-      border-color: $primary-500;
+      border-color: var(--primary-500);
     }
 
     &--error {
-      border-color: $error;
+      border-color: var(--color-error);
     }
   }
 
   &__field-error {
     font-size: 0.8125rem;
-    color: $error;
+    color: var(--color-error);
     margin-top: 2px;
   }
 
   &__referral-hint {
     margin-top: calc(-1 * #{$spacing-2});
     font-size: 0.8125rem;
-    color: $primary-700;
-    background: $primary-50;
-    border: 1px solid $primary-100;
+    color: var(--primary-700);
+    background: var(--primary-50);
+    border: 1px solid var(--primary-100);
     border-radius: 8px;
     padding: $spacing-2 $spacing-3;
   }

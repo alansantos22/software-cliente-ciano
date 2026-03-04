@@ -148,10 +148,10 @@ function titleLabel(key: TitleKey) {
 @use '@/assets/scss/mixins' as *;
 
 .progress-bar {
-  background: $bg-primary;
+  background: var(--bg-primary);
   border-radius: $radius-lg;
   padding: $spacing-5 $spacing-6;
-  box-shadow: $shadow-md;
+  box-shadow: var(--shadow-md);
 
   &__header {
     @include flex-between;
@@ -180,19 +180,19 @@ function titleLabel(key: TitleKey) {
   }
 
   &__arrow {
-    color: $text-tertiary;
+    color: var(--text-tertiary);
     font-size: 0.75rem;
   }
 
   &__percent {
     font-size: 0.875rem;
     font-weight: 700;
-    color: $text-secondary;
+    color: var(--text-secondary);
   }
 
   &__track {
     height: 10px;
-    background: $neutral-200;
+    background: var(--neutral-200);
     border-radius: $radius-full;
     overflow: hidden;
     margin-bottom: $spacing-3;
@@ -206,14 +206,14 @@ function titleLabel(key: TitleKey) {
 
   &__message {
     font-size: 0.8125rem;
-    color: $text-secondary;
+    color: var(--text-secondary);
     margin: 0;
     display: flex;
     align-items: center;
     gap: $spacing-2;
 
     svg {
-      color: $accent-500;
+      color: var(--accent-500);
       flex-shrink: 0;
     }
   }

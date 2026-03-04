@@ -24,7 +24,7 @@ const { t } = useI18n();
 .not-found {
   @include flex-center;
   min-height: 100vh;
-  background: $bg-secondary;
+  background: var(--bg-secondary);
 
   &__content {
     text-align: center;
@@ -33,26 +33,26 @@ const { t } = useI18n();
   &__title {
     font-size: 6rem;
     font-weight: 700;
-    color: $primary-500;
+    color: var(--primary-500);
     margin-bottom: $spacing-4;
   }
 
   &__text {
     font-size: 1.5rem;
-    color: $text-secondary;
+    color: var(--text-secondary);
     margin-bottom: $spacing-6;
   }
 
   &__link {
     display: inline-block;
     padding: $spacing-3 $spacing-6;
-    background: $primary-500;
+    background: var(--primary-500);
     color: white;
     border-radius: $radius-md;
     transition: background $transition-fast;
 
     &:hover {
-      background: $primary-600;
+      background: var(--primary-600);
       text-decoration: none;
     }
   }

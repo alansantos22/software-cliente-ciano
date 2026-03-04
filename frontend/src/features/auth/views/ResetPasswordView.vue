@@ -183,13 +183,13 @@ async function handleSubmit() {
 
 .reset-page {
   min-height: 100vh;
-  background: $bg-secondary;
+  background: var(--bg-secondary);
   @include flex-center;
   padding: $spacing-8 $spacing-4;
 }
 
 .reset-panel {
-  background: $bg-primary;
+  background: var(--bg-primary);
   border-radius: 20px;
   box-shadow: 0 8px 40px rgba(0, 0, 0, 0.08);
   padding: $spacing-8;
@@ -214,7 +214,7 @@ async function handleSubmit() {
   &__brand-name {
     font-size: 1.5rem;
     font-weight: 800;
-    color: $primary-700;
+    color: var(--primary-700);
     letter-spacing: -0.03em;
   }
 
@@ -227,14 +227,14 @@ async function handleSubmit() {
   &__title {
     font-size: 1.625rem;
     font-weight: 700;
-    color: $text-primary;
+    color: var(--text-primary);
     margin: 0;
     letter-spacing: -0.02em;
   }
 
   &__subtitle {
     font-size: 0.9375rem;
-    color: $text-secondary;
+    color: var(--text-secondary);
     margin: 0;
     line-height: 1.5;
   }
@@ -247,7 +247,7 @@ async function handleSubmit() {
     display: inline-flex;
     align-items: center;
     gap: $spacing-2;
-    color: $primary-600;
+    color: var(--primary-600);
     font-weight: 600;
     font-size: 0.9rem;
     text-decoration: none;
@@ -279,7 +279,7 @@ async function handleSubmit() {
   &__strength-bar {
     flex: 1;
     height: 4px;
-    background: $bg-tertiary;
+    background: var(--bg-tertiary);
     border-radius: 2px;
     overflow: hidden;
   }
@@ -289,15 +289,15 @@ async function handleSubmit() {
     transition: width 0.3s ease, background 0.3s ease;
     border-radius: 2px;
 
-    &--weak   { background: $error; }
-    &--fair   { background: $warning; }
-    &--strong { background: $success; }
+    &--weak   { background: var(--color-error); }
+    &--fair   { background: var(--color-warning); }
+    &--strong { background: var(--color-success); }
   }
 
   &__strength-label {
-    &--weak   { color: $error;  font-size: 0.8125rem; font-weight: 600; }
-    &--fair   { color: $warning; font-size: 0.8125rem; font-weight: 600; }
-    &--strong { color: $success; font-size: 0.8125rem; font-weight: 600; }
+    &--weak   { color: var(--color-error);  font-size: 0.8125rem; font-weight: 600; }
+    &--fair   { color: var(--color-warning); font-size: 0.8125rem; font-weight: 600; }
+    &--strong { color: var(--color-success); font-size: 0.8125rem; font-weight: 600; }
   }
 }
 </style>

@@ -311,15 +311,15 @@ function getTypeIcon(rawType: string): string {
         margin: 0;
         font-size: 1rem;
         font-weight: 600;
-        color: $neutral-900;
+        color: var(--neutral-900);
       }
     }
   }
 
   &__count {
     font-size: 0.8rem;
-    color: $neutral-500;
-    background: $neutral-100;
+    color: var(--neutral-500);
+    background: var(--neutral-100);
     padding: 0.2rem 0.6rem;
     border-radius: 20px;
   }
@@ -328,11 +328,11 @@ function getTypeIcon(rawType: string): string {
 // ── Summary Card ───────────────────────────────────────
 .summary-card {
   position: relative;
-  background: #fff;
+  background: var(--bg-primary);
   border-radius: 12px;
   padding: 1.25rem 1.5rem;
   box-shadow: 0 1px 3px rgba(0,0,0,.06);
-  border: 1px solid $neutral-200;
+  border: 1px solid var(--neutral-200);
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -341,7 +341,7 @@ function getTypeIcon(rawType: string): string {
   &__label {
     font-size: 0.78rem;
     font-weight: 500;
-    color: $neutral-500;
+    color: var(--neutral-500);
     text-transform: uppercase;
     letter-spacing: 0.05em;
   }
@@ -349,12 +349,12 @@ function getTypeIcon(rawType: string): string {
   &__value {
     font-size: 1.5rem;
     font-weight: 700;
-    color: $neutral-900;
+    color: var(--neutral-900);
   }
 
   &__sublabel {
     font-size: 0.7rem;
-    color: $neutral-400;
+    color: var(--neutral-400);
     margin-top: 2px;
     line-height: 1.3;
     padding-right: 2.5rem; // avoid overlapping icon
@@ -369,13 +369,13 @@ function getTypeIcon(rawType: string): string {
     opacity: 0.12;
   }
 
-  &--green { border-left: 4px solid $success;      .summary-card__icon { color: $success;      opacity: 0.2; } }
-  &--red   { border-left: 4px solid $error;        .summary-card__icon { color: $error;        opacity: 0.2; } }
-  &--blue  { border-left: 4px solid $info;         .summary-card__icon { color: $info;         opacity: 0.2; } }
-  &--purple{ border-left: 4px solid $primary-500;  .summary-card__icon { color: $primary-500;  opacity: 0.2; } }
+  &--green { border-left: 4px solid var(--color-success);      .summary-card__icon { color: var(--color-success);      opacity: 0.2; } }
+  &--red   { border-left: 4px solid var(--color-error);        .summary-card__icon { color: var(--color-error);        opacity: 0.2; } }
+  &--blue  { border-left: 4px solid var(--color-info);         .summary-card__icon { color: var(--color-info);         opacity: 0.2; } }
+  &--purple{ border-left: 4px solid var(--primary-500);  .summary-card__icon { color: var(--primary-500);  opacity: 0.2; } }
   &--teal  {
-    border-left: 4px solid $accent-500;
-    .summary-card__icon { color: $accent-500; opacity: 0.2; }
+    border-left: 4px solid var(--accent-500);
+    .summary-card__icon { color: var(--accent-500); opacity: 0.2; }
     .summary-card__value { color: color.adjust(#00bcd4, $lightness: -10%); }
   }
 }
@@ -400,22 +400,22 @@ function getTypeIcon(rawType: string): string {
   gap: 0.4rem;
   padding: 0.35rem 0.85rem;
   border-radius: 20px;
-  border: 1.5px solid $neutral-300;
-  background: #fff;
-  color: $neutral-600;
+  border: 1.5px solid var(--neutral-300);
+  background: var(--bg-primary);
+  color: var(--neutral-600);
   font-size: 0.82rem;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.18s ease;
 
   &:hover {
-    border-color: $primary-500;
-    color: $primary-500;
+    border-color: var(--primary-500);
+    color: var(--primary-500);
   }
 
   &--active {
-    background: $primary-500;
-    border-color: $primary-500;
+    background: var(--primary-500);
+    border-color: var(--primary-500);
     color: #fff;
   }
 
@@ -424,8 +424,8 @@ function getTypeIcon(rawType: string): string {
     font-weight: 600;
 
     &.filter-chip--active {
-      background: $accent-500;
-      border-color: $accent-500;
+      background: var(--accent-500);
+      border-color: var(--accent-500);
     }
   }
 }
@@ -435,7 +435,7 @@ function getTypeIcon(rawType: string): string {
   display: inline-block;
   width: 1px;
   height: 24px;
-  background: $neutral-300;
+  background: var(--neutral-300);
   align-self: center;
   flex-shrink: 0;
 }
@@ -450,11 +450,11 @@ function getTypeIcon(rawType: string): string {
     width: 28px;
     height: 28px;
     border-radius: 6px;
-    background: $neutral-100;
+    background: var(--neutral-100);
     display: flex;
     align-items: center;
     justify-content: center;
-    color: $neutral-500;
+    color: var(--neutral-500);
     font-size: 0.78rem;
     flex-shrink: 0;
   }
@@ -464,12 +464,12 @@ function getTypeIcon(rawType: string): string {
   font-weight: 600;
   font-size: 0.9rem;
 
-  &--positive { color: $success; }
-  &--negative { color: $error; }
+  &--positive { color: var(--color-success); }
+  &--negative { color: var(--color-error); }
 }
 
 .date-cell {
-  color: $neutral-600;
+  color: var(--neutral-600);
   font-size: 0.85rem;
 }
 
@@ -487,15 +487,15 @@ function getTypeIcon(rawType: string): string {
   gap: 4px;
   font-size: 0.68rem;
   font-weight: 600;
-  color: $warning-dark;
-  background: rgba($warning, 0.12);
-  border: 1px solid rgba($warning, 0.4);
+  color: var(--color-warning-dark);
+  background: rgba(var(--warning-rgb), 0.12);
+  border: 1px solid rgba(var(--warning-rgb), 0.4);
   padding: 1px 6px;
   border-radius: 10px;
   white-space: nowrap;
   cursor: help;
 }
 
-.text--positive { color: $success; }
-.text--negative { color: $error; }
+.text--positive { color: var(--color-success); }
+.text--negative { color: var(--color-error); }
 </style>

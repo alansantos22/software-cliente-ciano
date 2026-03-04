@@ -161,14 +161,14 @@ function formatCurrency(value: number): string {
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.1em;
-    color: $primary-600;
+    color: var(--primary-600);
     margin-bottom: $spacing-2;
   }
 
   &__title {
     font-size: 1.6rem;
     font-weight: 700;
-    color: $neutral-900;
+    color: var(--neutral-900);
     line-height: 1.3;
 
     .title-level {
@@ -188,7 +188,7 @@ function formatCurrency(value: number): string {
   }
 
   .impact-card {
-    border: 2px solid $neutral-200;
+    border: 2px solid var(--neutral-200);
     border-radius: $radius-xl;
     padding: $spacing-4;
     @include flex-column;
@@ -201,17 +201,17 @@ function formatCurrency(value: number): string {
       transform: translateY(-2px);
     }
 
-    &--investment { border-color: $neutral-200; background: white; }
-    &--level { border-color: $neutral-200; background: white; }
-    &--earnings { border-color: $neutral-200; background: white; }
+    &--investment { border-color: var(--neutral-200); background: white; }
+    &--level { border-color: var(--neutral-200); background: white; }
+    &--earnings { border-color: var(--neutral-200); background: white; }
 
     &__icon {
       font-size: 1.4rem;
-      color: $neutral-500;
+      color: var(--neutral-500);
     }
 
-    &--investment &__icon { color: $primary-600; }
-    &--earnings &__icon { color: $success-dark; }
+    &--investment &__icon { color: var(--primary-600); }
+    &--earnings &__icon { color: var(--color-success-dark); }
 
     &__body {
       @include flex-column;
@@ -220,7 +220,7 @@ function formatCurrency(value: number): string {
 
     &__label {
       font-size: 0.75rem;
-      color: $text-tertiary;
+      color: var(--text-tertiary);
       font-weight: 500;
       text-transform: uppercase;
       letter-spacing: 0.04em;
@@ -229,18 +229,18 @@ function formatCurrency(value: number): string {
     &__value {
       font-size: 1.1rem;
       font-weight: 800;
-      color: $neutral-900;
+      color: var(--neutral-900);
     }
 
     &__sub {
       font-size: 0.7rem;
-      color: $text-tertiary;
+      color: var(--text-tertiary);
     }
   }
 
   // ── Resumo ────────────────────────────────────────────────────────────────
   &__summary {
-    border: 2px solid $neutral-200;
+    border: 2px solid var(--neutral-200);
     border-radius: $radius-xl;
     overflow: hidden;
     background: white;
@@ -249,7 +249,7 @@ function formatCurrency(value: number): string {
   .summary-item {
     @include flex-between;
     padding: $spacing-4 $spacing-5;
-    border-bottom: 1px solid $neutral-100;
+    border-bottom: 1px solid var(--neutral-100);
     font-size: 0.9rem;
 
     &:last-child {
@@ -257,27 +257,27 @@ function formatCurrency(value: number): string {
     }
 
     &__label {
-      color: $text-secondary;
+      color: var(--text-secondary);
     }
 
     &__value {
       font-weight: 600;
-      color: $neutral-800;
+      color: var(--neutral-800);
     }
 
     &--total {
-      background: $neutral-50;
+      background: var(--neutral-50);
 
       .summary-item__label {
         font-weight: 700;
-        color: $neutral-700;
+        color: var(--neutral-700);
         font-size: 1rem;
       }
 
       .summary-item__value {
         font-size: 1.25rem;
         font-weight: 800;
-        color: $primary-700;
+        color: var(--primary-700);
       }
     }
   }
@@ -285,7 +285,7 @@ function formatCurrency(value: number): string {
   // ── Terms ─────────────────────────────────────────────────────────────────
   &__terms {
     font-size: 0.775rem;
-    color: $text-tertiary;
+    color: var(--text-tertiary);
     text-align: center;
     line-height: 1.6;
     margin: 0;

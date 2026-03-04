@@ -137,8 +137,8 @@ const captionText = computed(() => {
 
     &--bronze  { background: linear-gradient(135deg, #cd7f32, #e5a55a); color: #fff; }
     &--prata   { background: linear-gradient(135deg, #94a3b8, #cbd5e1); color: #fff; }
-    &--ouro    { background: linear-gradient(135deg, $accent-600, $accent-400); color: #fff; }
-    &--diamante{ background: linear-gradient(135deg, $primary-600, #7c3aed); color: #fff; }
+    &--ouro    { background: linear-gradient(135deg, var(--accent-600), var(--accent-400)); color: #fff; }
+    &--diamante{ background: linear-gradient(135deg, var(--primary-600), #7c3aed); color: #fff; }
     &--locked  { opacity: 0.45; filter: grayscale(0.4); }
   }
 
@@ -147,32 +147,32 @@ const captionText = computed(() => {
     font-size: 0.6875rem;
     text-transform: uppercase;
     letter-spacing: 0.07em;
-    color: $text-tertiary;
+    color: var(--text-tertiary);
   }
 
   &__current-name {
     display: block;
     font-size: 0.9375rem;
     font-weight: 700;
-    color: $text-primary;
+    color: var(--text-primary);
   }
 
   &__next-info span {
     font-size: 0.8125rem;
-    color: $text-secondary;
-    strong { color: $text-primary; }
+    color: var(--text-secondary);
+    strong { color: var(--text-primary); }
   }
 
   &__unlock {
     font-size: 0.75rem !important;
     font-weight: 600;
-    color: $success !important;
+    color: var(--color-success) !important;
   }
 
   /* Bar */
   &__track {
     height: 10px;
-    background: $neutral-200;
+    background: var(--neutral-200);
     border-radius: 999px;
     overflow: hidden;
     margin-bottom: $spacing-2;
@@ -186,8 +186,8 @@ const captionText = computed(() => {
 
     &--bronze   { background: linear-gradient(90deg, #cd7f32, #e5a55a); }
     &--prata    { background: linear-gradient(90deg, #94a3b8, #cbd5e1); }
-    &--ouro     { background: linear-gradient(90deg, $accent-700, $accent-400); }
-    &--diamante { background: linear-gradient(90deg, $primary-600, #7c3aed); }
+    &--ouro     { background: linear-gradient(90deg, var(--accent-700), var(--accent-400)); }
+    &--diamante { background: linear-gradient(90deg, var(--primary-600), #7c3aed); }
   }
 
   &__glow {
@@ -205,8 +205,8 @@ const captionText = computed(() => {
 
   &__caption {
     font-size: 0.8125rem;
-    color: $text-secondary;
-    strong { color: $primary-700; font-weight: 600; }
+    color: var(--text-secondary);
+    strong { color: var(--primary-700); font-weight: 600; }
   }
 }
 </style>

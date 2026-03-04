@@ -266,8 +266,8 @@ function getTitleLabel(title: UserTitle): string {
       font-weight: 600;
       text-transform: uppercase;
       letter-spacing: 0.06em;
-      color: $text-tertiary;
-      border-bottom: 2px solid $border-light;
+      color: var(--text-tertiary);
+      border-bottom: 2px solid var(--border-light);
       white-space: nowrap;
     }
   }
@@ -277,18 +277,18 @@ function getTitleLabel(title: UserTitle): string {
   &__row {
     transition: background 0.15s;
 
-    &:hover { background: $neutral-50; }
+    &:hover { background: var(--neutral-50); }
 
     td {
       padding: $spacing-3 $spacing-4;
-      border-bottom: 1px solid $border-light;
+      border-bottom: 1px solid var(--border-light);
       vertical-align: middle;
     }
   }
 
   &__empty {
     text-align: center;
-    color: $text-tertiary;
+    color: var(--text-tertiary);
     padding: $spacing-8 !important;
   }
 
@@ -304,7 +304,7 @@ function getTitleLabel(title: UserTitle): string {
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  background: linear-gradient(135deg, $primary-500, $secondary-500);
+  background: linear-gradient(135deg, var(--primary-500), var(--secondary-500));
   color: white;
   display: flex;
   align-items: center;
@@ -330,7 +330,7 @@ function getTitleLabel(title: UserTitle): string {
   &__name {
     font-weight: 600;
     font-size: 0.875rem;
-    color: $text-primary;
+    color: var(--text-primary);
     display: flex;
     align-items: center;
     gap: $spacing-1;
@@ -338,7 +338,7 @@ function getTitleLabel(title: UserTitle): string {
 
   &__email {
     font-size: 0.75rem;
-    color: $text-tertiary;
+    color: var(--text-tertiary);
   }
 
   &__whale {
@@ -356,13 +356,13 @@ function getTitleLabel(title: UserTitle): string {
   margin-right: $spacing-2;
   flex-shrink: 0;
 
-  &--green  { background: $success; box-shadow: 0 0 0 3px rgba($success, 0.2); }
-  &--yellow { background: $warning; box-shadow: 0 0 0 3px rgba($warning, 0.2); }
-  &--red    { background: $error;   box-shadow: 0 0 0 3px rgba($error, 0.2);   }
+  &--green  { background: var(--color-success); box-shadow: 0 0 0 3px rgba(var(--success-rgb), 0.2); }
+  &--yellow { background: var(--color-warning); box-shadow: 0 0 0 3px rgba(var(--warning-rgb), 0.2); }
+  &--red    { background: var(--color-error);   box-shadow: 0 0 0 3px rgba(var(--error-rgb), 0.2);   }
 
   &__label {
     font-size: 0.78rem;
-    color: $text-secondary;
+    color: var(--text-secondary);
   }
 }
 
@@ -370,7 +370,7 @@ function getTitleLabel(title: UserTitle): string {
 .crm-ltv {
   font-weight: 700;
   font-size: 0.9rem;
-  color: $text-primary;
+  color: var(--text-primary);
 }
 
 // Quotas
@@ -382,12 +382,12 @@ function getTitleLabel(title: UserTitle): string {
   &__bought {
     font-weight: 700;
     font-size: 0.9rem;
-    color: $text-primary;
+    color: var(--text-primary);
   }
 
   &__split {
     font-size: 0.72rem;
-    color: $primary-600;
+    color: var(--primary-600);
   }
 }
 
@@ -399,11 +399,11 @@ function getTitleLabel(title: UserTitle): string {
   font-size: 0.75rem;
   font-weight: 700;
 
-  &--socio    { background: rgba($primary-500, 0.1);  color: $primary-700;    border: 1px solid rgba($primary-500, 0.3); }
-  &--platinum { background: rgba($neutral-400, 0.15); color: $neutral-700;    border: 1px solid rgba($neutral-400, 0.4); }
-  &--vip      { background: rgba($accent-500, 0.12);  color: $accent-800;     border: 1px solid rgba($accent-500, 0.35); }
-  &--imperial { background: rgba($primary-500, 0.15); color: $primary-800;    border: 1px solid $primary-400;
-                box-shadow: 0 0 6px rgba($primary-500, 0.2); }
+  &--socio    { background: rgba(var(--primary-500-rgb), 0.1);  color: var(--primary-700);    border: 1px solid rgba(var(--primary-500-rgb), 0.3); }
+  &--platinum { background: rgba(var(--neutral-400-rgb), 0.15); color: var(--neutral-700);    border: 1px solid rgba(var(--neutral-400-rgb), 0.4); }
+  &--vip      { background: rgba(var(--accent-500-rgb), 0.12);  color: var(--accent-800);     border: 1px solid rgba(var(--accent-500-rgb), 0.35); }
+  &--imperial { background: rgba(var(--primary-500-rgb), 0.15); color: var(--primary-800);    border: 1px solid var(--primary-400);
+                box-shadow: 0 0 6px rgba(var(--primary-500-rgb), 0.2); }
 }
 
 // Title badge
@@ -414,7 +414,7 @@ function getTitleLabel(title: UserTitle): string {
   font-size: 0.75rem;
   font-weight: 700;
 
-  &--none    { color: $text-tertiary; background: none; padding: 0; }
+  &--none    { color: var(--text-tertiary); background: none; padding: 0; }
   &--bronze  { background: rgba(#cd7f32, 0.12); color: #7a4a1a; border: 1px solid rgba(#cd7f32, 0.4); }
   &--silver  { background: rgba(#a8a9ad, 0.15); color: #4a4a4a; border: 1px solid rgba(#a8a9ad, 0.4); }
   &--gold    { background: rgba(#FFD700, 0.15); color: #7a6000; border: 1px solid rgba(#FFD700, 0.5); }
@@ -428,23 +428,23 @@ function getTitleLabel(title: UserTitle): string {
 
   &__trigger {
     background: none;
-    border: 1px solid $border-default;
+    border: 1px solid var(--border-default);
     border-radius: $radius-sm;
     width: 30px;
     height: 30px;
     cursor: pointer;
     font-size: 1.1rem;
     line-height: 1;
-    color: $text-secondary;
+    color: var(--text-secondary);
     display: flex;
     align-items: center;
     justify-content: center;
     transition: all 0.15s;
 
     &:hover {
-      background: $neutral-100;
-      border-color: $neutral-400;
-      color: $text-primary;
+      background: var(--neutral-100);
+      border-color: var(--neutral-400);
+      color: var(--text-primary);
     }
   }
 
@@ -453,9 +453,9 @@ function getTitleLabel(title: UserTitle): string {
     right: 0;
     top: calc(100% + 4px);
     background: white;
-    border: 1px solid $border-default;
+    border: 1px solid var(--border-default);
     border-radius: $radius-md;
-    box-shadow: $shadow-xl;
+    box-shadow: var(--shadow-xl);
     min-width: 180px;
     z-index: 100;
     overflow: hidden;
@@ -471,15 +471,15 @@ function getTitleLabel(title: UserTitle): string {
     border: none;
     text-align: left;
     font-size: 0.875rem;
-    color: $text-primary;
+    color: var(--text-primary);
     cursor: pointer;
     transition: background 0.12s;
 
-    &:hover { background: $neutral-50; }
+    &:hover { background: var(--neutral-50); }
 
     &--danger {
-      color: $error;
-      &:hover { background: rgba($error, 0.06); }
+      color: var(--color-error);
+      &:hover { background: rgba(var(--error-rgb), 0.06); }
     }
   }
 }
