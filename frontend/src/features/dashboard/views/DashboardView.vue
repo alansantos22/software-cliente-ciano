@@ -123,6 +123,56 @@
             </span>
           </div>
         </div>
+
+        <!-- Ganhos da Vida (lifetime earnings) -->
+        <div class="kpi-card kpi-card--lifetime">
+          <div class="kpi-card__icon" style="color: #7c3aed">
+            <font-awesome-icon icon="trophy" />
+          </div>
+          <div class="kpi-card__body">
+            <span class="kpi-card__label">Ganhos da Vida</span>
+            <span class="kpi-card__value kpi-card__value--big">{{ formatCurrency(kpi.lifetimeEarnings) }}</span>
+            <span class="kpi-card__sub">Total acumulado desde o cadastro</span>
+          </div>
+        </div>
+
+        <!-- Perda por inatividade -->
+        <div v-if="kpi.inactivityLoss > 0" class="kpi-card kpi-card--loss">
+          <div class="kpi-card__icon" style="color: #dc2626">
+            <font-awesome-icon icon="arrow-trend-down" />
+          </div>
+          <div class="kpi-card__body">
+            <span class="kpi-card__label">Perdido por Inatividade</span>
+            <span class="kpi-card__value kpi-card__value--big kpi-card__value--danger">{{ formatCurrency(kpi.inactivityLoss) }}</span>
+            <span class="kpi-card__sub kpi-card__sub--danger">
+              <font-awesome-icon icon="triangle-exclamation" /> Valor estimado que deixou de receber por não estar ativo
+            </span>
+          </div>
+        </div>
+      </section>
+
+      <!-- ③b Sales Cards (Own vs Network) ──────────────────── -->
+      <section class="dashboard-view__sales">
+        <div class="sales-card">
+          <div class="sales-card__icon" style="color: #0891b2">
+            <font-awesome-icon icon="cart-shopping" />
+          </div>
+          <div class="sales-card__body">
+            <span class="sales-card__label">Vendas Próprias</span>
+            <span class="sales-card__value">{{ kpi.ownSalesCount }} cotas</span>
+            <span class="sales-card__sub">{{ formatCurrency(kpi.ownSalesValue) }} este mês</span>
+          </div>
+        </div>
+        <div class="sales-card">
+          <div class="sales-card__icon" style="color: #16a34a">
+            <font-awesome-icon icon="users" />
+          </div>
+          <div class="sales-card__body">
+            <span class="sales-card__label">Vendas da Rede</span>
+            <span class="sales-card__value">{{ kpi.networkSalesCount }} cotas</span>
+            <span class="sales-card__sub">{{ formatCurrency(kpi.networkSalesValue) }} este mês</span>
+          </div>
+        </div>
       </section>
       <!-- ④ Donut + Tabela de atividade ────────────────────── -->
       <div class="dashboard-view__mid">
@@ -495,7 +545,7 @@ onMounted(async () => {
   // ── KPI Cards ───────────────────────────────────────────────
   &__kpis {
     display: grid;
-    grid-template-columns: 1fr 1.2fr 1fr;
+    grid-template-columns: repeat(3, 1fr);
     gap: $spacing-4;
     margin-bottom: $spacing-6;
 
@@ -650,6 +700,80 @@ onMounted(async () => {
   &--network-warn {
     border-color: rgba($warning, 0.4);
     background: linear-gradient(135deg, rgba($warning, 0.04) 0%, #fff 100%);
+  }
+
+  &--lifetime {
+    .kpi-card__icon { background: rgba(#7c3aed, 0.1); }
+  }
+
+  &--loss {
+    border-color: rgba($error, 0.3);
+    background: linear-gradient(135deg, rgba($error, 0.04) 0%, #fff 100%);
+    .kpi-card__icon { background: rgba($error, 0.1); }
+  }
+
+  &__value--danger { color: $error !important; }
+  &__sub--danger { color: $error; font-weight: 500; }
+}
+
+// ── Sales Cards ─────────────────────────────────────────────
+.dashboard-view__sales {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: $spacing-4;
+  margin-bottom: $spacing-6;
+
+  @media (max-width: 576px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.sales-card {
+  display: flex;
+  align-items: center;
+  gap: $spacing-4;
+  padding: $spacing-5;
+  border-radius: $radius-xl;
+  border: 1.5px solid $neutral-200;
+  background: #fff;
+  transition: box-shadow 0.2s;
+
+  &:hover { box-shadow: $shadow-md; }
+
+  &__icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    font-size: 1.1rem;
+    flex-shrink: 0;
+    background: rgba($primary-500, 0.08);
+  }
+
+  &__body {
+    @include flex-column;
+    gap: 2px;
+  }
+
+  &__label {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: $text-tertiary;
+    font-weight: 600;
+  }
+
+  &__value {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: $text-primary;
+  }
+
+  &__sub {
+    font-size: 0.75rem;
+    color: $text-tertiary;
   }
 }
 

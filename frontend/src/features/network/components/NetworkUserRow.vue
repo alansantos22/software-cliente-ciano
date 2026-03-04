@@ -32,7 +32,13 @@
       <!-- Main info -->
       <div class="user-row__info">
         <div class="user-row__name-line">
-          <span class="user-row__name">{{ node.name }}</span>
+          <span
+            class="user-row__name user-row__name--clickable"
+            role="button"
+            tabindex="0"
+            @click.stop="emit('select-user', node)"
+            @keydown.enter.stop="emit('select-user', node)"
+          >{{ node.name }}</span>
           <span class="user-row__title-badge" :style="titleStyle">
             {{ titleLabel }}
           </span>
@@ -93,6 +99,7 @@
         :key="child.id"
         :node="child"
         :depth="depth + 1"
+        @select-user="(n: NetworkNode) => emit('select-user', n)"
       />
     </div>
   </div>
@@ -108,6 +115,10 @@ interface Props {
   node: NetworkNode;
   depth?: number;
 }
+
+const emit = defineEmits<{
+  'select-user': [node: NetworkNode];
+}>();
 
 const props = withDefaults(defineProps<Props>(), { depth: 0 });
 
@@ -332,6 +343,17 @@ const sanitizedPhone = computed(() =>
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+
+    &--clickable {
+      cursor: pointer;
+      transition: color 0.15s ease;
+
+      &:hover,
+      &:focus-visible {
+        color: $primary-500;
+        text-decoration: underline;
+      }
+    }
   }
 
   &__title-badge {

@@ -1,40 +1,71 @@
 <template>
   <div class="network-filters">
-    <button
-      v-for="f in filtersWithCounts"
-      :key="f.key"
-      :class="['network-filters__btn', { 'network-filters__btn--active': modelValue === f.key }]"
-      @click="emit('update:modelValue', f.key)"
-    >
-      <font-awesome-icon :icon="f.icon" class="network-filters__icon" />
-      {{ f.label }}
-      <span v-if="f.count !== undefined" class="network-filters__count">{{ f.count }}</span>
-    </button>
+    <div class="network-filters__group">
+      <span class="network-filters__group-label">Status</span>
+      <div class="network-filters__row">
+        <button
+          v-for="f in statusFilters"
+          :key="f.key"
+          :class="['network-filters__btn', { 'network-filters__btn--active': modelValue === f.key }]"
+          @click="emit('update:modelValue', f.key)"
+        >
+          <font-awesome-icon :icon="f.icon" class="network-filters__icon" />
+          {{ f.label }}
+          <span v-if="f.count !== undefined" class="network-filters__count">{{ f.count }}</span>
+        </button>
+      </div>
+    </div>
+    <div class="network-filters__group">
+      <span class="network-filters__group-label">Título</span>
+      <div class="network-filters__row">
+        <button
+          v-for="f in titleFilters"
+          :key="f.key"
+          :class="['network-filters__btn', `network-filters__btn--title-${f.titleKey}`, { 'network-filters__btn--active': modelValue === f.key }]"
+          @click="emit('update:modelValue', f.key)"
+        >
+          <font-awesome-icon :icon="f.icon" class="network-filters__icon" />
+          {{ f.label }}
+          <span v-if="f.count !== undefined" class="network-filters__count">{{ f.count }}</span>
+        </button>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue';
 
-export type NetworkFilter = 'all' | 'active' | 'inactive' | 'expiring';
+export type NetworkFilter = 'all' | 'active' | 'inactive' | 'expiring' | 'title-bronze' | 'title-silver' | 'title-gold' | 'title-diamond';
 
 interface Props {
   modelValue: NetworkFilter;
-  counts: Record<NetworkFilter, number>;
+  counts: Record<string, number>;
 }
 
 const props = defineProps<Props>();
 const emit = defineEmits<{ 'update:modelValue': [value: NetworkFilter] }>();
 
-const FILTER_DEFS = [
+const STATUS_DEFS = [
   { key: 'all'      as NetworkFilter, label: 'Todos',          icon: 'users'        },
   { key: 'active'   as NetworkFilter, label: 'Ativos',          icon: 'circle-check' },
   { key: 'inactive' as NetworkFilter, label: 'Inativos',        icon: 'circle-xmark' },
   { key: 'expiring' as NetworkFilter, label: 'Quase Expirando', icon: 'clock'        },
 ];
 
-const filtersWithCounts = computed(() =>
-  FILTER_DEFS.map(f => ({ ...f, count: props.counts[f.key] })),
+const TITLE_DEFS = [
+  { key: 'title-bronze'  as NetworkFilter, label: 'Bronze',   icon: 'medal',  titleKey: 'bronze'  },
+  { key: 'title-silver'  as NetworkFilter, label: 'Prata',    icon: 'medal',  titleKey: 'silver'  },
+  { key: 'title-gold'    as NetworkFilter, label: 'Ouro',     icon: 'medal',  titleKey: 'gold'    },
+  { key: 'title-diamond' as NetworkFilter, label: 'Diamante', icon: 'gem',    titleKey: 'diamond' },
+];
+
+const statusFilters = computed(() =>
+  STATUS_DEFS.map(f => ({ ...f, count: props.counts[f.key] })),
+);
+
+const titleFilters = computed(() =>
+  TITLE_DEFS.map(f => ({ ...f, count: props.counts[f.key] })),
 );
 </script>
 
@@ -45,8 +76,30 @@ const filtersWithCounts = computed(() =>
 
 .network-filters {
   display: flex;
-  flex-wrap: wrap;
-  gap: $spacing-2;
+  flex-direction: column;
+  gap: $spacing-3;
+
+  &__group {
+    display: flex;
+    align-items: center;
+    gap: $spacing-3;
+    flex-wrap: wrap;
+  }
+
+  &__group-label {
+    font-size: 0.6875rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: $text-tertiary;
+    min-width: 40px;
+  }
+
+  &__row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: $spacing-2;
+  }
 
   &__btn {
     display: inline-flex;
@@ -84,6 +137,17 @@ const filtersWithCounts = computed(() =>
         color: white;
       }
     }
+
+    // Title-specific colors
+    &--title-bronze { &:hover { border-color: #cd7f32; color: #7a4a10; background: #fbe9c5; } }
+    &--title-silver { &:hover { border-color: #a0a0a0; color: #4a4a4a; background: #ebebeb; } }
+    &--title-gold   { &:hover { border-color: #daa520; color: #7a5800; background: #fff5c2; } }
+    &--title-diamond { &:hover { border-color: #00bcd4; color: #007fa3; background: #d9f5fb; } }
+
+    &--title-bronze.network-filters__btn--active { background: #cd7f32; border-color: #cd7f32; }
+    &--title-silver.network-filters__btn--active { background: #a0a0a0; border-color: #a0a0a0; }
+    &--title-gold.network-filters__btn--active   { background: #daa520; border-color: #daa520; }
+    &--title-diamond.network-filters__btn--active { background: #00bcd4; border-color: #00bcd4; }
   }
 
   &__icon {

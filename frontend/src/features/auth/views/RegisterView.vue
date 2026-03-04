@@ -66,6 +66,50 @@
           />
         </div>
 
+        <!-- Cidade + Estado lado a lado -->
+        <div class="register-form__row">
+          <DsInput
+            v-model="form.city"
+            type="text"
+            label="Cidade"
+            placeholder="Ex: São Paulo"
+            :error="errors.city"
+          />
+          <div class="register-form__select-field">
+            <label class="register-form__label">Estado</label>
+            <select
+              v-model="form.state"
+              class="register-form__select"
+              :class="{ 'register-form__select--error': errors.state }"
+            >
+              <option value="" disabled>Selecione</option>
+              <option v-for="uf in BRAZILIAN_STATES" :key="uf" :value="uf">{{ uf }}</option>
+            </select>
+            <span v-if="errors.state" class="register-form__field-error">{{ errors.state }}</span>
+          </div>
+        </div>
+
+        <!-- PIX -->
+        <div class="register-form__row">
+          <div class="register-form__select-field">
+            <label class="register-form__label">Tipo de Chave PIX</label>
+            <select v-model="form.pixType" class="register-form__select">
+              <option value="" disabled>Selecione</option>
+              <option value="cpf">CPF</option>
+              <option value="email">E-mail</option>
+              <option value="phone">Telefone</option>
+              <option value="random">Chave aleatória</option>
+            </select>
+          </div>
+          <DsInput
+            v-model="form.pixKey"
+            type="text"
+            label="Chave PIX"
+            :placeholder="pixPlaceholder"
+            :error="errors.pixKey"
+          />
+        </div>
+
         <!-- Senha + Confirmar -->
         <DsInput
           v-model="form.password"
@@ -144,9 +188,28 @@ const form = reactive({
   email:           '',
   cpf:             '',
   phone:           '',
+  city:            '',
+  state:           '',
+  pixType:         '',
+  pixKey:          '',
   password:        '',
   confirmPassword: '',
   referralCode:    '',
+});
+
+const BRAZILIAN_STATES = [
+  'AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG',
+  'PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO',
+];
+
+const pixPlaceholder = computed(() => {
+  switch (form.pixType) {
+    case 'cpf':    return '000.000.000-00';
+    case 'email':  return 'seu@email.com';
+    case 'phone':  return '(00) 00000-0000';
+    case 'random': return 'Cole sua chave aleatória';
+    default:       return 'Selecione o tipo primeiro';
+  }
 });
 
 // Pré-preenche o código de convite vindo da URL (?ref=CODIGO)
@@ -164,6 +227,9 @@ const errors = reactive({
   email:           '',
   cpf:             '',
   phone:           '',
+  city:            '',
+  state:           '',
+  pixKey:          '',
   password:        '',
   confirmPassword: '',
   referralCode:    '',
@@ -351,6 +417,45 @@ async function handleRegister() {
   }
 
   &__submit { width: 100%; margin-top: $spacing-1; }
+
+  &__select-field {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-1;
+  }
+
+  &__label {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: $text-primary;
+  }
+
+  &__select {
+    height: 44px;
+    padding: 0 $spacing-3;
+    border: 1.5px solid $border-default;
+    border-radius: 10px;
+    background: $bg-primary;
+    color: $text-primary;
+    font-size: 0.9375rem;
+    transition: border-color 0.2s;
+    appearance: auto;
+
+    &:focus {
+      outline: none;
+      border-color: $primary-500;
+    }
+
+    &--error {
+      border-color: $error;
+    }
+  }
+
+  &__field-error {
+    font-size: 0.8125rem;
+    color: $error;
+    margin-top: 2px;
+  }
 
   &__referral-hint {
     margin-top: calc(-1 * #{$spacing-2});

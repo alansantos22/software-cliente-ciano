@@ -246,6 +246,8 @@ const pageSubtitle = computed(() => {
     '/admin': 'Painel administrativo',
     '/admin/payouts': 'Gestão de pagamentos mensais',
     '/admin/financial': 'Configurações financeiras',
+    '/profile': 'Gerencie seus dados pessoais',
+    '/settings': 'Personalize sua experiência',
   };
   return subtitles[route.path] || '';
 });

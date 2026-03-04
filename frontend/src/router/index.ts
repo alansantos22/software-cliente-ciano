@@ -88,6 +88,19 @@ const routes: RouteRecordRaw[] = [
         component: () => import('@/features/onboarding/views/RegisterNewUserView.vue'),
         meta: { requiresAuth: true, title: 'Cadastrar Membro' },
       },
+      // Profile & Settings
+      {
+        path: 'profile',
+        name: 'profile',
+        component: () => import('@/features/profile/views/ProfileView.vue'),
+        meta: { requiresAuth: true, title: 'Meu Perfil' },
+      },
+      {
+        path: 'settings',
+        name: 'settings',
+        component: () => import('@/features/settings/views/SettingsView.vue'),
+        meta: { requiresAuth: true, title: 'Configurações' },
+      },
       // Admin
       {
         path: 'admin',

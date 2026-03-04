@@ -80,6 +80,7 @@
             :key="node.id"
             :node="node"
             :depth="0"
+            @select-user="openUserDetail"
           />
         </div>
 
@@ -94,10 +95,17 @@
             :key="node.id"
             :node="node"
             :depth="0"
+            @select-user="openUserDetail"
           />
         </div>
       </DsCard>
     </section>
+
+    <!-- User Detail Modal -->
+    <NetworkUserDetailModal
+      v-model="showUserDetail"
+      :node="selectedNode"
+    />
   </div>
 </template>
 
@@ -117,6 +125,7 @@ import NetworkKpiCard     from '../components/NetworkKpiCard.vue';
 import NetworkProgressBar from '../components/NetworkProgressBar.vue';
 import NetworkFilters, { type NetworkFilter } from '../components/NetworkFilters.vue';
 import NetworkUserRow     from '../components/NetworkUserRow.vue';
+import NetworkUserDetailModal from '../components/NetworkUserDetailModal.vue';
 
 const authStore = useAuthStore();
 const TODAY = new Date('2026-02-18');
@@ -124,12 +133,20 @@ const TODAY = new Date('2026-02-18');
 // ── State ─────────────────────────────────────────────────────────────────────
 const rootNodes    = ref<NetworkNode[]>([]);
 const activeFilter = ref<NetworkFilter>('all');
+const showUserDetail = ref(false);
+const selectedNode = ref<NetworkNode | null>(null);
 
 // ── Load data ─────────────────────────────────────────────────────────────────
 onMounted(async () => {
   await mockDelay(300);
   rootNodes.value = mockNetworkTree.children ?? [];
 });
+
+// ── User detail modal ─────────────────────────────────────────────────────────
+function openUserDetail(node: NetworkNode) {
+  selectedNode.value = node;
+  showUserDetail.value = true;
+}
 
 // ── Referral link ─────────────────────────────────────────────────────────────
 const referralLink = computed(
@@ -172,18 +189,27 @@ function isExpiring(node: NetworkNode): boolean {
 // ── Filter counts ─────────────────────────────────────────────────────────────
 const expiringCount = computed(() => flatNodes.value.filter(isExpiring).length);
 
-const filterCounts = computed(() => ({
-  all:      flatNodes.value.length,
-  active:   flatNodes.value.filter(n => n.isActive && !isExpiring(n)).length,
-  inactive: flatNodes.value.filter(n => !n.isActive).length,
-  expiring: expiringCount.value,
+const filterCounts = computed<Record<string, number>>(() => ({
+  all:              flatNodes.value.length,
+  active:           flatNodes.value.filter(n => n.isActive && !isExpiring(n)).length,
+  inactive:         flatNodes.value.filter(n => !n.isActive).length,
+  expiring:         expiringCount.value,
+  'title-bronze':   flatNodes.value.filter(n => n.title === 'bronze').length,
+  'title-silver':   flatNodes.value.filter(n => n.title === 'silver').length,
+  'title-gold':     flatNodes.value.filter(n => n.title === 'gold').length,
+  'title-diamond':  flatNodes.value.filter(n => n.title === 'diamond').length,
 }));
 
 // ── Filtered flat list ────────────────────────────────────────────────────────
 const filteredNodes = computed<NetworkNode[]>(() => {
-  if (activeFilter.value === 'active')   return flatNodes.value.filter(n => n.isActive && !isExpiring(n));
-  if (activeFilter.value === 'inactive') return flatNodes.value.filter(n => !n.isActive);
-  if (activeFilter.value === 'expiring') return flatNodes.value.filter(isExpiring);
+  const f = activeFilter.value;
+  if (f === 'active')   return flatNodes.value.filter(n => n.isActive && !isExpiring(n));
+  if (f === 'inactive') return flatNodes.value.filter(n => !n.isActive);
+  if (f === 'expiring') return flatNodes.value.filter(isExpiring);
+  if (f.startsWith('title-')) {
+    const title = f.replace('title-', '');
+    return flatNodes.value.filter(n => n.title === title);
+  }
   return flatNodes.value;
 });
 

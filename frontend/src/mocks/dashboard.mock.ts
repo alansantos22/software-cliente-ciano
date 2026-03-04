@@ -46,6 +46,18 @@ export interface DashboardKpiData {
   networkEarnings: number;
   /** Earnings from quotas (dividends only) */
   quotaEarnings: number;
+  /** Total lifetime earnings since account creation */
+  lifetimeEarnings: number;
+  /** Estimated monetary value lost due to inactivity periods */
+  inactivityLoss: number;
+  /** Own quota purchases (count) this month */
+  ownSalesCount: number;
+  /** Own quota purchases (BRL value) this month */
+  ownSalesValue: number;
+  /** Network quota purchases (count) this month */
+  networkSalesCount: number;
+  /** Network quota purchases (BRL value) this month */
+  networkSalesValue: number;
 }
 
 export interface EarningSourceData {
@@ -147,6 +159,16 @@ export const mockDashboardKpi: DashboardKpiData = {
   networkEarnings: 2945,
   // quotaEarnings = dividends only
   quotaEarnings: 320,
+  // Lifetime earnings since account creation
+  lifetimeEarnings: 85000,
+  // Estimated lost earnings due to inactivity periods
+  inactivityLoss: 1250,
+  // Own sales this month
+  ownSalesCount: 2,
+  ownSalesValue: 5000,
+  // Network sales this month
+  networkSalesCount: 8,
+  networkSalesValue: 20000,
 };
 
 export const DONUT_COLORS = {

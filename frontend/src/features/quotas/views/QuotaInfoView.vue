@@ -25,9 +25,6 @@
           <DsButton variant="primary" size="lg" @click="scrollTo('pricing')">
             Ver Planos e Preços
           </DsButton>
-          <DsButton variant="outline" size="lg" @click="scrollTo('simulator')">
-            Simular meus Ganhos
-          </DsButton>
         </div>
         <div class="hero__social-trust">
           <span v-for="m in heroMetrics" :key="m.label" class="hero__metric">
@@ -148,6 +145,8 @@
     <section class="lp-section">
       <SocialProof />
     </section>
+
+    <!-- NOTE: Profit Simulator removed per client request ("Retirar Simule seus Ganhos") -->
 
     <!-- ============================================================
          5. FAQ
