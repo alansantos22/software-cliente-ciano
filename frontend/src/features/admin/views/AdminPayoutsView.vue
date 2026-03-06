@@ -38,7 +38,7 @@
         <div class="profit-entry-form">
           <div class="profit-entry-form__fields">
             <div class="profit-entry-form__field">
-              <label>Mês de Referência</label>
+              <label>Mês de Referência (Competência)</label>
               <DsMonthPicker v-model="profitMonth" />
             </div>
 
@@ -52,6 +52,16 @@
                 placeholder="Ex: 150.000,00"
                 :disabled="isMonthAlreadyProcessed"
               />
+            </div>
+
+            <div class="profit-entry-form__field profit-entry-form__field--payment-month">
+              <label>Mês de Pagamento</label>
+              <div class="payment-month-display">
+                <span class="payment-month-display__ref">{{ formatMonthLabel(profitMonth) }}</span>
+                <font-awesome-icon icon="arrow-right" class="payment-month-display__arrow" />
+                <span class="payment-month-display__pay">{{ formatMonthLabel(paymentMonth) }}</span>
+              </div>
+              <span class="payment-month-display__note">Dividendos pagos 2 meses após a competência</span>
             </div>
           </div>
 
@@ -91,9 +101,12 @@
         <DsCard>
           <template #header>
             <div>
-              <h2><font-awesome-icon icon="dollar-sign" /> Etapa 2 — Prévia da Distribuição &mdash; {{ formatMonthLabel(profitMonth) }}</h2>
+              <h2><font-awesome-icon icon="dollar-sign" /> Etapa 2 — Prévia da Distribuição &mdash; {{ formatMonthLabel(profitMonth) }} <span class="distribution-payment-arrow">→ Pagamento em {{ formatMonthLabel(paymentMonth) }}</span></h2>
               <span class="distribution-meta">
-                Pool total: {{ formatCurrency(dividendPool) }} · {{ distributionPreview.length }} cotistas
+                Dividendos: {{ formatCurrency(dividendPool) }}
+                &nbsp;+&nbsp; Rede: {{ formatCurrency(totalNetworkEarnings) }}
+                &nbsp;= <strong>Total: {{ formatCurrency(dividendPool + totalNetworkEarnings) }}</strong>
+                &nbsp;· {{ distributionPreview.length }} cotistas
               </span>
             </div>
             <DsButton variant="primary" @click="generatePayoutsFromProfit">
@@ -113,7 +126,19 @@
               </div>
             </template>
             <template #cell-amount="{ row }">
-              <strong class="amount-cell amount-cell--right">{{ formatCurrency(Number(row.amount)) }}</strong>
+              <div class="amount-breakdown-cell">
+                <strong class="amount-cell">{{ formatCurrency(Number(row.amount)) }}</strong>
+                <div class="amount-breakdown-cell__detail">
+                  <span>
+                    <font-awesome-icon icon="coins" />
+                    Dividendo: {{ formatCurrency(Number(row.quotaAmount)) }}
+                  </span>
+                  <span>
+                    <font-awesome-icon icon="sitemap" />
+                    Rede: {{ formatCurrency(Number(row.networkAmount)) }}
+                  </span>
+                </div>
+              </div>
             </template>
             <template #cell-pix="{ row }">
               <div class="pix-cell">
@@ -218,6 +243,9 @@
               <template #cell-referenceMonth="{ row }">
                 <span class="competencia-cell">{{ formatMonthLabel(String(row.referenceMonth ?? '')) }}</span>
               </template>
+              <template #cell-paymentMonth="{ row }">
+                <span class="payment-month-cell">{{ formatMonthLabel(String(row.paymentMonth ?? '')) }}</span>
+              </template>
               <template #cell-status="{ row }">
                 <DsBadge :variant="getStatusVariant(String(row.status ?? ''))">
                   {{ getStatusLabel(String(row.status ?? '')) }}
@@ -285,6 +313,10 @@
         <div class="detail-row">
           <span>Competência:</span>
           <strong>{{ formatMonthLabel(selectedPayout.referenceMonth) }}</strong>
+        </div>
+        <div v-if="selectedPayout.paymentMonth" class="detail-row">
+          <span>Pagamento em:</span>
+          <strong>{{ formatMonthLabel(selectedPayout.paymentMonth) }}</strong>
         </div>
         <div class="detail-row">
           <span>Valor:</span>
@@ -357,6 +389,16 @@ const showDetailsModal = ref(false);
 const netProfit   = ref<number>(0);
 const profitMonth = ref<string>(new Date().toISOString().slice(0, 7));
 
+/** Adiciona N meses a uma string YYYY-MM e devolve outra YYYY-MM */
+function addMonths(ym: string, months: number): string {
+  const [y, m] = ym.split('-').map(Number);
+  const d = new Date(y!, (m! - 1) + months, 1);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+}
+
+/** Dividendos de hotéis são pagos 2 meses após a competência */
+const paymentMonth = computed(() => addMonths(profitMonth.value, 2));
+
 // ─── Etapa 2: Distribuição ────────────────────────────────────
 const showDistribution = ref(false);
 const generationSuccess = ref(false);
@@ -388,22 +430,22 @@ const statusOptions = [
   { label: 'Cancelado',    value: 'cancelled' },
 ];
 
-/** Tabela de execução: "Competência" substitui "Solicitado" */
+/** Tabela de execução: "Competência" + "Pagamento em" */
 const columns = [
   { key: 'user',           label: 'Cotista' },
   { key: 'amount',         label: 'Valor',        align: 'right' as const, width: '140px' },
   { key: 'referenceMonth', label: 'Competência',  width: '120px' },
+  { key: 'paymentMonth',   label: 'Pagamento em', width: '130px' },
   { key: 'status',         label: 'Status',       width: '130px' },
   { key: 'actions',        label: 'Ações',        width: '200px' },
 ];
 
 const distributionColumns = [
   { key: 'user',   label: 'Cotista' },
-  { key: 'quotas', label: 'Cotas',      align: 'right' as const, width: '80px' },
-  { key: 'share',  label: '% do Pool',  align: 'right' as const, width: '110px' },
-  { key: 'amount', label: 'A Receber',  align: 'right' as const, width: '160px' },
-  // TODO (backend): pixKey virá de user.pixKey salvo no perfil do usuário
-  { key: 'pix',    label: 'Chave PIX',              width: '230px' },
+  { key: 'quotas', label: 'Cotas',           align: 'right' as const, width: '80px'  },
+  { key: 'share',  label: '% do Pool',       align: 'right' as const, width: '110px' },
+  { key: 'amount', label: 'Total a Receber', align: 'right' as const, width: '210px' },
+  { key: 'pix',    label: 'Chave PIX',                                width: '230px' },
 ];
 
 // ─── Computeds ────────────────────────────────────────────────
@@ -453,18 +495,26 @@ const distributionPreview = computed(() => {
   if (!dividendPool.value || totalActiveQuotas.value === 0) return [];
   return mockUsers
     .filter(u => u.isActive && u.quotaBalance > 0)
-    .map(u => ({
-      id:     u.id,
-      user:   u.name,
-      quotas: u.quotaBalance,
-      share:  ((u.quotaBalance / totalActiveQuotas.value) * 100).toFixed(2) + '%',
-      amount: Math.round((u.quotaBalance / totalActiveQuotas.value) * dividendPool.value * 100) / 100,
-      pixKey: u.email,
-      // TODO (backend): mapear para user.pixKey do perfil
-      pix:    u.email,
-    }))
+    .map(u => {
+      const quotaAmount   = Math.round((u.quotaBalance / totalActiveQuotas.value) * dividendPool.value * 100) / 100;
+      const networkAmount = u.availableWithdraw;
+      return {
+        id:            u.id,
+        user:          u.name,
+        quotas:        u.quotaBalance,
+        share:         ((u.quotaBalance / totalActiveQuotas.value) * 100).toFixed(2) + '%',
+        quotaAmount,
+        networkAmount,
+        amount:        Math.round((quotaAmount + networkAmount) * 100) / 100,
+        pix:           u.pixKey || u.email,
+      };
+    })
     .sort((a, b) => b.amount - a.amount);
 });
+
+const totalNetworkEarnings = computed(() =>
+  distributionPreview.value.reduce((s, r) => s + r.networkAmount, 0)
+);
 
 /** Quantidade de pagamentos atualmente em status 'processing' */
 const processingPayoutsCount = computed(
@@ -576,6 +626,7 @@ function generatePayoutsFromProfit() {
     pixKeyType:     'email' as const,
     status:         'pending' as const,
     referenceMonth: profitMonth.value,
+    paymentMonth:   paymentMonth.value,
     requestedAt:    new Date().toISOString(),
     processedAt:    null,
     completedAt:    null,
@@ -749,6 +800,61 @@ onMounted(async () => {
   }
 }
 
+// ─── Campo "Mês de Pagamento" ──────────────────────────────────
+.profit-entry-form__field--payment-month {
+  justify-content: flex-start;
+}
+
+.payment-month-display {
+  display: flex;
+  align-items: center;
+  gap: $spacing-2;
+  padding: $spacing-2 $spacing-3;
+  background: rgba(var(--primary-500-rgb), 0.06);
+  border: 1px solid rgba(var(--primary-500-rgb), 0.2);
+  border-radius: $radius-md;
+  min-height: 40px;
+
+  &__ref {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+  }
+
+  &__arrow {
+    color: var(--primary-500);
+    font-size: 0.8rem;
+  }
+
+  &__pay {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--primary-700);
+  }
+
+  &__note {
+    display: block;
+    font-size: 0.78rem;
+    color: var(--text-tertiary);
+    margin-top: $spacing-1;
+  }
+}
+
+// ─── Badge "Pagamento em" na Etapa 2 ──────────────────────────
+.distribution-payment-arrow {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--primary-600);
+  margin-left: $spacing-1;
+}
+
+// ─── Célula da coluna "Pagamento em" ──────────────────────────
+.payment-month-cell {
+  font-weight: 600;
+  color: var(--primary-700);
+  font-size: 0.875rem;
+}
+
 // ─── Etapa 2: Distribuição ────────────────────────────────────
 .distribution-meta {
   font-size: 0.875rem;
@@ -844,6 +950,35 @@ onMounted(async () => {
     display: block;
     text-align: right;
     width: 100%;
+  }
+}
+
+.amount-breakdown-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+
+  .amount-cell {
+    font-size: 1rem;
+  }
+
+  &__detail {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 1px;
+
+    span {
+      font-size: 0.7rem;
+      color: var(--text-tertiary);
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 3px;
+
+      svg { opacity: 0.6; font-size: 0.65rem; }
+    }
   }
 }
 

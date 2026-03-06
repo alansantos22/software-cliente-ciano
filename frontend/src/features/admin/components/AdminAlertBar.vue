@@ -59,14 +59,12 @@ const referenceMonthLabel = computed(() => {
 });
 
 const daysUntilPayment = computed(() => {
-  const today = new Date();
-  const payDate = new Date(today.getFullYear(), today.getMonth(), props.paymentDay);
-  if (today > payDate) {
-    // Payment day has passed this month
-    const diff = Math.floor((today.getTime() - payDate.getTime()) / 86_400_000);
-    return -diff;
-  }
-  return Math.ceil((payDate.getTime() - today.getTime()) / 86_400_000);
+  const today    = new Date();
+  // Use date-only (midnight) for both sides so the full payment day counts — until 23:59 it is still "today"
+  const todayMid = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  const payMid   = new Date(today.getFullYear(), today.getMonth(), props.paymentDay);
+  // Exact whole-day difference: 0 = today, positive = future, negative = overdue
+  return Math.round((payMid.getTime() - todayMid.getTime()) / 86_400_000);
 });
 
 const urgency = computed(() => {

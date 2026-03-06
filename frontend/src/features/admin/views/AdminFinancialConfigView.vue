@@ -183,6 +183,51 @@
                 </div>
 
               </div>
+
+              <DsAlert type="info" class="gov-card__cycle-note">
+                <font-awesome-icon icon="circle-info" />
+                <strong>Válido apenas para o próximo ciclo:</strong> alterações nas datas de fechamento e pagamento entram em vigor somente no mês seguinte à alteração — assim como a data de vencimento de um cartão de crédito, o ciclo em andamento permanece inalterado.
+              </DsAlert>
+            </DsCard>
+
+            <!-- Card: Métricas da Página de Cotas -->
+            <DsCard class="gov-card">
+              <template #header>
+                <h2 class="gov-card__title">
+                  <font-awesome-icon icon="pen-to-square" />
+                  Números em Destaque (Página de Cotas)
+                </h2>
+                <p class="gov-card__desc">
+                  Estes são os números exibidos na apresentação principal da página de cotas. Altere sempre que o grupo crescer.
+                </p>
+              </template>
+              <div class="config-grid">
+                <div
+                  v-for="(metric, idx) in presentationStore.heroMetrics"
+                  :key="idx"
+                  class="config-item"
+                >
+                  <div class="config-item__label-row">
+                    <label>Legenda {{ idx + 1 }}</label>
+                    <DsTooltip :content="`Texto exibido abaixo do número em destaque ${idx + 1}.`" position="right">
+                      <span class="info-icon">ⓘ</span>
+                    </DsTooltip>
+                  </div>
+                  <DsInput
+                    :model-value="metric.value"
+                    @update:model-value="(v) => presentationStore.updateMetric(idx, 'value', String(v))"
+                    type="text"
+                    placeholder="Ex: R$ 600K"
+                  />
+                  <DsInput
+                    :model-value="metric.label"
+                    @update:model-value="(v) => presentationStore.updateMetric(idx, 'label', String(v))"
+                    type="text"
+                    placeholder="Ex: faturamento anual"
+                    style="margin-top: 6px"
+                  />
+                </div>
+              </div>
             </DsCard>
           </div>
           <!-- TAB 2: Motor de Comissões -->
@@ -265,30 +310,6 @@
                     </DsTooltip>
                   </div>
                   <DsInput v-model.number="config.dividendPool" type="number" min="0" max="100" step="0.1">
-                    <template #suffix>%</template>
-                  </DsInput>
-                </div>
-
-                <div class="config-item">
-                  <div class="config-item__label-row">
-                    <label>Bônus Liderança Ouro</label>
-                    <DsTooltip content="Percentual adicional sobre 5 níveis qualificados exclusivo para usuários com título Ouro." position="right">
-                      <span class="info-icon">ⓘ</span>
-                    </DsTooltip>
-                  </div>
-                  <DsInput v-model.number="config.leadershipBonusOuro" type="number" min="0" max="100" step="0.5">
-                    <template #suffix>%</template>
-                  </DsInput>
-                </div>
-
-                <div class="config-item">
-                  <div class="config-item__label-row">
-                    <label>Bônus Liderança Diamante</label>
-                    <DsTooltip content="Percentual adicional sobre 5 níveis qualificados exclusivo para usuários com título Diamante." position="right">
-                      <span class="info-icon">ⓘ</span>
-                    </DsTooltip>
-                  </div>
-                  <DsInput v-model.number="config.leadershipBonusDiamante" type="number" min="0" max="100" step="0.5">
                     <template #suffix>%</template>
                   </DsInput>
                 </div>
@@ -546,6 +567,9 @@ import {
   DsTooltip,
 } from '@/design-system';
 import { mockDelay } from '@/mocks';
+import { useQuotaPresentationStore } from '@/shared/stores';
+
+const presentationStore = useQuotaPresentationStore();
 
 // Types
 type TabId = 'global' | 'commissions' | 'career';
@@ -639,8 +663,6 @@ const fieldRegistry: Record<string, { label: string; format: FieldFormat; tab: T
   repurchaseBonusL2to6:    { label: 'Bônus Recompra Níveis 2-6',   format: 'percent',  tab: 'commissions' },
   teamBonus:               { label: 'Bônus de Equipe',             format: 'percent',  tab: 'commissions' },
   dividendPool:            { label: 'Pool de Dividendos',          format: 'percent',  tab: 'commissions' },
-  leadershipBonusOuro:     { label: 'Bônus Liderança Ouro',        format: 'percent',  tab: 'commissions' },
-  leadershipBonusDiamante: { label: 'Bônus Liderança Diamante',    format: 'percent',  tab: 'commissions' },
 };
 
 // Helpers
@@ -674,15 +696,15 @@ const closingDayPreview = computed(() => {
   const now = new Date(); const year = now.getFullYear(); const month = now.getMonth();
   if (config.closingDayMode === 'last_day') {
     const lastDay = new Date(year, month + 1, 0).getDate();
-    return `${String(lastDay).padStart(2,'0')}/${String(month+1).padStart(2,'0')}/${year} (último dia do mês)`;
+    return `${String(lastDay).padStart(2,'0')}/${String(month+1).padStart(2,'0')}/${year} às 23:59 (último dia do mês)`;
   }
   if (config.closingDayMode === 'first_next_month') {
     const nextMonth = month+2>12?1:month+2; const nextYear = month+2>12?year+1:year;
-    return `01/${String(nextMonth).padStart(2,'0')}/${nextYear} (1º dia do próximo mês)`;
+    return `01/${String(nextMonth).padStart(2,'0')}/${nextYear} às 23:59 (1º dia do próximo mês)`;
   }
   const daysInMonth = new Date(year,month+1,0).getDate();
   const effectiveDay = Math.min(config.closingDay, daysInMonth);
-  return `${String(effectiveDay).padStart(2,'0')}/${String(month+1).padStart(2,'0')}/${year}`;
+  return `${String(effectiveDay).padStart(2,'0')}/${String(month+1).padStart(2,'0')}/${year} às 23:59`;
 });
 
 const pendingDiff = computed<DiffEntry[]>(() => {

@@ -12,7 +12,8 @@ export interface PayoutRequest {
   pixKey: string;
   pixKeyType: 'cpf' | 'email' | 'phone' | 'random';
   status: PayoutStatus;
-  referenceMonth: string; // YYYY-MM
+  referenceMonth: string;  // YYYY-MM — mês em que o lucro foi gerado (competência)
+  paymentMonth?: string;   // YYYY-MM — mês em que o pagamento será liberado (referenceMonth + 2 meses)
   requestedAt: string;
   processedAt: string | null;
   completedAt: string | null;

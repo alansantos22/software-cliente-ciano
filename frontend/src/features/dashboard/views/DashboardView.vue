@@ -13,6 +13,31 @@
 
     <div class="dashboard-view__body">
 
+      <!-- ① Código de Patrocínio ──────────────────────────── -->
+      <section class="dashboard-view__referral">
+        <div class="referral-card">
+          <div class="referral-card__icon">
+            <font-awesome-icon icon="share-nodes" />
+          </div>
+          <div class="referral-card__content">
+            <span class="referral-card__eyebrow">Seu código de patrocínio</span>
+            <div class="referral-card__code-row">
+              <span class="referral-card__code">{{ authStore.user?.referralCode ?? '—' }}</span>
+              <span class="referral-card__link">ciano.com.br/r/{{ authStore.user?.referralCode ?? '' }}</span>
+            </div>
+            <p class="referral-card__desc">Compartilhe este link e ganhe comissões em cada nova adesão da sua rede.</p>
+          </div>
+          <button
+            class="referral-card__copy-btn"
+            :class="{ 'referral-card__copy-btn--copied': referralLinkCopied }"
+            @click="copyReferralLink"
+          >
+            <font-awesome-icon :icon="['fas', referralLinkCopied ? 'check' : 'copy']" />
+            {{ referralLinkCopied ? 'Copiado!' : 'Copiar link' }}
+          </button>
+        </div>
+      </section>
+
       <!-- ② Header ─────────────────────────────────────────── -->
       <header class="dashboard-view__header">
         <div class="dashboard-view__welcome">
@@ -58,44 +83,29 @@
         </div>
 
         <!-- Saldo a receber no próximo pagamento -->
-        <div
-          class="kpi-card kpi-card--wallet"
-          :class="kpi.paymentWindowOpen ? 'kpi-card--highlight' : 'kpi-card--locked'"
-        >
-          <div class="kpi-card__icon" :style="kpi.paymentWindowOpen ? { color: '#7c3aed' } : { color: '#9ca3af' }">
-            <font-awesome-icon :icon="kpi.paymentWindowOpen ? 'wallet' : 'lock'" />
+        <div class="kpi-card kpi-card--wallet kpi-card--highlight">
+          <div class="kpi-card__icon" style="color: #7c3aed">
+            <font-awesome-icon icon="wallet" />
           </div>
           <div class="kpi-card__body">
             <span class="kpi-card__label">Saldo a Receber</span>
-
-            <!-- Dentro da janela: exibe o valor calculado -->
-            <template v-if="kpi.paymentWindowOpen">
-              <span class="kpi-card__value kpi-card__value--big">
-                {{ formatCurrency(kpi.availableWithdraw) }}
+            <span class="kpi-card__value kpi-card__value--big">
+              {{ formatCurrency(totalReceivable) }}
+            </span>
+            <div class="kpi-card__breakdown">
+              <span>
+                <font-awesome-icon icon="sitemap" />
+                Rede: {{ formatCurrency(kpi.networkEarnings) }}
               </span>
-              <span class="kpi-card__sub">
-                <font-awesome-icon icon="calendar-check" />
-                Pagamento em {{ kpi.nextPaymentDate ? formatDate(kpi.nextPaymentDate) : 'breve' }}
+              <span>
+                <font-awesome-icon icon="coins" />
+                Cotas: {{ formatCurrency(kpi.quotaEarnings) }}
               </span>
-            </template>
-
-            <!-- Fora da janela: aguardando fechamento do lucro das pousadas -->
-            <template v-else>
-              <span class="kpi-card__value kpi-card__value--big kpi-card__value--muted">
-                •••••
-              </span>
-              <span class="kpi-card__sub kpi-card__sub--info">
-                <font-awesome-icon icon="clock" />
-                Disponível {{ kpi.daysUntilPayment > 5 ? `em ${kpi.daysUntilPayment - 5} dia(s)` : 'em breve' }}
-                &mdash; aguardando lucro das pousadas
-              </span>
-            </template>
-          </div>
-
-          <!-- Badge mostrando quando abre a janela -->
-          <div v-if="!kpi.paymentWindowOpen" class="kpi-card__payment-badge">
-            <font-awesome-icon icon="calendar-day" />
-            Dia {{ kpi.paymentDay }}
+            </div>
+            <span class="kpi-card__sub">
+              <font-awesome-icon icon="calendar-check" />
+              Pagamento em {{ kpi.nextPaymentDate ? formatDate(kpi.nextPaymentDate) : 'breve' }}
+            </span>
           </div>
         </div>
 
@@ -283,31 +293,6 @@
         </div>
       </section>
 
-      <!-- ⑥ Referral Card ──────────────────────────────────── -->
-      <section class="dashboard-view__referral">
-        <div class="referral-card">
-          <div class="referral-card__icon">
-            <font-awesome-icon icon="share-nodes" />
-          </div>
-          <div class="referral-card__content">
-            <span class="referral-card__eyebrow">Seu código de patrocínio</span>
-            <div class="referral-card__code-row">
-              <span class="referral-card__code">{{ authStore.user?.referralCode ?? '—' }}</span>
-              <span class="referral-card__link">ciano.com.br/r/{{ authStore.user?.referralCode ?? '' }}</span>
-            </div>
-            <p class="referral-card__desc">Compartilhe este link e ganhe comissões em cada nova adesão da sua rede.</p>
-          </div>
-          <button
-            class="referral-card__copy-btn"
-            :class="{ 'referral-card__copy-btn--copied': referralLinkCopied }"
-            @click="copyReferralLink"
-          >
-            <font-awesome-icon :icon="['fas', referralLinkCopied ? 'check' : 'copy']" />
-            {{ referralLinkCopied ? 'Copiado!' : 'Copiar link' }}
-          </button>
-        </div>
-      </section>
-
     </div><!-- /.dashboard-view__body -->
   </div>
 </template>
@@ -381,6 +366,10 @@ const titleColor = computed((): 'default' | 'success' | 'warning' | 'info' | 'pr
 
 const totalMonthlyEarnings = computed(() =>
   earningsSources.value.reduce((s, e) => s + e.value, 0)
+);
+
+const totalReceivable = computed(() =>
+  kpi.value.networkEarnings + kpi.value.quotaEarnings
 );
 
 // ─── Methods ─────────────────────────────────────────────────
@@ -676,6 +665,23 @@ onMounted(async () => {
   &__sub--info {
     color: var(--primary-600);
     font-weight: 500;
+  }
+
+  &__breakdown {
+    display: flex;
+    gap: $spacing-3;
+    flex-wrap: wrap;
+    font-size: 0.73rem;
+    color: var(--text-secondary);
+    font-weight: 600;
+    margin-top: 1px;
+
+    span {
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      svg { opacity: 0.7; }
+    }
   }
 
   &__payment-badge {

@@ -135,10 +135,14 @@ export function getPaymentWindowStatus(paymentDay = 15): {
   // Window is open during the 5 days prior to—and including—paymentDay
   const windowOpen = daysUntilPayment >= 0 && daysUntilPayment <= 5;
 
+  // Build date string from local parts to avoid UTC offset shifting the day
+  const np = nextPayment;
+  const nextPaymentDate = `${np.getFullYear()}-${String(np.getMonth() + 1).padStart(2, '0')}-${String(np.getDate()).padStart(2, '0')}`;
+
   return {
     windowOpen,
     daysUntilPayment,
-    nextPaymentDate: nextPayment.toISOString().slice(0, 10),
+    nextPaymentDate,
   };
 }
 
@@ -146,7 +150,7 @@ const _paymentStatus = getPaymentWindowStatus(15);
 
 export const mockDashboardKpi: DashboardKpiData = {
   estimatedPatrimony: 17500,
-  availableWithdraw: 5200,
+  availableWithdraw: 3265, // networkEarnings (2945) + quotaEarnings (320)
   activeDirects: 10,
   totalDirects: 12,
   inactiveDirects: 2,

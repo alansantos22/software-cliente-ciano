@@ -250,7 +250,7 @@ const pageSubtitle = computed(() => {
     '/checkout': 'Adquira suas cotas',
     '/admin': 'Painel administrativo',
     '/admin/payouts': 'Gestão de pagamentos mensais',
-    '/admin/financial': 'Configurações financeiras',
+    '/admin/financial': 'Editar textos e informações exibidas no sistema',
     '/profile': 'Gerencie seus dados pessoais',
     '/settings': 'Personalize sua experiência',
   };
@@ -268,7 +268,7 @@ const mainMenuItems = [
 const adminMenuItems = [
   { path: '/admin',          label: 'Visão Geral', icon: 'crown' },
   { path: '/admin/payouts',  label: 'Pagamentos', icon: 'credit-card' },
-  { path: '/admin/financial',label: 'Financeiro', icon: 'chart-line' },
+  { path: '/admin/financial', label: 'Editar Informações', icon: 'pen-to-square' },
 ];
 
 function isActive(path: string): boolean {

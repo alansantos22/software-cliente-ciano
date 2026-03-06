@@ -139,28 +139,10 @@
       <CareerTimeline />
     </section>
 
-    <!-- ============================================================
-         4. SOCIAL PROOF
-    ============================================================ -->
-    <section class="lp-section">
-      <SocialProof />
-    </section>
-
-    <!-- NOTE: Profit Simulator removed per client request ("Retirar Simule seus Ganhos") -->
+    <!-- NOTE: Depoimentos e FAQ removidos por solicitação do cliente -->
 
     <!-- ============================================================
-         5. FAQ
-    ============================================================ -->
-    <section class="lp-section faq-section">
-      <div class="section-header section-header--left">
-        <span class="section-eyebrow">Tire suas Dúvidas</span>
-        <h2>Perguntas Frequentes</h2>
-      </div>
-      <DsAccordion :items="faqItems" />
-    </section>
-
-    <!-- ============================================================
-         8. FOOTER CTA
+         5. FOOTER CTA
     ============================================================ -->
     <section class="footer-cta">
       <div class="footer-cta__backdrop" aria-hidden="true" />
@@ -187,20 +169,16 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useRouter } from 'vue-router';
-import { DsButton, DsAccordion } from '@/design-system';
+import { DsButton } from '@/design-system';
 import { mockQuotaConfig } from '@/mocks';
+import { useQuotaPresentationStore } from '@/shared/stores';
 import CareerTimeline from '../components/CareerTimeline.vue';
-import SocialProof from '../components/SocialProof.vue';
 
 const router = useRouter();
+const presentationStore = useQuotaPresentationStore();
 
-// ─── Hero metrics ──────────────────────────────────────────
-const heroMetrics = [
-  { value: 'R$ 600K', label: 'faturamento anual' },
-  { value: '500%', label: 'crescimento sobre o ano anterior' },
-  { value: '4 hotéis', label: 'no portfólio' },
-  { value: '100%', label: 'dividendos em dia, sempre' },
-];
+// ─── Hero metrics (gerenciadas pelo admin via Editar Informações) ──
+const heroMetrics = computed(() => presentationStore.heroMetrics);
 
 // ─── How it works ──────────────────────────────────────────
 const steps = [
@@ -345,42 +323,6 @@ onMounted(() => {
 onUnmounted(() => {
   if (countdownTimer) clearInterval(countdownTimer);
 });
-
-// ─── FAQ ───────────────────────────────────────────────────
-const faqItems = [
-  {
-    title: 'O que são cotas?',
-    content: 'Cotas são participações no Grupo Ciano de Pousadas. Ao adquirir cotas, você se torna sócio do grupo e passa a receber dividendos mensais proporcionais à sua participação. O valor atual da cota é R$ 2.500.',
-  },
-  {
-    title: 'Como são calculados os dividendos?',
-    content: 'Os dividendos são calculados mensalmente: 20% do lucro líquido do grupo é depositado num pool de dividendos, e cada cotista recebe proporcionalmente ao número de cotas que possui (20% lucro ÷ total de cotas × suas cotas).',
-  },
-  {
-    title: 'Como funcionam as comissões de indicação?',
-    content: 'Ao indicar novos cotistas, você recebe 10% sobre a primeira compra de cotas do indicado (Bônus Primeira Compra). Na recompra, recebe 5% no nível 1 e 2% nos níveis 2 a 6, dependendo do seu título de carreira. Além disso, há o Bônus de Equipe (2% do total) e o Bônus de Liderança (1% Ouro / 2% Diamante).',
-  },
-  {
-    title: 'O que são os títulos (Bronze, Prata, Ouro, Diamante)?',
-    content: 'Os títulos são conquistas baseadas na sua rede de indicados. Bronze: 2 pessoas ativas. Prata: ajudar 1 indicado a virar Bronze. Ouro: 2 Bronzes em linhas diferentes. Diamante: 3 Bronzes em linhas diferentes. Cada título desbloqueia mais níveis de bônus de recompra e equipe.',
-  },
-  {
-    title: 'Qual a diferença entre Sócio, Platinum, VIP e Imperial?',
-    content: 'São os níveis de parceria baseados na quantidade de cotas compradas: Sócio (1-9 cotas), Platinum (10+), VIP (20+) e Imperial (60+). Cada nível oferece benefícios exclusivos como descontos em pousadas, hospedagem gratuita e reuniões com Marcos Maziero.',
-  },
-  {
-    title: 'Posso vender minhas cotas?',
-    content: 'Sim, as cotas podem ser transferidas ou vendidas para outros participantes do programa, seguindo as regras estabelecidas no contrato.',
-  },
-  {
-    title: 'Como recebo meus pagamentos?',
-    content: 'Os pagamentos são realizados mensalmente via PIX, diretamente na chave cadastrada em seu perfil. Fechamento todo dia 25 e pagamento até o dia 5 do mês seguinte.',
-  },
-  {
-    title: "O que é o 'split' e como funciona?",
-    content: 'O split é um mecanismo de ajuste do valor das cotas. A fórmula é: Preço = Valor atual + R$ 500 × Fator de valorização. O split é acionado quando o Fator de valorização atinge 3. A meta de cotas vendidas por split é 50 × 2^(QS), onde QS é o número de splits já ocorridos. Após o split, o preço base retorna a R$ 2.000.',
-  },
-];
 
 // ─── Helpers ───────────────────────────────────────────────
 function formatCurrency(value: number): string {

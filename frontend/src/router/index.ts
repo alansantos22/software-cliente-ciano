@@ -118,7 +118,7 @@ const routes: RouteRecordRaw[] = [
         path: 'admin/financial',
         name: 'admin-financial',
         component: () => import('@/features/admin/views/AdminFinancialConfigView.vue'),
-        meta: { requiresAuth: true, requiresAdmin: true, title: 'Config Financeira' },
+        meta: { requiresAuth: true, requiresAdmin: true, title: 'Editar Informações' },
       },
     ],
   },
