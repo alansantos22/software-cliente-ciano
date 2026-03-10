@@ -120,6 +120,12 @@ const routes: RouteRecordRaw[] = [
         component: () => import('@/features/admin/views/AdminFinancialConfigView.vue'),
         meta: { requiresAuth: true, requiresAdmin: true, title: 'Editar Informações' },
       },
+      {
+        path: 'admin/manager',
+        name: 'admin-manager',
+        component: () => import('@/features/admin/views/AdminManagerView.vue'),
+        meta: { requiresAuth: true, requiresAdmin: true, title: 'Gestão Protegida' },
+      },
     ],
   },
 

@@ -251,6 +251,7 @@ const pageSubtitle = computed(() => {
     '/admin': 'Painel administrativo',
     '/admin/payouts': 'Gestão de pagamentos mensais',
     '/admin/financial': 'Editar textos e informações exibidas no sistema',
+    '/admin/manager': 'Operações críticas protegidas por senha gerente',
     '/profile': 'Gerencie seus dados pessoais',
     '/settings': 'Personalize sua experiência',
   };
@@ -266,9 +267,10 @@ const mainMenuItems = [
 ];
 
 const adminMenuItems = [
-  { path: '/admin',          label: 'Visão Geral', icon: 'crown' },
-  { path: '/admin/payouts',  label: 'Pagamentos', icon: 'credit-card' },
+  { path: '/admin',           label: 'Visão Geral',       icon: 'crown' },
+  { path: '/admin/payouts',   label: 'Pagamentos',        icon: 'credit-card' },
   { path: '/admin/financial', label: 'Editar Informações', icon: 'pen-to-square' },
+  { path: '/admin/manager',   label: 'Gestão Protegida',  icon: 'shield-halved' },
 ];
 
 function isActive(path: string): boolean {

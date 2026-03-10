@@ -1,0 +1,362 @@
+<template>
+  <div class="mgr-user-table">
+    <div class="mgr-user-table__scroll">
+      <table aria-label="Usuários — Gestão Protegida">
+        <thead>
+          <tr>
+            <th>Usuário</th>
+            <th title="Cotas compradas diretamente">Cotas</th>
+            <th title="Cotas recebidas via split">Split</th>
+            <th>Patrocinador</th>
+            <th>Nível</th>
+            <th class="mgr-user-table__th--center">Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="user in users" :key="user.id" class="mgr-user-table__row">
+
+            <!-- Usuário -->
+            <td class="mgr-user-table__user-cell">
+              <div class="mgr-avatar">{{ getInitials(user.name) }}</div>
+              <div class="mgr-info">
+                <span class="mgr-info__name">{{ user.name }}</span>
+                <span class="mgr-info__email">{{ user.email }}</span>
+              </div>
+            </td>
+
+            <!-- Cotas compradas -->
+            <td>
+              <span class="mgr-quotas">{{ user.purchasedQuotas }}</span>
+            </td>
+
+            <!-- Split -->
+            <td>
+              <span class="mgr-split">{{ user.splitQuotas > 0 ? `+${user.splitQuotas}` : '—' }}</span>
+            </td>
+
+            <!-- Patrocinador -->
+            <td class="mgr-user-table__sponsor-cell">
+              <span>{{ getSponsorName(user.sponsorId) }}</span>
+            </td>
+
+            <!-- Nível -->
+            <td>
+              <span :class="['mgr-level', `mgr-level--${user.partnerLevel}`]">
+                {{ levelLabel[user.partnerLevel] }}
+              </span>
+            </td>
+
+            <!-- Ações -->
+            <td class="mgr-user-table__actions-cell">
+              <div class="mgr-action-menu" :ref="el => setRef(el, user.id)">
+                <button
+                  class="mgr-action-menu__trigger"
+                  :aria-label="`Ações para ${user.name}`"
+                  @click.stop="toggleMenu(user.id)"
+                >
+                  <font-awesome-icon icon="ellipsis-vertical" />
+                </button>
+
+                <transition name="menu-drop">
+                  <div v-if="openMenuId === user.id" class="mgr-action-menu__dropdown">
+                    <button class="mgr-action-menu__item" @click="action('add', user)">
+                      <font-awesome-icon icon="plus" />
+                      Adicionar Cotas
+                    </button>
+                    <button class="mgr-action-menu__item" @click="action('remove', user)">
+                      <font-awesome-icon icon="minus" />
+                      Retirar Cotas
+                    </button>
+                    <button class="mgr-action-menu__item" @click="action('sponsor', user)">
+                      <font-awesome-icon icon="arrows-rotate" />
+                      Alterar Patrocinador
+                    </button>
+                    <div class="mgr-action-menu__divider" />
+                    <button class="mgr-action-menu__item mgr-action-menu__item--danger" @click="action('delete', user)">
+                      <font-awesome-icon icon="trash" />
+                      Excluir Cadastro
+                    </button>
+                  </div>
+                </transition>
+              </div>
+            </td>
+
+          </tr>
+
+          <tr v-if="users.length === 0">
+            <td colspan="6" class="mgr-user-table__empty">Nenhum usuário encontrado.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref, onMounted, onUnmounted } from 'vue';
+import type { MockUser, PartnerLevel } from '@/mocks';
+import { useAdminManagerStore } from '@/shared/stores/adminManager.store';
+
+export type ManagerAction = 'add' | 'remove' | 'sponsor' | 'delete';
+
+const props = defineProps<{
+  users: MockUser[];
+}>();
+
+const emit = defineEmits<{
+  action: [type: ManagerAction, user: MockUser];
+}>();
+
+const store = useAdminManagerStore();
+
+const levelLabel: Record<PartnerLevel, string> = {
+  socio: 'Sócio',
+  platinum: 'Platinum',
+  vip: 'VIP',
+  imperial: 'Imperial',
+};
+
+// ── Menu dropdown ────────────────────────────────────────────
+const openMenuId = ref<string | null>(null);
+const menuRefs = new Map<string, Element | null>();
+
+function setRef(el: unknown, id: string) {
+  menuRefs.set(id, el as Element | null);
+}
+
+function toggleMenu(id: string) {
+  openMenuId.value = openMenuId.value === id ? null : id;
+}
+
+function handleDocClick(e: MouseEvent) {
+  if (!openMenuId.value) return;
+  const ref = menuRefs.get(openMenuId.value);
+  if (ref && !ref.contains(e.target as Node)) openMenuId.value = null;
+}
+
+onMounted(() => document.addEventListener('click', handleDocClick));
+onUnmounted(() => document.removeEventListener('click', handleDocClick));
+
+// ── Actions ──────────────────────────────────────────────────
+function action(type: ManagerAction, user: MockUser) {
+  openMenuId.value = null;
+  emit('action', type, user);
+}
+
+// ── Helpers ──────────────────────────────────────────────────
+function getInitials(name: string): string {
+  return name
+    .split(' ')
+    .slice(0, 2)
+    .map(w => w[0])
+    .join('')
+    .toUpperCase();
+}
+
+function getSponsorName(sponsorId: string | null): string {
+  return store.getSponsorName(sponsorId);
+}
+</script>
+
+<style lang="scss" scoped>
+@use '@/assets/scss/colors' as *;
+@use '@/assets/scss/mixins' as *;
+
+.mgr-user-table {
+  &__scroll {
+    overflow-x: auto;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.875rem;
+  }
+
+  thead tr {
+    border-bottom: 2px solid var(--border-color);
+  }
+
+  th {
+    padding: 0.75rem 1rem;
+    text-align: left;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    white-space: nowrap;
+  }
+
+  &__th--center {
+    text-align: center;
+  }
+
+  &__row {
+    border-bottom: 1px solid var(--border-color);
+    transition: background 0.15s;
+
+    &:hover {
+      background: var(--bg-secondary);
+    }
+
+    td {
+      padding: 0.875rem 1rem;
+      vertical-align: middle;
+    }
+  }
+
+  &__user-cell {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  &__sponsor-cell {
+    color: var(--text-secondary);
+    font-size: 0.8125rem;
+  }
+
+  &__actions-cell {
+    text-align: center;
+  }
+
+  &__empty {
+    text-align: center;
+    padding: 3rem;
+    color: var(--text-secondary);
+    font-style: italic;
+  }
+}
+
+// ── Avatar ────────────────────────────────────────────────────
+.mgr-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, $primary-600, $primary-800);
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  @include flex-center;
+  flex-shrink: 0;
+}
+
+.mgr-info {
+  display: flex;
+  flex-direction: column;
+
+  &__name {
+    font-weight: 600;
+    color: var(--text-primary);
+    white-space: nowrap;
+  }
+
+  &__email {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+  }
+}
+
+// ── Cotas / Split ─────────────────────────────────────────────
+.mgr-quotas {
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.mgr-split {
+  font-size: 0.8125rem;
+  color: $primary-500;
+}
+
+// ── Nível ─────────────────────────────────────────────────────
+.mgr-level {
+  display: inline-block;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+
+  &--socio    { background: rgba($primary-500, 0.12);  color: $primary-700; }
+  &--platinum { background: rgba(#e5e4e2, 0.25);       color: var(--text-secondary); }
+  &--vip      { background: rgba($accent-500, 0.15);   color: $accent-700; }
+  &--imperial { background: rgba($secondary-500, 0.15); color: $secondary-700; }
+}
+
+// ── Action menu ───────────────────────────────────────────────
+.mgr-action-menu {
+  position: relative;
+  display: inline-block;
+
+  &__trigger {
+    background: none;
+    border: 1px solid var(--border-color);
+    border-radius: 0.375rem;
+    padding: 0.35rem 0.65rem;
+    cursor: pointer;
+    color: var(--text-secondary);
+    transition: background 0.15s, color 0.15s;
+
+    &:hover {
+      background: var(--bg-secondary);
+      color: var(--text-primary);
+    }
+  }
+
+  &__dropdown {
+    position: absolute;
+    right: 0;
+    top: calc(100% + 4px);
+    z-index: 100;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 0.5rem;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+    min-width: 180px;
+    padding: 0.25rem;
+    display: flex;
+    flex-direction: column;
+  }
+
+  &__item {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.55rem 0.85rem;
+    font-size: 0.875rem;
+    color: var(--text-primary);
+    background: none;
+    border: none;
+    border-radius: 0.375rem;
+    cursor: pointer;
+    text-align: left;
+    transition: background 0.12s;
+
+    &:hover {
+      background: var(--bg-secondary);
+    }
+
+    &--danger {
+      color: $error;
+      &:hover { background: rgba($error, 0.08); }
+    }
+  }
+
+  &__divider {
+    height: 1px;
+    background: var(--border-color);
+    margin: 0.25rem 0.5rem;
+  }
+}
+
+// ── Menu transition ───────────────────────────────────────────
+.menu-drop-enter-active,
+.menu-drop-leave-active {
+  transition: opacity 0.15s, transform 0.15s;
+}
+.menu-drop-enter-from,
+.menu-drop-leave-to {
+  opacity: 0;
+  transform: translateY(-6px);
+}
+</style>
