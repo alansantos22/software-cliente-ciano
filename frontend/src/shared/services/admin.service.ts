@@ -1,0 +1,100 @@
+import api from './api';
+
+export const adminService = {
+  // ── Dashboard ──
+  getKpis() {
+    return api.get('/admin/dashboard/kpis');
+  },
+
+  getSalesChart() {
+    return api.get('/admin/dashboard/sales-chart');
+  },
+
+  getTitleDistribution() {
+    return api.get('/admin/dashboard/title-distribution');
+  },
+
+  getCrmUsers() {
+    return api.get('/admin/dashboard/crm-users');
+  },
+
+  // ── Price Engine ──
+  getPriceEngine() {
+    return api.get('/admin/price-engine');
+  },
+
+  updatePriceEngine(payload: Record<string, unknown>) {
+    return api.put('/admin/price-engine', payload);
+  },
+
+  // ── Financial Config ──
+  getFinancialConfig() {
+    return api.get('/admin/financial/config');
+  },
+
+  // ── Payouts ──
+  calculateDistribution(payload: { month: string }) {
+    return api.post('/admin/payouts/calculate-distribution', payload);
+  },
+
+  generateBatch(payload: { month: string }) {
+    return api.post('/admin/payouts/generate-batch', payload);
+  },
+
+  getPayouts(params?: { status?: string; month?: string }) {
+    return api.get('/admin/payouts', { params });
+  },
+
+  getPayoutStats() {
+    return api.get('/admin/payouts/stats');
+  },
+
+  processPayout(payoutId: string) {
+    return api.patch(`/admin/payouts/${payoutId}/process`);
+  },
+
+  confirmPayout(payoutId: string, payload: { transactionId?: string; action: string; rejectionReason?: string }) {
+    return api.patch(`/admin/payouts/${payoutId}/confirm`, payload);
+  },
+
+  bulkPayoutAction(payload: { payoutIds: string[]; action: string }) {
+    return api.post('/admin/payouts/bulk-action', payload);
+  },
+
+  // ── Manager ──
+  setManagerPassword(payload: { password: string }) {
+    return api.post('/admin/manager/set-password', payload);
+  },
+
+  verifyManagerPassword(payload: { password: string; operation: string }) {
+    return api.post('/admin/manager/verify-password', payload);
+  },
+
+  getUsers() {
+    return api.get('/admin/manager/users');
+  },
+
+  addQuotas(userId: string, payload: { quantity: number; managerPassword: string }) {
+    return api.post(`/admin/manager/users/${userId}/add-quotas`, payload);
+  },
+
+  removeQuotas(userId: string, payload: { quantity: number; managerPassword: string }) {
+    return api.post(`/admin/manager/users/${userId}/remove-quotas`, payload);
+  },
+
+  changeSponsor(userId: string, payload: { newSponsorId: string; managerPassword: string }) {
+    return api.patch(`/admin/manager/users/${userId}/sponsor`, payload);
+  },
+
+  deleteUser(userId: string, payload: { managerPassword: string }) {
+    return api.delete(`/admin/manager/users/${userId}`, { data: payload });
+  },
+
+  restoreUser(userId: string, payload: { managerPassword: string }) {
+    return api.post(`/admin/manager/users/${userId}/restore`, payload);
+  },
+
+  getTrash() {
+    return api.get('/admin/manager/trash');
+  },
+};

@@ -104,7 +104,7 @@
             </div>
             <div class="pkg-card__price">{{ formatCurrency(pkg.price) }}</div>
             <div class="pkg-card__per-quota">
-              {{ formatCurrency(mockQuotaConfig.quotaPrice) }} / cota
+              {{ formatCurrency(quotaPrice) }} / cota
             </div>
           </div>
 
@@ -170,12 +170,14 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { DsButton } from '@/design-system';
-import { mockQuotaConfig } from '@/mocks';
+import { quotasService } from '@/shared/services/quotas.service';
 import { useQuotaPresentationStore } from '@/shared/stores';
 import CareerTimeline from '../components/CareerTimeline.vue';
 
 const router = useRouter();
 const presentationStore = useQuotaPresentationStore();
+
+const quotaPrice = ref(2500);
 
 // ─── Hero metrics (gerenciadas pelo admin via Editar Informações) ──
 const heroMetrics = computed(() => presentationStore.heroMetrics);
@@ -216,7 +218,7 @@ const packages: Package[] = [
     id: 'socio',
     name: 'Sócio',
     quotas: 1,
-    price: mockQuotaConfig.quotaPrice,
+    price: quotaPrice.value,
     levelName: 'Sócio',
     levelEmoji: 'handshake',
     levelColor: '#0097a7',
@@ -234,7 +236,7 @@ const packages: Package[] = [
     id: 'platinum',
     name: 'Platinum',
     quotas: 10,
-    price: 10 * mockQuotaConfig.quotaPrice,
+    price: 10 * quotaPrice.value,
     popular: true,
     levelName: 'Platinum',
     levelEmoji: 'rocket',
@@ -254,7 +256,7 @@ const packages: Package[] = [
     id: 'vip',
     name: 'VIP',
     quotas: 20,
-    price: 20 * mockQuotaConfig.quotaPrice,
+    price: 20 * quotaPrice.value,
     levelName: 'VIP',
     levelEmoji: 'crown',
     levelColor: '#D97706',
@@ -274,7 +276,7 @@ const packages: Package[] = [
     id: 'imperial',
     name: 'Imperial',
     quotas: 60,
-    price: 60 * mockQuotaConfig.quotaPrice,
+    price: 60 * quotaPrice.value,
     levelName: 'Imperial',
     levelEmoji: 'building-columns',
     levelColor: '#7c3aed',
@@ -316,8 +318,12 @@ const countdownDisplay = computed(() => {
   return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
 });
 
-onMounted(() => {
+onMounted(async () => {
   countdownTimer = setInterval(() => { remaining.value = computeRemaining(); }, 1000);
+  try {
+    const res = await quotasService.getConfig();
+    if (res.data?.quotaPrice) quotaPrice.value = res.data.quotaPrice;
+  } catch { /* use default */ }
 });
 
 onUnmounted(() => {

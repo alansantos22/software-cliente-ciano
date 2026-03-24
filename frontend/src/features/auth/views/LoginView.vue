@@ -97,7 +97,6 @@ import { ref, reactive } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/shared/stores/auth.store';
 import { DsInput, DsButton, DsAlert } from '@/design-system';
-import { mockAuthenticate, mockTokens, mockDelay, type MockUser } from '@/mocks';
 
 const router    = useRouter();
 const authStore = useAuthStore();
@@ -141,48 +140,15 @@ async function handleLogin() {
   isLoading.value = true;
 
   try {
-    await mockDelay(800);
-
-    const user = mockAuthenticate(form.email, form.password);
-
-    if (!user) {
-      error.value = 'E-mail ou senha inválidos';
-      isLoading.value = false;
-      return;
-    }
-
-    // Set tokens
-    authStore.setTokens(mockTokens.accessToken, mockTokens.refreshToken);
-
-    // Transform mock user to auth user format
-    authStore.setUser(transformUser(user));
-
-    // Navigate to dashboard
-    router.push('/dashboard');
-  } catch (e) {
-    error.value = 'Erro ao realizar login. Tente novamente.';
-    console.error(e);
+    await authStore.login(form.email, form.password);
+    const redirect = router.currentRoute.value.query.redirect as string;
+    router.push(redirect || '/dashboard');
+  } catch (e: any) {
+    const msg = e?.response?.data?.message;
+    error.value = msg || 'E-mail ou senha inválidos';
   } finally {
     isLoading.value = false;
   }
-}
-
-function transformUser(mockUser: MockUser) {
-  return {
-    id: mockUser.id,
-    fullName: mockUser.name,
-    email: mockUser.email,
-    cpf: mockUser.cpf,
-    phone: mockUser.phone,
-    city: 'São Paulo',
-    state: 'SP',
-    pixKey: mockUser.email,
-    role: mockUser.role as 'admin' | 'user',
-    referralCode: mockUser.referralCode,
-    isActive: mockUser.isActive,
-    title: mockUser.title,
-    partnerLevel: mockUser.partnerLevel,
-  };
 }
 </script>
 

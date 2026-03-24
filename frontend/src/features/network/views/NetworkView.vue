@@ -113,12 +113,24 @@
 import { ref, computed, onMounted } from 'vue';
 import { useAuthStore } from '@/shared/stores/auth.store';
 import { DsCard, DsCopyButton } from '@/design-system';
-import {
-  mockNetworkTree,
-  calculateNetworkStats,
-  mockDelay,
-  type NetworkNode,
-} from '@/mocks';
+import { networkService } from '@/shared/services/network.service';
+
+interface NetworkNode {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  title: string;
+  partnerLevel: string;
+  quotaCount: number;
+  directCount: number;
+  teamCount: number;
+  totalVolume: number;
+  isActive: boolean;
+  expiresAt: string;
+  level: number;
+  children: NetworkNode[];
+}
 
 import NetworkHeroCard    from '../components/NetworkHeroCard.vue';
 import NetworkKpiCard     from '../components/NetworkKpiCard.vue';
@@ -137,9 +149,25 @@ const showUserDetail = ref(false);
 const selectedNode = ref<NetworkNode | null>(null);
 
 // ── Load data ─────────────────────────────────────────────────────────────────
+const stats = ref<any>({});
+
 onMounted(async () => {
-  await mockDelay(300);
-  rootNodes.value = mockNetworkTree.children ?? [];
+  try {
+    const [treeRes, statsRes] = await Promise.all([
+      networkService.getTree(),
+      networkService.getStats(),
+    ]);
+    if (Array.isArray(treeRes.data)) {
+      rootNodes.value = treeRes.data;
+    } else if (treeRes.data?.children) {
+      rootNodes.value = treeRes.data.children;
+    }
+    if (statsRes.data) {
+      stats.value = statsRes.data;
+    }
+  } catch {
+    rootNodes.value = [];
+  }
 });
 
 // ── User detail modal ─────────────────────────────────────────────────────────
@@ -167,7 +195,20 @@ const flatNodes = computed<NetworkNode[]>(() => {
 });
 
 // ── Stats ─────────────────────────────────────────────────────────────────────
-const networkStats = computed(() => calculateNetworkStats(mockNetworkTree));
+const networkStats = computed(() => {
+  const s = stats.value;
+  return {
+    totalDirect: s.totalDirect ?? flatNodes.value.filter((n: NetworkNode) => n.level === 1).length,
+    totalTeam: s.totalTeam ?? flatNodes.value.length,
+    totalVolume: s.totalVolume ?? 0,
+    activeMembers: s.activeMembers ?? flatNodes.value.filter((n: NetworkNode) => n.isActive).length,
+    inactiveMembers: s.inactiveMembers ?? flatNodes.value.filter((n: NetworkNode) => !n.isActive).length,
+    qualifiedBronzes: s.qualifiedBronzes ?? 0,
+    qualifiedLines: s.qualifiedLines ?? 0,
+    titleDistribution: s.titleDistribution ?? {},
+    levelDistribution: s.levelDistribution ?? {},
+  };
+});
 const directCount  = computed(() => rootNodes.value.length);
 const activityRate = computed(() => {
   const total = flatNodes.value.length;

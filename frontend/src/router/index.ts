@@ -150,11 +150,21 @@ const router = createRouter({
 });
 
 // Global navigation guards
-router.beforeEach((to, _from, next) => {
+router.beforeEach(async (to, _from, next) => {
   // Update document title
   document.title = to.meta.title ? `${to.meta.title} | Ciano` : 'Ciano - Sistema de Cotas';
 
   const authStore = useAuthStore();
+
+  // Restore tokens from storage on first load
+  if (!authStore.accessToken) {
+    authStore.loadFromStorage();
+  }
+
+  // If we have a token but no user yet, fetch profile from API
+  if (authStore.accessToken && !authStore.user) {
+    await authStore.fetchUser();
+  }
 
   // Check if route requires authentication
   if (to.meta.requiresAuth && !authStore.isAuthenticated) {

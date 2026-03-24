@@ -74,7 +74,7 @@
 <script setup lang="ts">
 import { ref, onUnmounted } from 'vue';
 import { DsInput, DsButton, DsAlert } from '@/design-system';
-import { mockDelay } from '@/mocks';
+import { authService } from '@/shared/services/auth.service';
 
 const email = ref('');
 const emailError = ref('');
@@ -116,7 +116,7 @@ async function handleSubmit() {
   isLoading.value = true;
 
   try {
-    await mockDelay(800);
+    await authService.forgotPassword(email.value);
     sent.value = true;
     startCooldown();
   } catch {

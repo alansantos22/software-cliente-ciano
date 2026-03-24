@@ -196,14 +196,7 @@ import { DsStatCard, DsCard } from '@/design-system';
 import AdminAlertBar from '../components/AdminAlertBar.vue';
 import AdminPriceEngine from '../components/AdminPriceEngine.vue';
 import AdminCrmTable from '../components/AdminCrmTable.vue';
-import {
-  mockUsers,
-  mockPayouts,
-  mockMonthlyConfigs,
-  mockGlobalSettings,
-  mockDelay,
-} from '@/mocks';
-import type { MockUser } from '@/mocks';
+import { adminService } from '@/shared/services/admin.service';
 
 const router = useRouter();
 
@@ -215,7 +208,7 @@ const lotProgress = ref(140);
 const lotSize = ref(200);
 const lotNumber = ref(3);
 const currentConstant = ref(7);
-const paymentDay = ref(mockGlobalSettings.paymentDay);
+const paymentDay = ref(15);
 const currentPeriod = new Date().toISOString().slice(0, 7);
 
 const todayFormatted = new Intl.DateTimeFormat('pt-BR', {
@@ -273,33 +266,25 @@ const pendingPayouts = ref({ total: 0, count: 0 });
 // =====================================================
 // CRM Users (sorted by LTV desc)
 // =====================================================
-const sortedUsers = computed<MockUser[]>(() =>
-  [...mockUsers]
-    .sort(
-      (a, b) =>
-        b.purchasedQuotas * currentQuotaPrice.value -
-        a.purchasedQuotas * currentQuotaPrice.value,
-    )
-    .slice(0, 10),
-);
+const sortedUsers = ref<any[]>([]);
 
 // =====================================================
 // Sales Chart Data (last 6 months)
 // =====================================================
-const salesChartData = [
-  { label: 'Set', novas: 32, recompra: 8  },
-  { label: 'Out', novas: 45, recompra: 14 },
-  { label: 'Nov', novas: 38, recompra: 20 },
-  { label: 'Dez', novas: 55, recompra: 28 },
-  { label: 'Jan', novas: 61, recompra: 35 },
-  { label: 'Fev', novas: 48, recompra: 42 },
-];
+const salesChartData = ref([
+  { label: 'Set', novas: 0, recompra: 0 },
+  { label: 'Out', novas: 0, recompra: 0 },
+  { label: 'Nov', novas: 0, recompra: 0 },
+  { label: 'Dez', novas: 0, recompra: 0 },
+  { label: 'Jan', novas: 0, recompra: 0 },
+  { label: 'Fev', novas: 0, recompra: 0 },
+]);
 
 const chartMaxTotal = computed(() =>
-  Math.max(...salesChartData.map(d => d.novas + d.recompra)),
+  Math.max(...salesChartData.value.map(d => d.novas + d.recompra), 1),
 );
 
-function getBarHeightPercent(bar: typeof salesChartData[0]): number {
+function getBarHeightPercent(bar: typeof salesChartData.value[0]): number {
   return Math.round(((bar.novas + bar.recompra) / chartMaxTotal.value) * 100);
 }
 
@@ -323,7 +308,7 @@ function handleAdjustConstant(value: number) {
   console.info('[Admin] Constant adjusted to', value);
 }
 
-function handleCrmAction(type: 'extrato' | 'bloquear' | 'mensagem', user: MockUser) {
+function handleCrmAction(type: 'extrato' | 'bloquear' | 'mensagem', user: any) {
   if (type === 'extrato') {
     router.push(`/admin/users/${user.id}`);
   } else {
@@ -335,51 +320,46 @@ function handleCrmAction(type: 'extrato' | 'bloquear' | 'mensagem', user: MockUs
 // Load Data
 // =====================================================
 onMounted(async () => {
-  await mockDelay(250);
+  try {
+    const [kpiRes, titleRes, salesRes, crmRes, payoutStatsRes] = await Promise.all([
+      adminService.getKpis(),
+      adminService.getTitleDistribution(),
+      adminService.getSalesChart(),
+      adminService.getCrmUsers(),
+      adminService.getPayoutStats().catch(() => ({ data: null })),
+    ]);
 
-  const users = mockUsers;
-  const config = mockMonthlyConfigs[0];
+    if (kpiRes.data) {
+      kpis.value = kpiRes.data;
+    }
 
-  const monthQuotas = 48;
-  const prevMonthQuotas = 40;
-  const monthRevenue = monthQuotas * currentQuotaPrice.value;
-  const prevMonthRevenue = prevMonthQuotas * currentQuotaPrice.value;
-  const totalQuotas = users.reduce((s, u) => s + u.quotaBalance, 0);
-  const activeUsers = users.filter(u => u.isActive).length;
-  const dividendPoolRate = config?.dividendPoolPercent ?? 20;
-  const dividendPool = monthRevenue * (dividendPoolRate / 100);
+    if (titleRes.data) {
+      const dist = titleRes.data;
+      titleDistribution.value = titleDistribution.value.map(t => {
+        const key = t.name.toLowerCase() as string;
+        const count = (dist as Record<string, number>)[key] || 0;
+        const total = Object.values(dist as Record<string, number>).reduce((a, b) => a + b, 0) || 1;
+        return { ...t, count, percentage: (count / total) * 100 };
+      });
+    }
 
-  kpis.value = {
-    monthRevenue,
-    monthRevenueTrend: Math.round(((monthRevenue - prevMonthRevenue) / prevMonthRevenue) * 100),
-    activeUsers,
-    retentionRate: Math.round((activeUsers / users.length) * 100),
-    monthQuotas,
-    monthQuotasTrend: Math.round(((monthQuotas - prevMonthQuotas) / prevMonthQuotas) * 100),
-    totalRevenue: totalQuotas * currentQuotaPrice.value,
-    dividendPool,
-  };
+    if (salesRes.data && Array.isArray(salesRes.data)) {
+      salesChartData.value = salesRes.data;
+    }
 
-  const titleCounts = users.reduce((acc: Record<string, number>, u) => {
-    acc[u.title] = (acc[u.title] || 0) + 1;
-    return acc;
-  }, {});
+    if (crmRes.data && Array.isArray(crmRes.data)) {
+      sortedUsers.value = crmRes.data.slice(0, 10);
+    }
 
-  titleDistribution.value = titleDistribution.value.map(t => ({
-    ...t,
-    count: titleCounts[t.name.toLowerCase()] || 0,
-    percentage: ((titleCounts[t.name.toLowerCase()] || 0) / users.length) * 100,
-  }));
-
-  // Ciclo de pagamento mensal — a empresa processa pagamentos no dia fixo (paymentDay)
-  // Não são saques solicitados pelos usuários
-  const cyclePayouts = mockPayouts.filter(
-    p => p.referenceMonth === currentPeriod && (p.status === 'pending' || p.status === 'processing'),
-  );
-  pendingPayouts.value = {
-    total: cyclePayouts.reduce((s, p) => s + p.amount, 0),
-    count: cyclePayouts.length,
-  };
+    if (payoutStatsRes.data) {
+      pendingPayouts.value = {
+        total: payoutStatsRes.data.pendingTotal || 0,
+        count: payoutStatsRes.data.pendingCount || 0,
+      };
+    }
+  } catch {
+    /* fail silently */
+  }
 });
 </script>
 

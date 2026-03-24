@@ -1,8 +1,9 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { ThrottlerModule } from '@nestjs/throttler';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { ScheduleModule } from '@nestjs/schedule';
+import { APP_GUARD, APP_INTERCEPTOR, APP_FILTER } from '@nestjs/core';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import {
@@ -11,6 +12,32 @@ import {
   jwtConfig,
   throttleConfig,
 } from './config';
+
+// Core modules
+import { DatabaseModule } from './core/database/database.module';
+import { BonusModule } from './core/bonus/bonus.module';
+import { TitleModule } from './core/title/title.module';
+import { SplitModule } from './core/split/split.module';
+
+// Feature modules
+import { AuthModule } from './modules/auth/auth.module';
+import { UsersModule } from './modules/users/users.module';
+import { QuotasModule } from './modules/quotas/quotas.module';
+import { EarningsModule } from './modules/earnings/earnings.module';
+import { NetworkModule } from './modules/network/network.module';
+import { DashboardModule } from './modules/dashboard/dashboard.module';
+import { PayoutsModule } from './modules/payouts/payouts.module';
+import { AdminModule } from './modules/admin/admin.module';
+import { ProfileModule } from './modules/profile/profile.module';
+import { OnboardingModule } from './modules/onboarding/onboarding.module';
+import { SettingsModule } from './modules/settings/settings.module';
+import { JobsModule } from './jobs/jobs.module';
+
+// Guards, interceptors, filters
+import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard';
+import { RolesGuard } from './common/guards/roles.guard';
+import { ResponseInterceptor } from './common/interceptors/response.interceptor';
+import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 
 @Module({
   imports: [
@@ -32,7 +59,7 @@ import {
         password: configService.get<string>('database.password'),
         database: configService.get<string>('database.database'),
         entities: [__dirname + '/**/*.entity{.ts,.js}'],
-        synchronize: false,
+        synchronize: true,
         logging: configService.get<string>('app.nodeEnv') === 'development',
         charset: 'utf8mb4',
         timezone: 'Z',
@@ -54,8 +81,42 @@ import {
 
     // Scheduled Tasks
     ScheduleModule.forRoot(),
+
+    // Core
+    DatabaseModule,
+    BonusModule,
+    TitleModule,
+    SplitModule,
+
+    // Feature modules
+    AuthModule,
+    UsersModule,
+    QuotasModule,
+    EarningsModule,
+    NetworkModule,
+    DashboardModule,
+    PayoutsModule,
+    AdminModule,
+    ProfileModule,
+    OnboardingModule,
+    SettingsModule,
+
+    // Jobs
+    JobsModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    // Global JWT Auth Guard
+    { provide: APP_GUARD, useClass: JwtAuthGuard },
+    // Global Roles Guard
+    { provide: APP_GUARD, useClass: RolesGuard },
+    // Global Throttler Guard
+    { provide: APP_GUARD, useClass: ThrottlerGuard },
+    // Global Response Interceptor
+    { provide: APP_INTERCEPTOR, useClass: ResponseInterceptor },
+    // Global Exception Filter
+    { provide: APP_FILTER, useClass: AllExceptionsFilter },
+  ],
 })
 export class AppModule {}

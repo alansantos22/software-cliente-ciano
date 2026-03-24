@@ -107,7 +107,16 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue';
-import type { NetworkNode } from '@/mocks';
+
+interface NetworkNode {
+  id: string;
+  name: string;
+  title?: string;
+  level?: number;
+  depth?: number;
+  children?: NetworkNode[];
+  [key: string]: unknown;
+}
 
 defineOptions({ name: 'NetworkUserRow' });
 

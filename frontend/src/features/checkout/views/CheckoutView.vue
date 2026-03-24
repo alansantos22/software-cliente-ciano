@@ -102,10 +102,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/shared/stores';
-import { mockQuotaConfig, mockDelay } from '@/mocks';
+import { quotasService } from '@/shared/services/quotas.service';
 import QuotaCalculator from '../components/QuotaCalculator.vue';
 import PaymentSelector from '../components/PaymentSelector.vue';
 import OrderConfirmation from '../components/OrderConfirmation.vue';
@@ -117,7 +117,14 @@ const router = useRouter();
 const authStore = useAuthStore();
 
 // ─── Constants ────────────────────────────────────────────────────────────────
-const quotaPrice = mockQuotaConfig.quotaPrice; // R$ 2.500
+const quotaPrice = ref(2500);
+
+onMounted(async () => {
+  try {
+    const { data } = await quotasService.getConfig();
+    if (data?.currentPrice) quotaPrice.value = data.currentPrice;
+  } catch { /* keep default */ }
+});
 
 const stepLabels = ['Suas Cotas', 'Pagamento', 'Confirmar', 'Finalizar'];
 
@@ -142,7 +149,7 @@ const currentUserQuotas = computed<number>(() => {
 
 const userReferralCode = computed(() => authStore.user?.referralCode ?? 'CIANO');
 
-const totalAmount = computed(() => selectedQuotas.value * quotaPrice);
+const totalAmount = computed(() => selectedQuotas.value * quotaPrice.value);
 
 const progressPercent = computed(() => {
   return Math.round((currentStep.value / (stepLabels.length - 1)) * 100);
@@ -167,20 +174,21 @@ function onPaymentSelected(method: string) {
 async function processOrder() {
   isProcessing.value = true;
 
-  await mockDelay(1800);
-
-  const id = `CQ${Date.now().toString().slice(-8)}`;
-  orderData.value = {
-    orderNumber: id,
-    pixCode:
-      `00020126580014BR.GOV.BCB.PIX0136${id}-${crypto.randomUUID()}` +
-      `5204000053039865802BR5925CIANO COTAS POUSADAS6009SAO PAULO62070503***63041234`,
-    // In production: comes from Pagar.me API; base URL for mock
-    paymentUrl: '',
-  };
-
-  isProcessing.value = false;
-  goToStep(3);
+  try {
+    const { data } = await quotasService.purchase(selectedQuotas.value, selectedPaymentMethod.value);
+    orderData.value = {
+      orderNumber: data?.transactionId || `CQ${Date.now().toString().slice(-8)}`,
+      pixCode:
+        `00020126580014BR.GOV.BCB.PIX0136${data?.transactionId || ''}-${crypto.randomUUID()}` +
+        `5204000053039865802BR5925CIANO COTAS POUSADAS6009SAO PAULO62070503***63041234`,
+      paymentUrl: '',
+    };
+    goToStep(3);
+  } catch {
+    // TODO: show error feedback
+  } finally {
+    isProcessing.value = false;
+  }
 }
 
 // ─── Post-payment ─────────────────────────────────────────────────────────────

@@ -112,10 +112,12 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue';
-import type { MockUser, PartnerLevel, UserTitle } from '@/mocks';
+
+type PartnerLevel = 'socio' | 'platinum' | 'vip' | 'imperial';
+type UserTitle = string;
 
 interface Props {
-  users: MockUser[];
+  users: any[];
   quotaPrice?: number;
 }
 
@@ -124,7 +126,7 @@ const props = withDefaults(defineProps<Props>(), {
 });
 
 const emit = defineEmits<{
-  action: [type: 'extrato' | 'bloquear' | 'mensagem', user: MockUser];
+  action: [type: 'extrato' | 'bloquear' | 'mensagem', user: any];
 }>();
 
 // Menu state
@@ -139,7 +141,7 @@ function toggleMenu(id: string) {
   openMenuId.value = openMenuId.value === id ? null : id;
 }
 
-function handleAction(type: 'extrato' | 'bloquear' | 'mensagem', user: MockUser) {
+function handleAction(type: 'extrato' | 'bloquear' | 'mensagem', user: any) {
   openMenuId.value = null;
   emit('action', type, user);
 }
@@ -161,12 +163,11 @@ function getInitials(name: string): string {
   return name.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase();
 }
 
-function isWhale(user: MockUser): boolean {
+function isWhale(user: any): boolean {
   return user.purchasedQuotas * props.quotaPrice >= 100_000;
 }
 
-/** Retorna true se a última compra foi há mais de 6 meses (ou nunca houve compra). */
-function isAccountExpired(user: MockUser): boolean {
+function isAccountExpired(user: any): boolean {
   if (!user.lastPurchaseDate) return true;
   const sixMonthsAgo = new Date();
   sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
@@ -174,7 +175,7 @@ function isAccountExpired(user: MockUser): boolean {
 }
 
 /** Data em que a conta expira (lastPurchaseDate + 6 meses). */
-function getExpiryDate(user: MockUser): string {
+function getExpiryDate(user: any): string {
   if (!user.lastPurchaseDate) return '—';
   const d = new Date(user.lastPurchaseDate);
   d.setMonth(d.getMonth() + 6);
@@ -183,7 +184,7 @@ function getExpiryDate(user: MockUser): string {
 
 type ActivityStatus = 'green' | 'yellow' | 'red';
 
-function getActivityStatus(user: MockUser): ActivityStatus {
+function getActivityStatus(user: any): ActivityStatus {
   if (!user.isActive || isAccountExpired(user)) return 'red';
   const expiryDate = new Date(user.lastPurchaseDate!);
   expiryDate.setMonth(expiryDate.getMonth() + 6);
@@ -194,7 +195,7 @@ function getActivityStatus(user: MockUser): ActivityStatus {
   return 'yellow';
 }
 
-function getActivityLabel(user: MockUser): string {
+function getActivityLabel(user: any): string {
   if (!user.isActive) return 'Inativo';
   if (isAccountExpired(user)) return 'Expirado';
   const s = getActivityStatus(user);
@@ -203,7 +204,7 @@ function getActivityLabel(user: MockUser): string {
   return 'Inativo';
 }
 
-function getActivityTooltip(user: MockUser): string {
+function getActivityTooltip(user: any): string {
   if (!user.isActive) return 'Inativo — conta bloqueada ou dormente';
   if (isAccountExpired(user)) return `Expirado — sem compras nos últimos 6 meses (expirou em ${getExpiryDate(user)})`;
   const s = getActivityStatus(user);
@@ -212,7 +213,7 @@ function getActivityTooltip(user: MockUser): string {
   return 'Inativo — conta bloqueada ou dormente';
 }
 
-function formatLtv(user: MockUser): string {
+function formatLtv(user: any): string {
   const ltv = user.purchasedQuotas * props.quotaPrice;
   if (ltv >= 1_000_000) return `R$ ${(ltv / 1_000_000).toFixed(1)}M`;
   if (ltv >= 1_000) return `R$ ${(ltv / 1_000).toFixed(0)}k`;

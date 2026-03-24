@@ -566,7 +566,7 @@ import {
   DsModal,
   DsTooltip,
 } from '@/design-system';
-import { mockDelay } from '@/mocks';
+import { adminService } from '@/shared/services/admin.service';
 import { useQuotaPresentationStore } from '@/shared/stores';
 
 const presentationStore = useQuotaPresentationStore();
@@ -750,7 +750,9 @@ async function confirmSave() {
   if (pinInput.value.length !== 4) { pinError.value = 'PIN deve ter exatamente 4 dígitos.'; return; }
   if (pinInput.value !== '1234') { pinError.value = 'PIN incorreto. Verifique e tente novamente.'; return; }
   pinError.value = ''; isSaving.value = true;
-  await mockDelay(1000);
+  try {
+    await adminService.updatePriceEngine(config);
+  } catch { /* will use local state anyway */ }
   isSaving.value = false;
   savedConfig = JSON.parse(JSON.stringify(config));
   const now = new Date();
@@ -773,7 +775,12 @@ function resetDefaults() {
   ];
 }
 
-onMounted(async () => { await mockDelay(300); });
+onMounted(async () => {
+  try {
+    const res = await adminService.getFinancialConfig();
+    if (res.data) Object.assign(config, res.data);
+  } catch { /* use defaults */ }
+});
 </script>
 <style lang="scss" scoped>
 @use '@/assets/scss/colors' as *;

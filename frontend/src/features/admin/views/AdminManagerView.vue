@@ -56,23 +56,69 @@
             <font-awesome-icon icon="users" />
             Usuários
           </h2>
-          <!-- Busca -->
-          <div class="mgr-view__search">
-            <font-awesome-icon icon="magnifying-glass" class="mgr-view__search-icon" />
-            <input
-              v-model="search"
-              type="text"
-              class="mgr-view__search-input"
-              placeholder="Buscar por nome ou e-mail…"
-              autocomplete="off"
-            />
+          <!-- Busca + linhas por página -->
+          <div class="mgr-view__section-controls">
+            <div class="mgr-view__search">
+              <font-awesome-icon icon="magnifying-glass" class="mgr-view__search-icon" />
+              <input
+                v-model="search"
+                type="text"
+                class="mgr-view__search-input"
+                placeholder="Buscar por nome ou e-mail…"
+                autocomplete="off"
+              />
+            </div>
+            <div class="mgr-view__page-size">
+              <span>Exibir</span>
+              <select v-model.number="pageSize" class="mgr-view__page-size-select">
+                <option v-for="n in PAGE_SIZE_OPTIONS" :key="n" :value="n">{{ n }}</option>
+              </select>
+              <span>por página</span>
+            </div>
           </div>
         </div>
 
         <ManagerUserTable
-          :users="filteredUsers"
+          :users="pagedUsers"
           @action="handleTableAction"
         />
+
+        <!-- Paginação -->
+        <div v-if="totalPages > 1" class="mgr-view__pagination">
+          <button
+            class="mgr-view__page-btn"
+            :disabled="currentPage === 1"
+            aria-label="Página anterior"
+            @click="currentPage--"
+          >
+            <font-awesome-icon icon="chevron-left" />
+          </button>
+
+          <template v-for="p in pageNumbers" :key="p">
+            <span v-if="p === '...'" class="mgr-view__page-ellipsis">…</span>
+            <button
+              v-else
+              :class="['mgr-view__page-btn', { 'mgr-view__page-btn--active': p === currentPage }]"
+              @click="currentPage = (p as number)"
+            >
+              {{ p }}
+            </button>
+          </template>
+
+          <button
+            class="mgr-view__page-btn"
+            :disabled="currentPage === totalPages"
+            aria-label="Próxima página"
+            @click="currentPage++"
+          >
+            <font-awesome-icon icon="chevron-right" />
+          </button>
+
+          <span class="mgr-view__page-info">
+            {{ (currentPage - 1) * pageSize + 1 }}–{{ Math.min(currentPage * pageSize, filteredUsers.length) }}
+            de {{ filteredUsers.length }}
+          </span>
+        </div>
       </section>
 
       <!-- ══════════════════════════════════════════════════
@@ -148,9 +194,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue';
-import { useAdminManagerStore, type TrashUser } from '@/shared/stores/adminManager.store';
-import type { MockUser } from '@/mocks';
+import { ref, computed, watch, onMounted } from 'vue';
+import { useAdminManagerStore, type TrashUser, type ManagerUser } from '@/shared/stores/adminManager.store';
 import ManagerPasswordSetupModal from '../components/ManagerPasswordSetupModal.vue';
 import ManagerActionConfirmModal from '../components/ManagerActionConfirmModal.vue';
 import ManagerUserTable from '../components/ManagerUserTable.vue';
@@ -161,7 +206,7 @@ type ActionType = 'add' | 'remove' | 'sponsor' | 'delete' | 'restore';
 
 interface PendingAction {
   type: ActionType;
-  user: MockUser | TrashUser;
+  user: ManagerUser | TrashUser;
   title: string;
   description: string;
   confirmLabel: string;
@@ -174,6 +219,11 @@ const store = useAdminManagerStore();
 // ── UI State ─────────────────────────────────────────────────
 const search = ref('');
 const trashCollapsed = ref(true);
+
+// ── Paginação ─────────────────────────────────────────────────
+const PAGE_SIZE_OPTIONS = [10, 25, 50] as const;
+const pageSize = ref<number>(10);
+const currentPage = ref(1);
 
 // ── Action state ─────────────────────────────────────────────
 const showConfirm = ref(false);
@@ -196,6 +246,34 @@ const filteredUsers = computed(() => {
       u.email.toLowerCase().includes(q),
   );
 });
+
+const totalPages = computed(() =>
+  Math.ceil(filteredUsers.value.length / pageSize.value),
+);
+
+const pagedUsers = computed(() => {
+  const start = (currentPage.value - 1) * pageSize.value;
+  return filteredUsers.value.slice(start, start + pageSize.value);
+});
+
+// Números de página visíveis (máx 7 botões com reticências laterais)
+const pageNumbers = computed(() => {
+  const total = totalPages.value;
+  const cur = currentPage.value;
+  if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+
+  const pages: (number | '...')[] = [1];
+  if (cur > 3) pages.push('...');
+  const start = Math.max(2, cur - 1);
+  const end = Math.min(total - 1, cur + 1);
+  for (let i = start; i <= end; i++) pages.push(i);
+  if (cur < total - 2) pages.push('...');
+  pages.push(total);
+  return pages;
+});
+
+// Reset para página 1 ao filtrar ou mudar pageSize
+watch([search, pageSize], () => { currentPage.value = 1; });
 
 const sponsorOptions = computed(() => {
   if (!pendingAction.value || pendingAction.value.type !== 'sponsor') return [];
@@ -226,7 +304,7 @@ function showSuccess(msg: string) {
 }
 
 // ── Eventos da tabela ─────────────────────────────────────────
-function handleTableAction(type: 'add' | 'remove' | 'sponsor' | 'delete', user: MockUser) {
+function handleTableAction(type: 'add' | 'remove' | 'sponsor' | 'delete', user: ManagerUser) {
   const actions: Record<typeof type, PendingAction> = {
     add: {
       type: 'add',
@@ -338,6 +416,11 @@ async function handleConfirm(password: string) {
 // Fecha o modal quando showConfirm muda para false (ex: via v-model)
 watch(showConfirm, (v) => {
   if (!v) closeAction();
+});
+
+onMounted(() => {
+  store.loadUsers();
+  store.loadTrash();
 });
 </script>
 
@@ -480,6 +563,14 @@ watch(showConfirm, (v) => {
     }
   }
 
+  // ── Controls row (busca + linhas/página) ─────────────────────
+  &__section-controls {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+  }
+
   // ── Busca ──────────────────────────────────────────────────
   &__search {
     position: relative;
@@ -502,7 +593,7 @@ watch(showConfirm, (v) => {
     font-size: 0.875rem;
     background: var(--bg-secondary);
     color: var(--text-primary);
-    width: 260px;
+    width: 240px;
     outline: none;
     transition: border-color 0.15s, box-shadow 0.15s;
 
@@ -513,9 +604,94 @@ watch(showConfirm, (v) => {
       box-shadow: 0 0 0 3px rgba($primary-500, 0.15);
     }
 
-    @media (max-width: 576px) {
-      width: 180px;
+    @media (max-width: 576px) { width: 160px; }
+  }
+
+  // ── Linhas por página ──────────────────────────────────────
+  &__page-size {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.8125rem;
+    color: var(--text-secondary);
+  }
+
+  &__page-size-select {
+    border: 1px solid var(--border-color);
+    border-radius: 0.375rem;
+    padding: 0.3rem 0.5rem;
+    font-size: 0.8125rem;
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    cursor: pointer;
+    outline: none;
+
+    &:focus {
+      border-color: $primary-500;
+      box-shadow: 0 0 0 3px rgba($primary-500, 0.15);
     }
+  }
+
+  // ── Paginação ──────────────────────────────────────────────
+  &__pagination {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.875rem 1.25rem;
+    border-top: 1px solid var(--border-color);
+    flex-wrap: wrap;
+  }
+
+  &__page-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 32px;
+    height: 32px;
+    padding: 0 0.5rem;
+    border: 1px solid var(--border-color);
+    border-radius: 0.375rem;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    font-size: 0.8125rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
+
+    &:hover:not(:disabled) {
+      background: var(--bg-secondary);
+      border-color: $primary-400;
+    }
+
+    &:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+    }
+
+    &--active {
+      background: $primary-600;
+      border-color: $primary-600;
+      color: #fff;
+
+      &:hover { background: $primary-700; border-color: $primary-700; }
+    }
+  }
+
+  &__page-info {
+    margin-left: auto;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+  }
+
+  &__page-ellipsis {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 32px;
+    height: 32px;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    user-select: none;
   }
 }
 

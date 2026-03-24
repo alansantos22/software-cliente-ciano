@@ -376,7 +376,24 @@ import {
   DsModal,
   DsEmptyState,
 } from '@/design-system';
-import { mockDelay, mockUsers, mockMonthlyConfigs, type PayoutRequest } from '@/mocks';
+import { adminService } from '@/shared/services/admin.service';
+
+interface PayoutRequest {
+  id: string;
+  userId: string;
+  userName: string;
+  amount: number;
+  pixKey: string;
+  pixKeyType: string;
+  status: 'pending' | 'processing' | 'completed' | 'failed' | 'cancelled';
+  referenceMonth: string;
+  paymentMonth: string;
+  requestedAt: string;
+  processedAt: string | null;
+  completedAt: string | null;
+  failureReason: string | null;
+  transactionId: string | null;
+}
 
 // ─── State ────────────────────────────────────────────────────
 const isLoading    = ref(false);
@@ -478,42 +495,17 @@ const filteredPayouts = computed(() => {
 });
 
 // ─── Profit Distribution Computeds ───────────────────────────
-const dividendPoolPercent = computed(() => {
-  const config = mockMonthlyConfigs.find(c => c.month === profitMonth.value);
-  return config?.dividendPoolPercent ?? 20;
-});
+const dividendPoolPercent = ref(20);
 
 const dividendPool = computed(() =>
   Math.round(netProfit.value * (dividendPoolPercent.value / 100) * 100) / 100
 );
 
-const totalActiveQuotas = computed(() =>
-  mockUsers.filter(u => u.isActive && u.quotaBalance > 0).reduce((s, u) => s + u.quotaBalance, 0)
-);
-
-const distributionPreview = computed(() => {
-  if (!dividendPool.value || totalActiveQuotas.value === 0) return [];
-  return mockUsers
-    .filter(u => u.isActive && u.quotaBalance > 0)
-    .map(u => {
-      const quotaAmount   = Math.round((u.quotaBalance / totalActiveQuotas.value) * dividendPool.value * 100) / 100;
-      const networkAmount = u.availableWithdraw;
-      return {
-        id:            u.id,
-        user:          u.name,
-        quotas:        u.quotaBalance,
-        share:         ((u.quotaBalance / totalActiveQuotas.value) * 100).toFixed(2) + '%',
-        quotaAmount,
-        networkAmount,
-        amount:        Math.round((quotaAmount + networkAmount) * 100) / 100,
-        pix:           u.pixKey || u.email,
-      };
-    })
-    .sort((a, b) => b.amount - a.amount);
-});
+const totalActiveQuotas = ref(0);
+const distributionPreview = ref<any[]>([]);
 
 const totalNetworkEarnings = computed(() =>
-  distributionPreview.value.reduce((s, r) => s + r.networkAmount, 0)
+  distributionPreview.value.reduce((s: number, r: any) => s + (r.networkAmount || 0), 0)
 );
 
 /** Quantidade de pagamentos atualmente em status 'processing' */
@@ -612,33 +604,40 @@ function downloadReceipt(payout: PayoutRequest) {
 
 // ─── Ações Etapa 1 & 2 ────────────────────────────────────────
 
-function calculateDistribution() {
-  if (netProfit.value > 0) showDistribution.value = true;
+async function calculateDistribution() {
+  if (netProfit.value <= 0) return;
+  try {
+    const res = await adminService.calculateDistribution({
+      month: profitMonth.value,
+      netProfit: netProfit.value,
+    });
+    if (res.data) {
+      distributionPreview.value = res.data.preview || [];
+      totalActiveQuotas.value = res.data.totalActiveQuotas || 0;
+      if (res.data.dividendPoolPercent) dividendPoolPercent.value = res.data.dividendPoolPercent;
+    }
+    showDistribution.value = true;
+  } catch {
+    showDistribution.value = true;
+  }
 }
 
-function generatePayoutsFromProfit() {
-  const newPayouts: PayoutRequest[] = distributionPreview.value.map((row, i) => ({
-    id:             `auto-${Date.now()}-${i}`,
-    userId:         row.id,
-    userName:       row.user,
-    amount:         row.amount,
-    pixKey:         row.pixKey,
-    pixKeyType:     'email' as const,
-    status:         'pending' as const,
-    referenceMonth: profitMonth.value,
-    paymentMonth:   paymentMonth.value,
-    requestedAt:    new Date().toISOString(),
-    processedAt:    null,
-    completedAt:    null,
-    failureReason:  null,
-    transactionId:  null,
-  }));
-
-  payouts.value = [...newPayouts, ...payouts.value];
-  batchApproved.value = true;
-  generationSuccess.value = true;
-  setTimeout(() => { generationSuccess.value = false; }, 4000);
-  recalcStats();
+async function generatePayoutsFromProfit() {
+  try {
+    const res = await adminService.generateBatch({
+      month: profitMonth.value,
+      netProfit: netProfit.value,
+    });
+    if (res.data && Array.isArray(res.data)) {
+      payouts.value = [...res.data, ...payouts.value];
+    }
+    batchApproved.value = true;
+    generationSuccess.value = true;
+    setTimeout(() => { generationSuccess.value = false; }, 4000);
+    recalcStats();
+  } catch {
+    /* handle error */
+  }
 }
 
 // ─── Stats ────────────────────────────────────────────────────
@@ -664,8 +663,23 @@ function downloadReceiptRow(row: Record<string, unknown>) { downloadReceipt(row 
 // por usuários neste sistema.
 onMounted(async () => {
   isLoading.value = true;
-  await mockDelay(300);
-  isLoading.value = false;
+  try {
+    const [payoutsRes, configRes] = await Promise.all([
+      adminService.getPayouts({ month: filters.value.month }),
+      adminService.getFinancialConfig().catch(() => ({ data: null })),
+    ]);
+    if (payoutsRes.data && Array.isArray(payoutsRes.data)) {
+      payouts.value = payoutsRes.data;
+    }
+    if (configRes.data?.dividendPoolPercent) {
+      dividendPoolPercent.value = configRes.data.dividendPoolPercent;
+    }
+    recalcStats();
+  } catch {
+    /* fail silently */
+  } finally {
+    isLoading.value = false;
+  }
 });
 </script>
 

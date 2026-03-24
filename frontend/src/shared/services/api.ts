@@ -25,9 +25,13 @@ api.interceptors.request.use(
   }
 );
 
-// Response interceptor
+// Response interceptor — unwrap backend envelope { success, data, error }
 api.interceptors.response.use(
   (response: AxiosResponse) => {
+    const body = response.data;
+    if (body && typeof body === 'object' && 'success' in body) {
+      response.data = body.data;
+    }
     return response;
   },
   async (error: AxiosError) => {

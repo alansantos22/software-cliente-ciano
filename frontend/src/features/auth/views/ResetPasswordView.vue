@@ -85,7 +85,7 @@
 import { ref, reactive, computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { DsInput, DsButton, DsAlert } from '@/design-system';
-import { mockDelay } from '@/mocks';
+import { authService } from '@/shared/services/auth.service';
 
 const route  = useRoute();
 const router = useRouter();
@@ -163,9 +163,8 @@ async function handleSubmit() {
   isLoading.value = true;
 
   try {
-    // Token from URL would be sent to API
-    const _token = route.params.token;
-    await mockDelay(800);
+    const token = route.params.token as string;
+    await authService.resetPassword(token, form.password);
     success.value = true;
     setTimeout(() => router.push('/login'), 2000);
   } catch {

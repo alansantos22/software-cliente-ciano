@@ -94,17 +94,18 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue';
-import type { MockUser, PartnerLevel } from '@/mocks';
 import { useAdminManagerStore } from '@/shared/stores/adminManager.store';
 
 export type ManagerAction = 'add' | 'remove' | 'sponsor' | 'delete';
 
+type PartnerLevel = 'socio' | 'platinum' | 'vip' | 'imperial';
+
 const props = defineProps<{
-  users: MockUser[];
+  users: any[];
 }>();
 
 const emit = defineEmits<{
-  action: [type: ManagerAction, user: MockUser];
+  action: [type: ManagerAction, user: any];
 }>();
 
 const store = useAdminManagerStore();
@@ -138,7 +139,7 @@ onMounted(() => document.addEventListener('click', handleDocClick));
 onUnmounted(() => document.removeEventListener('click', handleDocClick));
 
 // ── Actions ──────────────────────────────────────────────────
-function action(type: ManagerAction, user: MockUser) {
+function action(type: ManagerAction, user: any) {
   openMenuId.value = null;
   emit('action', type, user);
 }

@@ -173,7 +173,7 @@
 <script setup lang="ts">
 import { ref, reactive, computed } from 'vue';
 import { DsInput, DsButton, DsAlert, DsCard } from '@/design-system';
-import { mockDelay } from '@/mocks';
+import { authService } from '@/shared/services/auth.service';
 
 const isLoading = ref(false);
 const error = ref('');
@@ -249,9 +249,20 @@ async function handleSubmit() {
   isLoading.value = true;
 
   try {
-    await mockDelay(800);
+    const res = await authService.register({
+      name: form.fullName,
+      email: form.email,
+      cpf: form.cpf.replace(/\D/g, ''),
+      phone: `${form.ddd}${form.phone}`.replace(/\D/g, ''),
+      city: form.city,
+      state: form.state,
+      pixType: form.pixType,
+      pixKey: form.pixKey,
+      quotaCount: form.quotaCount,
+      quotaType: form.quotaType,
+    });
     createdUser.value = {
-      id: generateId(),
+      id: res.data?.id || generateId(),
       name: form.fullName,
     };
   } catch {

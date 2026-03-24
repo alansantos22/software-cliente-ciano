@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
+import { authService } from '@/shared/services/auth.service';
 
 export interface User {
   id: string;
@@ -72,6 +73,38 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  async function fetchUser() {
+    if (!accessToken.value) return;
+    try {
+      isLoading.value = true;
+      const { data } = await authService.me();
+      user.value = data;
+    } catch {
+      clearAuth();
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  async function login(email: string, password: string) {
+    isLoading.value = true;
+    const { data } = await authService.login({ email, password });
+    setTokens(data.accessToken, data.refreshToken);
+    setUser(data.user);
+    isLoading.value = false;
+    return data;
+  }
+
+  async function logout() {
+    try {
+      if (refreshToken.value) {
+        await authService.logout(refreshToken.value);
+      }
+    } finally {
+      clearAuth();
+    }
+  }
+
   return {
     // State
     user,
@@ -88,5 +121,8 @@ export const useAuthStore = defineStore('auth', () => {
     setUser,
     clearAuth,
     loadFromStorage,
+    fetchUser,
+    login,
+    logout,
   };
 });

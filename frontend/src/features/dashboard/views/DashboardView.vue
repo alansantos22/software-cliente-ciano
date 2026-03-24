@@ -88,7 +88,7 @@
             <font-awesome-icon icon="wallet" />
           </div>
           <div class="kpi-card__body">
-            <span class="kpi-card__label">Saldo a Receber</span>
+            <span class="kpi-card__label">Previsão a Receber</span>
             <span class="kpi-card__value kpi-card__value--big">
               {{ formatCurrency(totalReceivable) }}
             </span>
@@ -308,23 +308,8 @@ import {
   DsMonthPicker,
   DsEmptyState,
 } from '@/design-system';
-import {
-  getMonthlySummary,
-  mockDelay,
-  mockSplitTicker,
-  mockCareerProgress,
-  mockAccountHealth,
-  mockDashboardKpi,
-  mockRecentActivity,
-  buildEarningsSources,
-  getPaymentWindowStatus,
-  type SplitTickerData,
-  type CareerProgressData,
-  type AccountHealthData,
-  type DashboardKpiData,
-  type RecentActivityItem,
-  type EarningSourceData,
-} from '@/mocks';
+import { dashboardService } from '@/shared/services/dashboard.service';
+import { earningsService } from '@/shared/services/earnings.service';
 import SplitTicker from '../components/SplitTicker.vue';
 import LevelProgressBar from '../components/LevelProgressBar.vue';
 import StatusWidget from '../components/StatusWidget.vue';
@@ -412,20 +397,20 @@ function activityVariant(type: string): 'default' | 'success' | 'warning' | 'inf
   return map[type] ?? 'default';
 }
 
-function loadEarnings(month: string) {
-  const userId = authStore.user?.id ?? 'user-001';
-  const summary = getMonthlySummary(userId, month);
-  if (summary) {
-    earningsSources.value = buildEarningsSources(
-      summary.firstPurchase,
-      summary.repurchase,
-      summary.team,
-      summary.leadership,
-      summary.dividend,
-    );
-  } else {
-    // Default mock fallback
-    earningsSources.value = buildEarningsSources(1500, 500, 1300, 500, 320);
+async function loadEarnings(month: string) {
+  try {
+    const { data } = await earningsService.monthly(month);
+    if (data) {
+      earningsSources.value = [
+        { label: 'Primeira Compra', value: data.firstPurchase || 0, color: '#10b981' },
+        { label: 'Recompra',        value: data.repurchase || 0,     color: '#3b82f6' },
+        { label: 'Equipe',          value: data.team || 0,           color: '#8b5cf6' },
+        { label: 'Liderança',       value: data.leadership || 0,     color: '#f59e0b' },
+        { label: 'Dividendo',       value: data.dividend || 0,       color: '#06b6d4' },
+      ].filter(s => s.value > 0);
+    }
+  } catch {
+    earningsSources.value = [];
   }
 }
 
@@ -444,22 +429,73 @@ async function copyReferralLink() {
   setTimeout(() => { referralLinkCopied.value = false; }, 2500);
 }
 
-// Refresh payment window status so the lock reflects real-time day changes
-function refreshPaymentWindow() {
-  const status = getPaymentWindowStatus(kpi.value.paymentDay);
-  kpi.value = {
-    ...kpi.value,
-    paymentWindowOpen: status.windowOpen,
-    daysUntilPayment: status.daysUntilPayment,
-    nextPaymentDate: status.nextPaymentDate,
-  };
+// Refresh payment window status
+async function refreshPaymentWindow() {
+  try {
+    const { data } = await dashboardService.getPaymentWindow();
+    if (data) {
+      kpi.value = { ...kpi.value, ...data };
+    }
+  } catch { /* non-critical */ }
 }
 
 // ─── Watchers & Lifecycle ────────────────────────────────────
 watch(selectedMonth, loadEarnings);
 
 onMounted(async () => {
-  await mockDelay(300);
+  try {
+    // Load KPIs, chart data, and recent activity in parallel
+    const [kpiRes, chartRes, activityRes] = await Promise.all([
+      dashboardService.getKpis(),
+      dashboardService.getQuotaChart(),
+      dashboardService.getRecentActivity(),
+    ]);
+
+    if (kpiRes.data) {
+      kpi.value = kpiRes.data;
+
+      // Map career progress from KPI data
+      career.value = {
+        currentLevel: kpiRes.data.partnerLevel || 'socio',
+        nextLevel: '',
+        currentValue: kpiRes.data.quotaBalance || 0,
+        targetValue: 0,
+        bonusPercentUnlock: 0,
+      };
+
+      // Map health from active status
+      health.value = {
+        status: kpiRes.data.isActive ? 'active' : 'critical',
+        daysRemaining: 0,
+      };
+    }
+
+    if (chartRes.data) {
+      ticker.value = {
+        currentPrice: chartRes.data.currentPrice || 0,
+        splitProgress: chartRes.data.totalSold ? Math.round((chartRes.data.totalSold / chartRes.data.nextEventTarget) * 100) : 0,
+        nextEventLabel: chartRes.data.nextEventLabel || '',
+        quotasToNextEvent: (chartRes.data.nextEventTarget || 0) - (chartRes.data.totalSold || 0),
+        changePercent: 0,
+      };
+    }
+
+    if (activityRes.data) {
+      recentActivity.value = (activityRes.data as any[]).map(e => ({
+        id: e.id,
+        type: e.bonusType || e.description || '',
+        description: e.description || '',
+        amount: e.amount || 0,
+        date: e.createdAt || '',
+        sourceUserName: e.sourceUserName || null,
+        sourceAvatarInitials: e.sourceUserName ? e.sourceUserName.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase() : null,
+        sourceAvatarColor: null,
+      }));
+    }
+  } catch {
+    /* fail silently — page shows empty state */
+  }
+
   refreshPaymentWindow();
   loadEarnings(selectedMonth.value);
 });

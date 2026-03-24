@@ -174,7 +174,7 @@
 import { ref, reactive, computed, onMounted } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { DsInput, DsButton, DsAlert } from '@/design-system';
-import { mockDelay } from '@/mocks';
+import { authService } from '@/shared/services/auth.service';
 
 const router = useRouter();
 const route  = useRoute();
@@ -285,12 +285,22 @@ async function handleRegister() {
   isLoading.value = true;
 
   try {
-    // Simulação — substituir pela chamada real à API quando disponível
-    await mockDelay(900);
+    await authService.register({
+      name: form.fullName,
+      cpf: form.cpf.replace(/\D/g, ''),
+      email: form.email,
+      phone: form.phone.replace(/\D/g, ''),
+      city: form.city,
+      state: form.state,
+      pixKey: form.pixKey,
+      password: form.password,
+      referralCode: form.referralCode || undefined,
+    });
     success.value = true;
     setTimeout(() => router.push('/login'), 2000);
-  } catch {
-    error.value = 'Erro ao realizar cadastro. Tente novamente.';
+  } catch (e: any) {
+    const msg = e?.response?.data?.message;
+    error.value = typeof msg === 'string' ? msg : 'Erro ao realizar cadastro. Tente novamente.';
   } finally {
     isLoading.value = false;
   }

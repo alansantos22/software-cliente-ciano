@@ -119,11 +119,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, watch, onMounted } from 'vue';
 import DsCard from '@/design-system/DsCard.vue';
 import DsTable from '@/design-system/DsTable.vue';
 import DsBadge from '@/design-system/DsBadge.vue';
 import DsMonthPicker from '@/design-system/DsMonthPicker.vue';
+import { earningsService } from '@/shared/services/earnings.service';
 
 // ─── Types ───────────────────────────────────────────
 interface ActivityRow {
@@ -144,35 +145,38 @@ interface ActivityRow {
 const selectedMonth = ref(new Date().toISOString().slice(0, 7));
 const activeFilter = ref('all');
 
-// ─── Mock Data ────────────────────────────────────────
-const allRows = ref<ActivityRow[]>([
-  // ── Janeiro 2025 ────────────────────────────────────────────────────────
-  { id: 1,  type: 'Comissão',  rawType: 'first_purchase', description: 'Bônus primeira compra — João Silva',     amount:  150.00, date: '2025-01-15', cutoffEligible: false },
-  { id: 2,  type: 'Bônus',     rawType: 'repurchase',     description: 'Bônus recompra — Nível 2',               amount:   75.50, date: '2025-01-14', cutoffEligible: false },
-  { id: 3,  type: 'Dividendo', rawType: 'dividend',       description: 'Dividendo mensal — Janeiro 2025',        amount:  320.00, date: '2025-01-10', cutoffEligible: true  },
-  { id: 4,  type: 'Compra',    rawType: 'purchase',       description: 'Aquisição de cotas',                     amount: -2500.00, date: '2025-01-08' },
-  { id: 5,  type: 'Comissão',  rawType: 'first_purchase', description: 'Bônus primeira compra — Maria Fernanda', amount:  150.00, date: '2025-01-07', cutoffEligible: false },
-  { id: 6,  type: 'Bônus',     rawType: 'leadership',     description: 'Bônus de liderança — Nível Ouro',        amount:  500.00, date: '2025-01-05', cutoffEligible: true  },
-  { id: 7,  type: 'Bônus',     rawType: 'team_bonus',     description: 'Bônus de equipe — 2% do total',          amount:   90.00, date: '2025-01-03', cutoffEligible: true  },
-  // ── Dezembro 2024 ───────────────────────────────────────────────────────
-  { id: 8,  type: 'Dividendo', rawType: 'dividend',       description: 'Dividendo mensal — Dezembro 2024',       amount:  310.00, date: '2024-12-10', cutoffEligible: true  },
-  { id: 9,  type: 'Compra',    rawType: 'purchase',       description: 'Aquisição de cotas',                     amount: -2500.00, date: '2024-12-05' },
-  { id: 10, type: 'Comissão',  rawType: 'first_purchase', description: 'Bônus primeira compra — Carlos Eduardo', amount:  150.00, date: '2024-12-03', cutoffEligible: false },
-  { id: 11, type: 'Bônus',     rawType: 'repurchase',     description: 'Bônus recompra — Nível 3',               amount:  200.00, date: '2024-12-01', cutoffEligible: false },
-  // ── Novembro 2024 ───────────────────────────────────────────────────────
-  { id: 12, type: 'Dividendo', rawType: 'dividend',       description: 'Dividendo mensal — Novembro 2024',       amount:  295.00, date: '2024-11-10', cutoffEligible: true  },
-  { id: 13, type: 'Comissão',  rawType: 'first_purchase', description: 'Bônus primeira compra — Ana Paula',      amount:  150.00, date: '2024-11-08', cutoffEligible: false },
-  { id: 14, type: 'Bônus',     rawType: 'repurchase',     description: 'Bônus recompra — Nível 2',               amount:  120.00, date: '2024-11-05', cutoffEligible: false },
-  { id: 15, type: 'Compra',    rawType: 'purchase',       description: 'Aquisição de cotas',                     amount: -5000.00, date: '2024-11-01' },
-  // ── Fevereiro 2026 (mês atual) ─────────────────────────────────────────
-  // Compras realizadas em fevereiro são APÓS o corte (31/jan)
-  // → dividendos e comissões gerados por elas só entram no ciclo de março
-  { id: 16, type: 'Dividendo', rawType: 'dividend',       description: 'Dividendo mensal — Fev 2026 (compra após corte)',        amount:  345.00, date: '2026-02-15', cutoffEligible: false },
-  { id: 17, type: 'Bônus',     rawType: 'repurchase',     description: 'Bônus recompra — Lucas Oliveira (compra após corte)',    amount:   95.00, date: '2026-02-10', cutoffEligible: false },
-  { id: 18, type: 'Comissão',  rawType: 'first_purchase', description: 'Bônus 1ª compra — Rafael Duarte (compra após corte)',   amount:  150.00, date: '2026-02-08', cutoffEligible: false },
-  { id: 19, type: 'Compra',    rawType: 'purchase',       description: 'Aquisição de 1 cota (após corte de jan — dividendo em mar)', amount: -2500.00, date: '2026-02-03' },
-  { id: 20, type: 'Bônus',     rawType: 'leadership',     description: 'Bônus liderança Ouro — ref. jan/2026 (dentro do corte)', amount:  500.00, date: '2026-02-15', cutoffEligible: true  },
-]);
+// ─── Data loaded from API ─────────────────────────────
+const allRows = ref<ActivityRow[]>([]);
+
+const bonusTypeLabel: Record<string, string> = {
+  firstPurchase: 'Comissão',
+  repurchase: 'Bônus',
+  team: 'Bônus',
+  leadership: 'Bônus',
+  dividend: 'Dividendo',
+};
+
+async function loadEarnings() {
+  try {
+    const { data } = await earningsService.list(1, 100);
+    if (data?.items) {
+      allRows.value = data.items.map((e: any, i: number) => ({
+        id: i + 1,
+        type: bonusTypeLabel[e.bonusType] || e.bonusType,
+        rawType: e.bonusType,
+        description: e.description || '',
+        amount: e.amount || 0,
+        date: (e.createdAt || '').slice(0, 10),
+        cutoffEligible: e.cutoffEligible ?? true,
+      }));
+    }
+  } catch {
+    allRows.value = [];
+  }
+}
+
+watch(selectedMonth, loadEarnings);
+onMounted(loadEarnings);
 
 // ─── Filters config ───────────────────────────────────
 const typeFilters = [

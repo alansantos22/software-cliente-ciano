@@ -94,7 +94,16 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { DsModal } from '@/design-system';
-import type { NetworkNode } from '@/mocks';
+
+interface NetworkNode {
+  id: string;
+  name: string;
+  title?: string;
+  level?: number;
+  depth?: number;
+  children?: NetworkNode[];
+  [key: string]: unknown;
+}
 
 interface Props {
   modelValue: boolean;

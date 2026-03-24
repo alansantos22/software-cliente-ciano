@@ -210,6 +210,7 @@ import { ref, computed, reactive, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useAuthStore } from '@/shared/stores/auth.store';
 import { DsCard, DsInput, DsButton, DsBadge, DsCopyButton, DsAlert } from '@/design-system';
+import { profileService } from '@/shared/services/profile.service';
 
 const { t } = useI18n();
 const authStore = useAuthStore();
@@ -285,11 +286,22 @@ function cancelEdit() {
 
 async function savePersonalData() {
   saving.value = true;
-  // Mock: simula delay de API
-  await new Promise(resolve => setTimeout(resolve, 1000));
-  saving.value = false;
-  editing.value = false;
-  showFeedback('success', t('profile.saveSuccess'));
+  try {
+    await profileService.update({
+      name: form.fullName,
+      phone: form.phone,
+      city: form.city,
+      state: form.state,
+    });
+    // Refresh user in store
+    await authStore.fetchUser();
+    editing.value = false;
+    showFeedback('success', t('profile.saveSuccess'));
+  } catch {
+    showFeedback('error', 'Erro ao salvar dados.');
+  } finally {
+    saving.value = false;
+  }
 }
 
 // === Edição PIX ===
@@ -307,10 +319,19 @@ function cancelPixEdit() {
 
 async function saveFinancialData() {
   savingPix.value = true;
-  await new Promise(resolve => setTimeout(resolve, 1000));
-  savingPix.value = false;
-  editingPix.value = false;
-  showFeedback('success', t('profile.pixSaveSuccess'));
+  try {
+    await profileService.updatePix({
+      pixKeyType: 'cpf',
+      pixKey: form.pixKey,
+    });
+    await authStore.fetchUser();
+    editingPix.value = false;
+    showFeedback('success', t('profile.pixSaveSuccess'));
+  } catch {
+    showFeedback('error', 'Erro ao salvar chave PIX.');
+  } finally {
+    savingPix.value = false;
+  }
 }
 
 // === Feedback ===

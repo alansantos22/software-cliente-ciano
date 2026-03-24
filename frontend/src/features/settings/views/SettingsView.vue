@@ -160,6 +160,7 @@ import { ref, reactive, computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useAppStore } from '@/shared/stores/app.store';
 import { DsCard, DsInput, DsButton, DsAlert } from '@/design-system';
+import { profileService } from '@/shared/services/profile.service';
 
 const { t, locale } = useI18n();
 const appStore = useAppStore();
@@ -231,13 +232,21 @@ async function changePassword() {
   if (!validatePasswordForm()) return;
 
   savingPassword.value = true;
-  // Mock: simula delay de API
-  await new Promise(resolve => setTimeout(resolve, 1200));
-  savingPassword.value = false;
-  passwordForm.currentPassword = '';
-  passwordForm.newPassword = '';
-  passwordForm.confirmPassword = '';
-  showFeedback('success', t('settings.passwordChanged'));
+  try {
+    await profileService.changePassword({
+      currentPassword: passwordForm.currentPassword,
+      newPassword: passwordForm.newPassword,
+    });
+    passwordForm.currentPassword = '';
+    passwordForm.newPassword = '';
+    passwordForm.confirmPassword = '';
+    showFeedback('success', t('settings.passwordChanged'));
+  } catch (e: any) {
+    const msg = e?.response?.data?.message;
+    showFeedback('error', msg || 'Erro ao alterar senha.');
+  } finally {
+    savingPassword.value = false;
+  }
 }
 
 // === Notificações ===
