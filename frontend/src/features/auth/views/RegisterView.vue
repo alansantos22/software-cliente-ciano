@@ -387,6 +387,8 @@ function validateField(field: string): void {
         e.password = 'Senha é obrigatória';
       } else if (f.password.length < 8) {
         e.password = 'Mínimo de 8 caracteres';
+      } else if (passwordStrength.value.score < 2) {
+        e.password = 'Senha muito fraca — use maiúsculas, números ou caracteres especiais';
       }
       // re-check confirm if already touched
       if (errors.confirmPassword && f.password !== f.confirmPassword)
@@ -462,6 +464,9 @@ function validate(): boolean {
     valid = false;
   } else if (form.password.length < 8) {
     errors.password = 'Mínimo de 8 caracteres';
+    valid = false;
+  } else if (passwordStrength.value.score < 2) {
+    errors.password = 'Senha muito fraca — use maiúsculas, números ou caracteres especiais';
     valid = false;
   }
 

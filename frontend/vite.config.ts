@@ -14,4 +14,17 @@ export default defineConfig({
     port: 5173,
     host: true,
   },
+  test: {
+    globals: true,
+    environment: 'jsdom',
+    setupFiles: ['./src/test/setup.ts'],
+    alias: {
+      '@': fileURLToPath(new URL('./src', import.meta.url)),
+    },
+    coverage: {
+      reporter: ['text', 'lcov'],
+      include: ['src/**/*.ts', 'src/**/*.vue'],
+      exclude: ['src/main.ts', 'src/test/**'],
+    },
+  },
 })
