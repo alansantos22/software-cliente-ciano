@@ -318,15 +318,116 @@ import DonutChart from '../components/DonutChart.vue';
 const router = useRouter();
 const authStore = useAuthStore();
 
+// ─── Types ────────────────────────────────────────────────────
+interface SplitTickerData {
+  currentPrice: number;
+  splitProgress: number;
+  nextEventLabel: string;
+  quotasToNextEvent: number;
+  changePercent: number;
+}
+
+interface CareerProgressData {
+  currentLevel: string;
+  nextLevel: string;
+  currentValue: number;
+  targetValue: number;
+  bonusPercentUnlock: number;
+}
+
+interface AccountHealthData {
+  status: 'active' | 'warning' | 'critical';
+  daysRemaining: number;
+}
+
+interface DashboardKpiData {
+  estimatedPatrimony: number;
+  availableWithdraw: number;
+  activeDirects: number;
+  totalDirects: number;
+  inactiveDirects: number;
+  networkTotal: number;
+  paymentDay: number;
+  paymentWindowOpen: boolean;
+  daysUntilPayment: number;
+  nextPaymentDate: string;
+  networkEarnings: number;
+  quotaEarnings: number;
+  lifetimeEarnings: number;
+  inactivityLoss: number;
+  ownSalesCount: number;
+  ownSalesValue: number;
+  networkSalesCount: number;
+  networkSalesValue: number;
+  partnerLevel?: string;
+  quotaBalance?: number;
+  isActive?: boolean;
+}
+
+interface RecentActivityItem {
+  id: string;
+  type: string;
+  description: string;
+  sourceUserName: string | null;
+  sourceAvatarInitials: string | null;
+  sourceAvatarColor: string | null;
+  amount: number;
+  date: string;
+}
+
+interface EarningSourceData {
+  label: string;
+  value: number;
+  color: string;
+}
+
 // ─── State ───────────────────────────────────────────────────
 const selectedMonth = ref<string>(new Date().toISOString().slice(0, 7));
 const referralLinkCopied = ref(false);
 
-const ticker    = ref<SplitTickerData>(mockSplitTicker);
-const career    = ref<CareerProgressData>(mockCareerProgress);
-const health    = ref<AccountHealthData>(mockAccountHealth);
-const kpi       = ref<DashboardKpiData>(mockDashboardKpi);
-const recentActivity = ref<RecentActivityItem[]>(mockRecentActivity);
+const ticker = ref<SplitTickerData>({
+  currentPrice: 0,
+  splitProgress: 0,
+  nextEventLabel: '',
+  quotasToNextEvent: 0,
+  changePercent: 0,
+});
+
+const career = ref<CareerProgressData>({
+  currentLevel: 'socio',
+  nextLevel: '',
+  currentValue: 0,
+  targetValue: 0,
+  bonusPercentUnlock: 0,
+});
+
+const health = ref<AccountHealthData>({
+  status: 'active',
+  daysRemaining: 0,
+});
+
+const kpi = ref<DashboardKpiData>({
+  estimatedPatrimony: 0,
+  availableWithdraw: 0,
+  activeDirects: 0,
+  totalDirects: 0,
+  inactiveDirects: 0,
+  networkTotal: 0,
+  paymentDay: 15,
+  paymentWindowOpen: false,
+  daysUntilPayment: 0,
+  nextPaymentDate: '',
+  networkEarnings: 0,
+  quotaEarnings: 0,
+  lifetimeEarnings: 0,
+  inactivityLoss: 0,
+  ownSalesCount: 0,
+  ownSalesValue: 0,
+  networkSalesCount: 0,
+  networkSalesValue: 0,
+});
+
+const recentActivity = ref<RecentActivityItem[]>([]);
 const earningsSources = ref<EarningSourceData[]>([]);
 
 // ─── Computed ────────────────────────────────────────────────
@@ -353,16 +454,22 @@ const totalMonthlyEarnings = computed(() =>
   earningsSources.value.reduce((s, e) => s + e.value, 0)
 );
 
-const totalReceivable = computed(() =>
-  kpi.value.networkEarnings + kpi.value.quotaEarnings
-);
+const totalReceivable = computed(() => {
+  const network = Number(kpi.value.networkEarnings) || 0;
+  const quota = Number(kpi.value.quotaEarnings) || 0;
+  return network + quota;
+});
 
 // ─── Methods ─────────────────────────────────────────────────
 function formatCurrency(value: number): string {
+  const num = Number(value);
+  if (isNaN(num) || value === null || value === undefined) {
+    return 'R$ 0,00';
+  }
   return new Intl.NumberFormat('pt-BR', {
     style: 'currency',
     currency: 'BRL',
-  }).format(value);
+  }).format(num);
 }
 
 function formatDate(dateStr: string): string {
@@ -455,18 +562,34 @@ onMounted(async () => {
       kpi.value = kpiRes.data;
 
       // Map career progress from KPI data
+      const currentLevel = kpiRes.data.partnerLevel || 'socio';
+      const levelProgression: Record<string, string> = {
+        socio: 'bronze',
+        bronze: 'prata',
+        prata: 'ouro',
+        ouro: 'diamante',
+        diamante: '',
+      };
+      const levelTargets: Record<string, number> = {
+        bronze: 2,    // 2 pessoas ativas
+        prata: 1,     // 1 indicado Bronze
+        ouro: 2,      // 2 Bronzes em linhas diferentes
+        diamante: 3,  // 3 Bronzes em linhas diferentes
+      };
+      const nextLevel = levelProgression[currentLevel] || '';
+
       career.value = {
-        currentLevel: kpiRes.data.partnerLevel || 'socio',
-        nextLevel: '',
-        currentValue: kpiRes.data.quotaBalance || 0,
-        targetValue: 0,
-        bonusPercentUnlock: 0,
+        currentLevel,
+        nextLevel,
+        currentValue: kpiRes.data.qualifiedCount || kpiRes.data.quotaBalance || 0,
+        targetValue: levelTargets[nextLevel] || 0,
+        bonusPercentUnlock: nextLevel ? 2 : 0,
       };
 
       // Map health from active status
       health.value = {
         status: kpiRes.data.isActive ? 'active' : 'critical',
-        daysRemaining: 0,
+        daysRemaining: kpiRes.data.daysUntilExpiry || 0,
       };
     }
 

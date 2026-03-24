@@ -39,6 +39,11 @@ const routes: RouteRecordRaw[] = [
     name: 'invite',
     redirect: (to) => ({ path: '/register', query: { ref: to.params.referralCode } }),
   },
+  {
+    path: '/r/:referralCode',
+    name: 'referral',
+    redirect: (to) => ({ path: '/register', query: { ref: to.params.referralCode } }),
+  },
 
   // ========== PROTECTED ROUTES (com AppLayout) ==========
   {

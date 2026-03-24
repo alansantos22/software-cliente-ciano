@@ -203,11 +203,11 @@ const router = useRouter();
 // =====================================================
 // Constants / Config
 // =====================================================
-const currentQuotaPrice = ref(2500);
-const lotProgress = ref(140);
-const lotSize = ref(200);
-const lotNumber = ref(3);
-const currentConstant = ref(7);
+const currentQuotaPrice = ref(0);
+const lotProgress = ref(0);
+const lotSize = ref(0);
+const lotNumber = ref(0);
+const currentConstant = ref(0);
 const paymentDay = ref(15);
 const currentPeriod = new Date().toISOString().slice(0, 7);
 
@@ -271,7 +271,7 @@ const sortedUsers = ref<any[]>([]);
 // =====================================================
 // Sales Chart Data (last 6 months)
 // =====================================================
-const salesChartData = ref([
+const salesChartData = ref<Array<{ label: string; novas: number; recompra: number }>>([
   { label: 'Set', novas: 0, recompra: 0 },
   { label: 'Out', novas: 0, recompra: 0 },
   { label: 'Nov', novas: 0, recompra: 0 },
@@ -280,19 +280,27 @@ const salesChartData = ref([
   { label: 'Fev', novas: 0, recompra: 0 },
 ]);
 
-const chartMaxTotal = computed(() =>
-  Math.max(...salesChartData.value.map(d => d.novas + d.recompra), 1),
-);
+const chartMaxTotal = computed(() => {
+  const maxVal = Math.max(...salesChartData.value.map(d => (d.novas || 0) + (d.recompra || 0)), 1);
+  return isNaN(maxVal) || maxVal === 0 ? 1 : maxVal;
+});
 
 function getBarHeightPercent(bar: typeof salesChartData.value[0]): number {
-  return Math.round(((bar.novas + bar.recompra) / chartMaxTotal.value) * 100);
+  const total = (bar.novas || 0) + (bar.recompra || 0);
+  const max = chartMaxTotal.value;
+  if (isNaN(total) || isNaN(max) || max === 0) return 0;
+  return Math.round((total / max) * 100);
 }
 
 // =====================================================
 // Helpers
 // =====================================================
 function formatCurrency(value: number): string {
-  return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
+  const num = Number(value);
+  if (isNaN(num) || value === null || value === undefined) {
+    return 'R$ 0,00';
+  }
+  return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(num);
 }
 
 function goToPayouts() {
@@ -321,16 +329,27 @@ function handleCrmAction(type: 'extrato' | 'bloquear' | 'mensagem', user: any) {
 // =====================================================
 onMounted(async () => {
   try {
-    const [kpiRes, titleRes, salesRes, crmRes, payoutStatsRes] = await Promise.all([
+    const [kpiRes, titleRes, salesRes, crmRes, payoutStatsRes, priceEngineRes] = await Promise.all([
       adminService.getKpis(),
       adminService.getTitleDistribution(),
       adminService.getSalesChart(),
       adminService.getCrmUsers(),
       adminService.getPayoutStats().catch(() => ({ data: null })),
+      adminService.getPriceEngine().catch(() => ({ data: null })),
     ]);
 
     if (kpiRes.data) {
       kpis.value = kpiRes.data;
+    }
+
+    // Load price engine data from API
+    if (priceEngineRes.data) {
+      const pe = priceEngineRes.data;
+      currentQuotaPrice.value = Number(pe.quotaPrice) || 2500;
+      lotProgress.value = Number(pe.lotSold) || 0;
+      lotSize.value = Number(pe.lotSize) || 50;
+      lotNumber.value = Number(pe.lotNumber) || 1;
+      currentConstant.value = Number(pe.currentConstant) || 0;
     }
 
     if (titleRes.data) {
@@ -344,7 +363,11 @@ onMounted(async () => {
     }
 
     if (salesRes.data && Array.isArray(salesRes.data)) {
-      salesChartData.value = salesRes.data;
+      salesChartData.value = salesRes.data.map((item: any) => ({
+        label: item.label || '',
+        novas: Number(item.novas) || 0,
+        recompra: Number(item.recompra) || 0,
+      }));
     }
 
     if (crmRes.data && Array.isArray(crmRes.data)) {

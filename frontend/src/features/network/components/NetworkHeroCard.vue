@@ -10,7 +10,7 @@
 
     <div class="hero-card__value">{{ formattedValue }}</div>
 
-    <div class="hero-card__footer">
+    <div class="hero-card__footer" v-if="trend">
       <span class="hero-card__trend">
         <font-awesome-icon icon="arrow-trend-up" />
         {{ trend }}
@@ -29,12 +29,16 @@ interface Props {
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  trend: '+0%',
+  trend: '',
 });
 
-const formattedValue = computed(() =>
-  new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(props.value),
-);
+const formattedValue = computed(() => {
+  const num = Number(props.value);
+  if (isNaN(num) || props.value === null || props.value === undefined) {
+    return 'R$ 0,00';
+  }
+  return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(num);
+});
 </script>
 
 <style lang="scss" scoped>

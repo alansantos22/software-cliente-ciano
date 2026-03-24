@@ -18,13 +18,13 @@
     <!-- KPI grid: hero + 3 cards -->
     <section class="network-view__kpis">
       <NetworkHeroCard
-        :value="12500.75"
-        trend="+5% este mês"
+        :value="networkStats.totalVolume"
+        :trend="networkStats.volumeTrend || ''"
       />
       <NetworkKpiCard
         label="Indicados Diretos"
         :value="String(directCount)"
-        trend-text="+2 esta semana"
+        :trend-text="networkStats.directTrend || ''"
         :trend-up="true"
       >
         <template #icon><font-awesome-icon icon="user-plus" /></template>
@@ -32,7 +32,7 @@
       <NetworkKpiCard
         label="Total na Rede"
         :value="String(flatNodes.length)"
-        trend-text="+3 novos"
+        :trend-text="networkStats.teamTrend || ''"
         :trend-up="true"
         :subtitle="`${networkStats.activeMembers} ativos · ${networkStats.inactiveMembers} inativo${networkStats.inactiveMembers !== 1 ? 's' : ''}`"
       >
@@ -201,6 +201,9 @@ const networkStats = computed(() => {
     totalDirect: s.totalDirect ?? flatNodes.value.filter((n: NetworkNode) => n.level === 1).length,
     totalTeam: s.totalTeam ?? flatNodes.value.length,
     totalVolume: s.totalVolume ?? 0,
+    volumeTrend: s.volumeTrend ?? '',
+    directTrend: s.directTrend ?? '',
+    teamTrend: s.teamTrend ?? '',
     activeMembers: s.activeMembers ?? flatNodes.value.filter((n: NetworkNode) => n.isActive).length,
     inactiveMembers: s.inactiveMembers ?? flatNodes.value.filter((n: NetworkNode) => !n.isActive).length,
     qualifiedBronzes: s.qualifiedBronzes ?? 0,

@@ -83,7 +83,7 @@
         <!-- Credenciais demo — apenas em desenvolvimento -->
         <div v-if="isDev" class="login-panel__demo">
           <span class="login-panel__demo-badge">DEV</span>
-          <p><strong>admin@ciano.com</strong> · qualquer senha</p>
+          <p><strong>admin@ciano.com</strong> · <strong>admin123</strong></p>
         </div>
 
       </div>

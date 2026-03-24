@@ -214,7 +214,10 @@ function getActivityTooltip(user: any): string {
 }
 
 function formatLtv(user: any): string {
-  const ltv = user.purchasedQuotas * props.quotaPrice;
+  const quotas = Number(user.purchasedQuotas) || 0;
+  const price = Number(props.quotaPrice) || 0;
+  const ltv = quotas * price;
+  if (isNaN(ltv) || ltv === 0) return 'R$ 0,00';
   if (ltv >= 1_000_000) return `R$ ${(ltv / 1_000_000).toFixed(1)}M`;
   if (ltv >= 1_000) return `R$ ${(ltv / 1_000).toFixed(0)}k`;
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(ltv);

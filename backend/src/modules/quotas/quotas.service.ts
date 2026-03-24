@@ -33,6 +33,10 @@ export class QuotasService {
     const state = await this.splitEngine.getState();
     const settings = await this.settingsRepo.findOne({ where: { id: 1 } });
 
+    // Get estimated yield from presentation metrics or use default
+    const presentationMetrics = settings?.presentationMetrics as Record<string, unknown> | null;
+    const estimatedYieldPerQuota = Number(presentationMetrics?.estimatedYieldPerQuota) || 200;
+
     return {
       currentPrice: Number(state.currentQuotaPrice),
       totalQuotasSold: state.totalQuotasSold,
@@ -43,6 +47,7 @@ export class QuotasService {
       minQuotas: settings?.minQuotas || 1,
       maxQuotasPerUser: settings?.maxQuotasPerUser || 200,
       totalQuotasAvailable: settings?.totalQuotasAvailable || 10000,
+      estimatedYieldPerQuota,
     };
   }
 

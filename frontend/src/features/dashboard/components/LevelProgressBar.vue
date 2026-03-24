@@ -77,16 +77,23 @@ const ICONS: Record<LevelKey, string> = {
   diamante: 'gem',
 };
 
-function levelLabel(key: LevelKey) { return LABELS[key]; }
-function levelIcon(key: LevelKey)  { return ICONS[key]; }
+function levelLabel(key: LevelKey | string) { return LABELS[key as LevelKey] ?? key ?? '—'; }
+function levelIcon(key: LevelKey | string)  { return ICONS[key as LevelKey] ?? 'circle'; }
 
-const progressPercent = computed(() =>
-  Math.min(100, Math.round((props.currentValue / props.targetValue) * 100))
-);
+const progressPercent = computed(() => {
+  const current = Number(props.currentValue) || 0;
+  const target = Number(props.targetValue) || 1;
+  if (target === 0 || isNaN(current) || isNaN(target)) return 0;
+  return Math.min(100, Math.round((current / target) * 100));
+});
 
 const captionText = computed(() => {
   if (props.currentLevel === 'diamante') return 'Parabéns! Você atingiu o título máximo.';
-  return `Requisito para ${LABELS[props.nextLevel]}: ${REQUIREMENTS[props.nextLevel]}`;
+  if (!props.nextLevel) return 'Continue crescendo sua rede para avançar!';
+  const label = LABELS[props.nextLevel as LevelKey];
+  const req = REQUIREMENTS[props.nextLevel as LevelKey];
+  if (!label || !req) return 'Continue crescendo sua rede para avançar!';
+  return `Requisito para ${label}: ${req}`;
 });
 </script>
 

@@ -93,23 +93,30 @@ const segments = computed(() => {
 });
 
 const totalFormatted = computed(() => {
-  if (total.value >= 1000)
-    return `R$${(total.value / 1000).toFixed(1)}k`;
-  return format(total.value);
+  const t = total.value;
+  if (isNaN(t) || t === 0) return 'R$ 0';
+  if (t >= 1000)
+    return `R$${(t / 1000).toFixed(1)}k`;
+  return format(t);
 });
 
 function format(value: number): string {
+  const num = Number(value);
+  if (isNaN(num) || value === null || value === undefined) {
+    return 'R$ 0';
+  }
   return new Intl.NumberFormat('pt-BR', {
     style: 'currency',
     currency: 'BRL',
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
-  }).format(value);
+  }).format(num);
 }
 
 function pct(value: number): string {
-  if (total.value === 0) return '0';
-  return ((value / total.value) * 100).toFixed(1).replace('.0', '');
+  const t = total.value;
+  if (isNaN(t) || t === 0 || isNaN(value)) return '0';
+  return ((value / t) * 100).toFixed(1).replace('.0', '');
 }
 </script>
 

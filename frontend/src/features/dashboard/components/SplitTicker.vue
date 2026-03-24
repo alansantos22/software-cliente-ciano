@@ -70,12 +70,16 @@ const urgencyClass = computed(() => {
 });
 
 function formatCurrency(value: number): string {
+  const num = Number(value);
+  if (isNaN(num) || value === null || value === undefined) {
+    return 'R$ 0';
+  }
   return new Intl.NumberFormat('pt-BR', {
     style: 'currency',
     currency: 'BRL',
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
-  }).format(value);
+  }).format(num);
 }
 </script>
 

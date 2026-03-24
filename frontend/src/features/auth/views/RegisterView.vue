@@ -35,6 +35,7 @@
           placeholder="João da Silva"
           :error="errors.fullName"
           required
+          @blur="validateField('fullName')"
         />
 
         <!-- E-mail -->
@@ -45,6 +46,7 @@
           placeholder="seu@email.com"
           :error="errors.email"
           required
+          @blur="validateField('email')"
         />
 
         <!-- CPF + Telefone lado a lado -->
@@ -54,15 +56,19 @@
             type="text"
             label="CPF"
             placeholder="000.000.000-00"
+            :maxlength="14"
             :error="errors.cpf"
             required
+            @blur="validateField('cpf')"
           />
           <DsInput
             v-model="form.phone"
             type="text"
             label="Telefone"
             placeholder="(00) 00000-0000"
+            :maxlength="15"
             :error="errors.phone"
+            @blur="validateField('phone')"
           />
         </div>
 
@@ -110,15 +116,32 @@
           />
         </div>
 
-        <!-- Senha + Confirmar -->
-        <DsInput
-          v-model="form.password"
-          type="password"
-          label="Senha"
-          placeholder="Mínimo 8 caracteres"
-          :error="errors.password"
-          required
-        />
+        <!-- Senha + medidor de força -->
+        <div class="register-form__password-field">
+          <DsInput
+            v-model="form.password"
+            type="password"
+            label="Senha"
+            placeholder="Mínimo 8 caracteres"
+            :error="errors.password"
+            required
+            @blur="validateField('password')"
+          />
+          <div v-if="form.password" class="password-strength">
+            <div class="password-strength__bars">
+              <span
+                v-for="i in 4"
+                :key="i"
+                class="password-strength__bar"
+                :class="{ 'is-active': i <= passwordStrength.score }"
+                :data-level="passwordStrength.level"
+              />
+            </div>
+            <span class="password-strength__label" :data-level="passwordStrength.level">
+              {{ passwordStrength.label }}
+            </span>
+          </div>
+        </div>
         <DsInput
           v-model="form.confirmPassword"
           type="password"
@@ -126,6 +149,7 @@
           placeholder="Repita a senha"
           :error="errors.confirmPassword"
           required
+          @blur="validateField('confirmPassword')"
         />
 
         <!-- Código de indicação (opcional) -->
@@ -171,7 +195,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted } from 'vue';
+import { ref, reactive, computed, onMounted, watch } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { DsInput, DsButton, DsAlert } from '@/design-system';
 import { authService } from '@/shared/services/auth.service';
@@ -212,6 +236,44 @@ const pixPlaceholder = computed(() => {
   }
 });
 
+// CPF algorithm validation
+function isValidCPF(raw: string): boolean {
+  const d = raw.replace(/\D/g, '');
+  if (d.length !== 11) return false;
+  if (/^(\d)\1+$/.test(d)) return false; // all same digits (000.000.000-00 etc)
+  let sum = 0;
+  for (let i = 0; i < 9; i++) sum += parseInt(d[i]) * (10 - i);
+  let r = (sum * 10) % 11;
+  if (r === 10 || r === 11) r = 0;
+  if (r !== parseInt(d[9])) return false;
+  sum = 0;
+  for (let i = 0; i < 10; i++) sum += parseInt(d[i]) * (11 - i);
+  r = (sum * 10) % 11;
+  if (r === 10 || r === 11) r = 0;
+  return r === parseInt(d[10]);
+}
+
+// Máscara automática — CPF: 000.000.000-00
+watch(() => form.cpf, (val) => {
+  const d = val.replace(/\D/g, '').slice(0, 11);
+  let masked = d;
+  if (d.length > 9)      masked = `${d.slice(0,3)}.${d.slice(3,6)}.${d.slice(6,9)}-${d.slice(9)}`;
+  else if (d.length > 6) masked = `${d.slice(0,3)}.${d.slice(3,6)}.${d.slice(6)}`;
+  else if (d.length > 3) masked = `${d.slice(0,3)}.${d.slice(3)}`;
+  if (masked !== val) form.cpf = masked;
+}, { flush: 'sync' });
+
+// Máscara automática — Telefone: (00) 00000-0000
+watch(() => form.phone, (val) => {
+  const d = val.replace(/\D/g, '').slice(0, 11);
+  let masked = d;
+  if (d.length > 10)     masked = `(${d.slice(0,2)}) ${d.slice(2,7)}-${d.slice(7)}`;
+  else if (d.length > 6) masked = `(${d.slice(0,2)}) ${d.slice(2,7)}-${d.slice(7)}`;
+  else if (d.length > 2) masked = `(${d.slice(0,2)}) ${d.slice(2)}`;
+  else if (d.length > 0) masked = `(${d}`;
+  if (masked !== val) form.phone = masked;
+}, { flush: 'sync' });
+
 // Pré-preenche o código de convite vindo da URL (?ref=CODIGO)
 const isReferralLocked = computed(() => !!route.query.ref);
 
@@ -235,6 +297,112 @@ const errors = reactive({
   referralCode:    '',
 });
 
+// ── Medidor de força da senha ───────────────────────────────
+const passwordStrength = computed(() => {
+  const p = form.password;
+  if (!p) return { score: 0, level: '', label: '' };
+
+  const hasMinLength  = p.length >= 8;
+  const hasGoodLength = p.length >= 12;
+  const hasMixed      = /[A-Z]/.test(p) && /[a-z]/.test(p);
+  const hasNumber     = /[0-9]/.test(p);
+  const hasSpecial    = /[^A-Za-z0-9]/.test(p);
+  const onlyDigits    = /^[0-9]+$/.test(p);
+  const onlyLetters   = /^[a-zA-Z]+$/.test(p);
+
+  let score = 0;
+  if (hasMinLength)  score++;
+  if (hasGoodLength) score++;
+  if (hasMixed)      score++;
+  if (hasNumber)     score++;
+  if (hasSpecial)    score++;
+
+  // "Forte" exige caractere especial — sem especial o máximo é "Boa"
+  if (!hasSpecial) score = Math.min(score, 3);
+  // Penalidade: apenas dígitos ou apenas letras → nunca passa de "Fraca"
+  if (onlyDigits || onlyLetters) score = Math.min(score, 1);
+  // Garantir intervalo [1, 4]
+  score = Math.max(1, Math.min(score, 4));
+
+  const levels: Record<number, { level: string; label: string }> = {
+    1: { level: 'weak',   label: 'Fraca' },
+    2: { level: 'fair',   label: 'Razoável' },
+    3: { level: 'good',   label: 'Boa' },
+    4: { level: 'strong', label: 'Forte' },
+  };
+  return { score, ...levels[score] };
+});
+
+// ── Validação por campo individual (blur) ───────────────────
+function validateField(field: string): void {
+  const e = errors as Record<string, string>;
+  const f = form as Record<string, string>;
+  e[field] = '';
+
+  switch (field) {
+    case 'fullName':
+      if (!f.fullName.trim()) e.fullName = 'Nome é obrigatório';
+      break;
+
+    case 'email':
+      if (!f.email) {
+        e.email = 'E-mail é obrigatório';
+      } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.email)) {
+        e.email = 'E-mail inválido';
+      }
+      break;
+
+    case 'cpf':
+      if (!f.cpf) {
+        e.cpf = 'CPF é obrigatório';
+      } else if (f.cpf.replace(/\D/g, '').length !== 11) {
+        e.cpf = 'CPF incompleto — insira todos os 11 dígitos';
+      } else if (!isValidCPF(f.cpf)) {
+        e.cpf = 'CPF inválido';
+      }
+      break;
+
+    case 'phone':
+      if (f.phone) {
+        const d = f.phone.replace(/\D/g, '');
+        if (d.length < 10 || d.length > 11) e.phone = 'Telefone inválido (DDD + número)';
+      }
+      break;
+
+    case 'pixKey':
+      if (form.pixType && f.pixKey) {
+        if (form.pixType === 'cpf' && f.pixKey.replace(/\D/g, '').length !== 11)
+          e.pixKey = 'CPF da chave PIX deve ter 11 dígitos';
+        else if (form.pixType === 'email' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.pixKey))
+          e.pixKey = 'E-mail da chave PIX inválido';
+        else if (form.pixType === 'phone') {
+          const d = f.pixKey.replace(/\D/g, '');
+          if (d.length < 10 || d.length > 11) e.pixKey = 'Telefone da chave PIX inválido';
+        }
+      }
+      break;
+
+    case 'password':
+      if (!f.password) {
+        e.password = 'Senha é obrigatória';
+      } else if (f.password.length < 8) {
+        e.password = 'Mínimo de 8 caracteres';
+      }
+      // re-check confirm if already touched
+      if (errors.confirmPassword && f.password !== f.confirmPassword)
+        e.confirmPassword = 'As senhas não coincidem';
+      break;
+
+    case 'confirmPassword':
+      if (!f.confirmPassword) {
+        e.confirmPassword = 'Confirme a senha';
+      } else if (f.password !== f.confirmPassword) {
+        e.confirmPassword = 'As senhas não coincidem';
+      }
+      break;
+  }
+}
+
 function validate(): boolean {
   let valid = true;
 
@@ -257,6 +425,36 @@ function validate(): boolean {
   if (!form.cpf) {
     errors.cpf = 'CPF é obrigatório';
     valid = false;
+  } else if (form.cpf.replace(/\D/g, '').length !== 11) {
+    errors.cpf = 'CPF incompleto — insira todos os 11 dígitos';
+    valid = false;
+  } else if (!isValidCPF(form.cpf)) {
+    errors.cpf = 'CPF inválido';
+    valid = false;
+  }
+
+  if (form.phone) {
+    const phoneDigits = form.phone.replace(/\D/g, '');
+    if (phoneDigits.length < 10 || phoneDigits.length > 11) {
+      errors.phone = 'Telefone inválido (DDD + número)';
+      valid = false;
+    }
+  }
+
+  if (form.pixType && form.pixKey) {
+    if (form.pixType === 'cpf' && form.pixKey.replace(/\D/g, '').length !== 11) {
+      errors.pixKey = 'CPF da chave PIX deve ter 11 dígitos';
+      valid = false;
+    } else if (form.pixType === 'email' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.pixKey)) {
+      errors.pixKey = 'E-mail da chave PIX inválido';
+      valid = false;
+    } else if (form.pixType === 'phone') {
+      const pix = form.pixKey.replace(/\D/g, '');
+      if (pix.length < 10 || pix.length > 11) {
+        errors.pixKey = 'Telefone da chave PIX inválido';
+        valid = false;
+      }
+    }
   }
 
   if (!form.password) {
@@ -300,7 +498,13 @@ async function handleRegister() {
     setTimeout(() => router.push('/login'), 2000);
   } catch (e: any) {
     const msg = e?.response?.data?.message;
-    error.value = typeof msg === 'string' ? msg : 'Erro ao realizar cadastro. Tente novamente.';
+    if (Array.isArray(msg)) {
+      error.value = msg.join(' • ');
+    } else if (typeof msg === 'string') {
+      error.value = msg;
+    } else {
+      error.value = 'Erro ao realizar cadastro. Tente novamente.';
+    }
   } finally {
     isLoading.value = false;
   }
@@ -467,6 +671,58 @@ async function handleRegister() {
     margin-top: 2px;
   }
 
+  // ── Campo de senha + medidor ──
+  &__password-field {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-2;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// MEDIDOR DE FORÇA DA SENHA
+// ═══════════════════════════════════════════════════════════════
+.password-strength {
+  display: flex;
+  align-items: center;
+  gap: $spacing-3;
+
+  &__bars {
+    display: flex;
+    gap: 4px;
+    flex: 1;
+  }
+
+  &__bar {
+    flex: 1;
+    height: 4px;
+    border-radius: 99px;
+    background: var(--border-default);
+    transition: background 0.25s ease;
+
+    &.is-active {
+      &[data-level='weak']   { background: #ef4444; }
+      &[data-level='fair']   { background: #f97316; }
+      &[data-level='good']   { background: #eab308; }
+      &[data-level='strong'] { background: #22c55e; }
+    }
+  }
+
+  &__label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    white-space: nowrap;
+    min-width: 60px;
+    text-align: right;
+
+    &[data-level='weak']   { color: #ef4444; }
+    &[data-level='fair']   { color: #f97316; }
+    &[data-level='good']   { color: #eab308; }
+    &[data-level='strong'] { color: #22c55e; }
+  }
+}
+
+.register-form {
   &__referral-hint {
     margin-top: calc(-1 * #{$spacing-2});
     font-size: 0.8125rem;

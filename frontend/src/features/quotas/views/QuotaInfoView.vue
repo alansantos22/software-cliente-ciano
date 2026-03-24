@@ -194,9 +194,9 @@ const steps = [
 // Safety margin: estimates are shown 10% below last-period yield
 // so clients are pleasantly surprised rather than disappointed.
 const SAFETY_MARGIN = 0.10;
-// Last-period gross yield per cota (R$) — will come from API in production
-const GROSS_YIELD_PER_QUOTA = 200;
-const netYieldPerQuota = Math.round(GROSS_YIELD_PER_QUOTA * (1 - SAFETY_MARGIN));
+// Gross yield per quota (R$) — loaded from API
+const grossYieldPerQuota = ref(200); // default fallback
+const netYieldPerQuota = computed(() => Math.round(grossYieldPerQuota.value * (1 - SAFETY_MARGIN)));
 
 interface Package {
   id: string;
@@ -213,7 +213,7 @@ interface Package {
   ctaLabel: string;
 }
 
-const packages: Package[] = [
+const packages = computed<Package[]>(() => [
   {
     id: 'socio',
     name: 'Sócio',
@@ -223,7 +223,7 @@ const packages: Package[] = [
     levelEmoji: 'handshake',
     levelColor: '#0097a7',
     hotelSubtitle: 'Grupo Ciano',
-    monthlyEstimate: netYieldPerQuota,
+    monthlyEstimate: netYieldPerQuota.value,
     benefits: [
       'Participação nos lucros do Grupo Ciano',
       'Participação na valorização do grupo',
@@ -242,7 +242,7 @@ const packages: Package[] = [
     levelEmoji: 'rocket',
     levelColor: '#6B7280',
     hotelSubtitle: 'Resort Ciano Prime',
-    monthlyEstimate: 10 * netYieldPerQuota,
+    monthlyEstimate: 10 * netYieldPerQuota.value,
     benefits: [
       'Todos os benefícios do Sócio',
       '30% de desconto em pousadas Ciano',
@@ -261,7 +261,7 @@ const packages: Package[] = [
     levelEmoji: 'crown',
     levelColor: '#D97706',
     hotelSubtitle: 'Resort Ciano VIP',
-    monthlyEstimate: 20 * netYieldPerQuota,
+    monthlyEstimate: 20 * netYieldPerQuota.value,
     benefits: [
       'Todos os benefícios do Platinum',
       '50% de desconto em pousadas Ciano',
@@ -281,7 +281,7 @@ const packages: Package[] = [
     levelEmoji: 'building-columns',
     levelColor: '#7c3aed',
     hotelSubtitle: 'Resort Ciano Imperial',
-    monthlyEstimate: 60 * netYieldPerQuota,
+    monthlyEstimate: 60 * netYieldPerQuota.value,
     benefits: [
       'Todos os benefícios do VIP',
       'Hospedagem gratuita ilimitada (até 3 acompanhantes)',
@@ -294,7 +294,7 @@ const packages: Package[] = [
     ],
     ctaLabel: 'Tornar-se Imperial',
   },
-];
+]);
 
 // ─── Split countdown ──────────────────────────────────────
 const splitDate = new Date();
@@ -322,8 +322,9 @@ onMounted(async () => {
   countdownTimer = setInterval(() => { remaining.value = computeRemaining(); }, 1000);
   try {
     const res = await quotasService.getConfig();
-    if (res.data?.quotaPrice) quotaPrice.value = res.data.quotaPrice;
-  } catch { /* use default */ }
+    if (res.data?.currentPrice) quotaPrice.value = res.data.currentPrice;
+    if (res.data?.estimatedYieldPerQuota) grossYieldPerQuota.value = res.data.estimatedYieldPerQuota;
+  } catch { /* use defaults */ }
 });
 
 onUnmounted(() => {
@@ -332,12 +333,16 @@ onUnmounted(() => {
 
 // ─── Helpers ───────────────────────────────────────────────
 function formatCurrency(value: number): string {
+  const num = Number(value);
+  if (isNaN(num) || value === null || value === undefined) {
+    return 'R$ 0';
+  }
   return new Intl.NumberFormat('pt-BR', {
     style: 'currency',
     currency: 'BRL',
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
-  }).format(value);
+  }).format(num);
 }
 
 function goToCheckout(packageId?: string) {

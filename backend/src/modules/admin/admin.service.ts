@@ -149,15 +149,26 @@ export class AdminService {
 
   async getPriceEngine() {
     const state = await this.splitEngine.getState();
+    
+    // Calculate lot progress: how many quotas sold in current lot
+    // Target for lot N is 50 * 2^splitCount
+    // Previous lot threshold = sum of all previous targets
+    // For simplicity: previousTarget = splitCount > 0 ? 50 * (2^splitCount - 1) : 0
+    // Actually: each split doubles, so cumulative before current = 50 * (2^splitCount - 1)
+    const currentTarget = state.nextEventTarget || 50;
+    const previousTarget = state.splitCount > 0 ? 50 * (Math.pow(2, state.splitCount) - 1) : 0;
+    const lotSold = Math.max(0, state.totalQuotasSold - previousTarget);
+    
     return {
       quotaPrice: Number(state.currentQuotaPrice),
       totalQuotasSold: state.totalQuotasSold,
       splitCount: state.splitCount,
       currentPhase: state.currentPhase,
-      nextEventTarget: state.nextEventTarget,
+      nextEventTarget: currentTarget,
       nextEventLabel: state.nextEventLabel,
-      lotSize: state.nextEventTarget,
-      lotNumber: state.currentPhase,
+      lotSize: currentTarget,
+      lotSold: lotSold,
+      lotNumber: state.splitCount + 1,
       currentConstant: state.currentPhase,
     };
   }

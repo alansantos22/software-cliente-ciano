@@ -100,45 +100,78 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
+import { quotasService } from '@/shared/services/quotas.service';
 
-// --- Constants (mirrors QuotaInfoView.vue) ---
-const QUOTA_PRICE = 2500;           // R$ 2.500,00 per quota — canonical value
-const GROSS_YIELD_PER_QUOTA = 200;  // R$ per quota last period
-const SAFETY_MARGIN = 0.10;         // 10% conservative buffer on displayed estimates
-const NET_YIELD_PER_QUOTA = Math.round(GROSS_YIELD_PER_QUOTA * (1 - SAFETY_MARGIN)); // 180
-const DIRECT_COMMISSION = 0.10;     // 10% of referred purchase
+// --- Props with defaults ---
+interface Props {
+  quotaPrice?: number;
+  yieldPerQuota?: number;
+  directCommission?: number;
+}
+
+const props = withDefaults(defineProps<Props>(), {
+  quotaPrice: 2500,
+  yieldPerQuota: 180,      // R$ per quota after safety margin
+  directCommission: 0.10,  // 10% of referred purchase
+});
+
+// --- State ---
+const currentQuotaPrice = ref(props.quotaPrice);
+const currentYieldPerQuota = ref(props.yieldPerQuota);
 const AVG_QUOTA_PURCHASE = 10_000;  // avg R$ 10k purchase per new referral (4 cotas)
 
-const investment = ref(10 * QUOTA_PRICE); // default: 10 cotas = R$ 25.000
+const investment = ref(10 * currentQuotaPrice.value); // default: 10 cotas
 const referrals = ref(3);
 
+// --- Load config from API ---
+onMounted(async () => {
+  try {
+    const res = await quotasService.getConfig();
+    if (res.data?.quotaPrice) {
+      currentQuotaPrice.value = res.data.quotaPrice;
+      investment.value = 10 * currentQuotaPrice.value;
+    }
+    if (res.data?.yieldPerQuota) {
+      currentYieldPerQuota.value = res.data.yieldPerQuota;
+    }
+  } catch { /* use defaults */ }
+});
+
 const monthlyDividends = computed(() => {
-  const quotas = Math.round(investment.value / QUOTA_PRICE);
-  return quotas * NET_YIELD_PER_QUOTA;
+  const quotas = Math.round(investment.value / currentQuotaPrice.value);
+  return quotas * currentYieldPerQuota.value;
 });
 
 const referralBonus = computed(() =>
-  Math.round(referrals.value * AVG_QUOTA_PURCHASE * DIRECT_COMMISSION)
+  Math.round(referrals.value * AVG_QUOTA_PURCHASE * props.directCommission)
 );
 
 const totalMonthly = computed(() =>
   monthlyDividends.value + referralBonus.value
 );
 
-const roiPercent = computed(() =>
-  investment.value > 0
-    ? ((totalMonthly.value / investment.value) * 100).toFixed(1)
-    : '0.0'
-);
+const roiPercent = computed(() => {
+  const inv = Number(investment.value) || 0;
+  const total = Number(totalMonthly.value) || 0;
+  if (inv <= 0 || isNaN(total)) return '0.0';
+  return ((total / inv) * 100).toFixed(1);
+});
+
+// Expose for template
+const QUOTA_PRICE = computed(() => currentQuotaPrice.value);
 
 function formatCurrency(value: number): string {
+  const num = Number(value);
+  if (isNaN(num) || value === null || value === undefined) {
+    return 'R$ 0';
+  }
   return new Intl.NumberFormat('pt-BR', {
     style: 'currency',
     currency: 'BRL',
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
-  }).format(value);
+  }).format(num);
 }
 </script>
 

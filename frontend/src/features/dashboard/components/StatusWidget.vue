@@ -41,11 +41,17 @@ const statusTitle = computed(() => {
 });
 
 const statusDetail = computed(() => {
-  if (props.status === 'active')
-    return `Renovação necessária em ${props.daysRemaining} dias`;
-  if (props.status === 'warning')
-    return `${props.daysRemaining} dias para inatividade - compre uma cota`;
-  return `Apenas ${props.daysRemaining} dia(s)! Seus bônus estão em risco`;
+  const days = props.daysRemaining || 0;
+  if (props.status === 'active') {
+    if (days <= 0) return 'Você está ativo e pode receber comissões';
+    return `Renovação necessária em ${days} dias`;
+  }
+  if (props.status === 'warning') {
+    if (days <= 0) return 'Última chance para renovar!';
+    return `${days} dias para inatividade - compre uma cota`;
+  }
+  if (days <= 0) return 'Conta expirada! Seus bônus estão suspensos';
+  return `Apenas ${days} dia(s)! Seus bônus estão em risco`;
 });
 </script>
 
