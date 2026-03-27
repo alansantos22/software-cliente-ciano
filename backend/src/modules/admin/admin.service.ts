@@ -33,6 +33,9 @@ export class AdminService {
 
   async getDashboardKpis() {
     const month = getCurrentPeriod();
+    const now = new Date();
+    const prevDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const prevMonth = `${prevDate.getFullYear()}-${String(prevDate.getMonth() + 1).padStart(2, '0')}`;
     const sixMonthsAgo = new Date();
     sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
 
@@ -42,7 +45,7 @@ export class AdminService {
 
     const totalUsersCount = await this.userRepo.count({ where: { deletedAt: IsNull() } });
 
-    const monthRevenue = await this.txnRepo
+    const monthRevenueRow = await this.txnRepo
       .createQueryBuilder('t')
       .select('SUM(t.amount)', 'total')
       .where('t.type = :type', { type: TransactionType.PURCHASE })
@@ -50,14 +53,22 @@ export class AdminService {
       .andWhere('t.status = :status', { status: TransactionStatus.COMPLETED })
       .getRawOne();
 
-    const totalRevenue = await this.txnRepo
+    const prevMonthRevenueRow = await this.txnRepo
+      .createQueryBuilder('t')
+      .select('SUM(t.amount)', 'total')
+      .where('t.type = :type', { type: TransactionType.PURCHASE })
+      .andWhere('t.reference_month = :month', { month: prevMonth })
+      .andWhere('t.status = :status', { status: TransactionStatus.COMPLETED })
+      .getRawOne();
+
+    const totalRevenueRow = await this.txnRepo
       .createQueryBuilder('t')
       .select('SUM(t.amount)', 'total')
       .where('t.type = :type', { type: TransactionType.PURCHASE })
       .andWhere('t.status = :status', { status: TransactionStatus.COMPLETED })
       .getRawOne();
 
-    const monthQuotas = await this.txnRepo
+    const monthQuotasRow = await this.txnRepo
       .createQueryBuilder('t')
       .select('SUM(t.quotas_affected)', 'total')
       .where('t.type = :type', { type: TransactionType.PURCHASE })
@@ -65,53 +76,76 @@ export class AdminService {
       .andWhere('t.status = :status', { status: TransactionStatus.COMPLETED })
       .getRawOne();
 
+    const prevMonthQuotasRow = await this.txnRepo
+      .createQueryBuilder('t')
+      .select('SUM(t.quotas_affected)', 'total')
+      .where('t.type = :type', { type: TransactionType.PURCHASE })
+      .andWhere('t.reference_month = :month', { month: prevMonth })
+      .andWhere('t.status = :status', { status: TransactionStatus.COMPLETED })
+      .getRawOne();
+
     const settings = await this.settingsRepo.findOne({ where: { id: 1 } });
     const dividendPoolPercent = settings?.profitPayoutPercentage || 20;
-    const totalRev = parseFloat(totalRevenue?.total || '0');
 
-    const pendingPayouts = await this.payoutRepo.count({ where: { status: PayoutStatus.PENDING } });
-    const pendingPayoutsTotal = await this.payoutRepo
+    const monthRev = parseFloat(monthRevenueRow?.total || '0');
+    const prevMonthRev = parseFloat(prevMonthRevenueRow?.total || '0');
+    const totalRev = parseFloat(totalRevenueRow?.total || '0');
+    const monthQ = parseInt(monthQuotasRow?.total || '0', 10);
+    const prevMonthQ = parseInt(prevMonthQuotasRow?.total || '0', 10);
+
+    const calcTrend = (current: number, previous: number): number => {
+      if (previous === 0) return current > 0 ? 100 : 0;
+      return Math.round(((current - previous) / previous) * 100);
+    };
+
+    const pendingPayoutsCount = await this.payoutRepo.count({ where: { status: PayoutStatus.PENDING } });
+    const pendingPayoutsTotalRow = await this.payoutRepo
       .createQueryBuilder('p')
       .select('SUM(p.amount)', 'total')
       .where('p.status = :status', { status: PayoutStatus.PENDING })
       .getRawOne();
 
     return {
-      monthRevenue: parseFloat(monthRevenue?.total || '0'),
+      monthRevenue: monthRev,
+      monthRevenueTrend: calcTrend(monthRev, prevMonthRev),
       activeUsers,
       retentionRate: totalUsersCount > 0 ? Math.round((activeUsers / totalUsersCount) * 100) : 0,
-      monthQuotas: parseInt(monthQuotas?.total || '0', 10),
+      monthQuotas: monthQ,
+      monthQuotasTrend: calcTrend(monthQ, prevMonthQ),
       totalRevenue: totalRev,
-      dividendPool: totalRev * dividendPoolPercent / 100,
+      dividendPool: monthRev * dividendPoolPercent / 100,
       dividendPoolPercent,
-      pendingPayoutsCount: pendingPayouts,
-      pendingPayoutsTotal: parseFloat(pendingPayoutsTotal?.total || '0'),
+      pendingPayoutsCount,
+      pendingPayoutsTotal: parseFloat(pendingPayoutsTotalRow?.total || '0'),
     };
   }
 
   async getSalesChart() {
-    const months: string[] = [];
+    const PT_MONTHS = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
     const now = new Date();
+    const entries: Array<{ key: string; label: string }> = [];
     for (let i = 5; i >= 0; i--) {
       const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      months.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`);
+      entries.push({
+        key: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`,
+        label: PT_MONTHS[d.getMonth()],
+      });
     }
 
     const result = [];
-    for (const month of months) {
-      const newSales = await this.txnRepo
+    for (const { key, label } of entries) {
+      const novasRow = await this.txnRepo
         .createQueryBuilder('t')
-        .select('SUM(t.amount)', 'total')
+        .select('SUM(t.quotas_affected)', 'total')
         .where('t.type = :type', { type: TransactionType.PURCHASE })
-        .andWhere('t.reference_month = :month', { month })
-        .andWhere('t.description LIKE :desc', { desc: '%Compra%' })
+        .andWhere('t.reference_month = :month', { month: key })
         .andWhere('t.status = :status', { status: TransactionStatus.COMPLETED })
         .getRawOne();
 
       result.push({
-        monthLabel: month,
-        newSales: parseFloat(newSales?.total || '0'),
-        repurchase: 0, // Differentiation can be refined with first-purchase flag
+        label,
+        novas: parseInt(novasRow?.total || '0', 10),
+        recompra: 0,
       });
     }
 
@@ -127,21 +161,19 @@ export class AdminService {
       .groupBy('u.title')
       .getRawMany();
 
-    const total = dist.reduce((s: number, d: any) => s + parseInt(d.count, 10), 0);
-
-    return dist.map((d: any) => ({
-      title: d.title,
-      count: parseInt(d.count, 10),
-      percentage: total > 0 ? Math.round((parseInt(d.count, 10) / total) * 100) : 0,
-    }));
+    const result: Record<string, number> = { bronze: 0, prata: 0, ouro: 0, diamante: 0 };
+    for (const d of dist) {
+      const key = (d.title as string)?.toLowerCase();
+      if (key in result) result[key] = parseInt(d.count, 10);
+    }
+    return result;
   }
 
   async getCrmUsers() {
     return this.userRepo.find({
       where: { deletedAt: IsNull() },
       order: { totalEarnings: 'DESC' },
-      take: 10,
-      select: ['id', 'name', 'title', 'totalEarnings', 'isActive', 'email'],
+      select: ['id', 'name', 'title', 'totalEarnings', 'isActive', 'email', 'purchasedQuotas', 'splitQuotas', 'quotaBalance', 'partnerLevel', 'lastPurchaseDate'],
     });
   }
 
@@ -298,7 +330,21 @@ export class AdminService {
     const completed = await this.payoutRepo.count({ where: { status: PayoutStatus.COMPLETED } });
     const failed = await this.payoutRepo.count({ where: { status: PayoutStatus.FAILED } });
 
-    return { pending, processing, completed, failed, total: pending + processing + completed + failed };
+    const pendingTotalRow = await this.payoutRepo
+      .createQueryBuilder('p')
+      .select('SUM(p.amount)', 'total')
+      .where('p.status = :status', { status: PayoutStatus.PENDING })
+      .getRawOne();
+
+    return {
+      pending,
+      processing,
+      completed,
+      failed,
+      total: pending + processing + completed + failed,
+      pendingCount: pending,
+      pendingTotal: parseFloat(pendingTotalRow?.total || '0'),
+    };
   }
 
   async processPayoutAction(payoutId: string, action: string, transactionId?: string, failureReason?: string) {
@@ -395,5 +441,52 @@ export class AdminService {
   async updateCareerPlan(titleId: number, data: Partial<TitleRequirement>) {
     await this.titleReqRepo.update(titleId, data);
     return this.titleReqRepo.findOne({ where: { id: titleId } });
+  }
+
+  // ─── Audit Log ─────────────────────────────────────────
+
+  async getTransactionLog(filters: { type?: string; userId?: string; month?: string; page?: number; limit?: number }) {
+    const page = filters.page || 1;
+    const limit = Math.min(filters.limit || 50, 200);
+    const skip = (page - 1) * limit;
+
+    const qb = this.txnRepo
+      .createQueryBuilder('t')
+      .leftJoinAndSelect('t.user', 'u')
+      .orderBy('t.created_at', 'DESC')
+      .skip(skip)
+      .take(limit);
+
+    if (filters.type) {
+      qb.andWhere('t.type = :type', { type: filters.type });
+    }
+    if (filters.userId) {
+      qb.andWhere('t.user_id = :userId', { userId: filters.userId });
+    }
+    if (filters.month) {
+      qb.andWhere('t.reference_month = :month', { month: filters.month });
+    }
+
+    const [items, total] = await qb.getManyAndCount();
+
+    return {
+      total,
+      page,
+      limit,
+      items: items.map(t => ({
+        id: t.id,
+        createdAt: t.createdAt,
+        completedAt: t.completedAt,
+        type: t.type,
+        status: t.status,
+        amount: Number(t.amount),
+        quotasAffected: t.quotasAffected,
+        description: t.description,
+        referenceMonth: t.referenceMonth,
+        userId: t.userId,
+        userName: (t.user as any)?.name || '—',
+        userEmail: (t.user as any)?.email || '—',
+      })),
+    };
   }
 }

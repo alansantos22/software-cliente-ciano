@@ -1,9 +1,12 @@
-import { Injectable, BadRequestException, Logger } from '@nestjs/common';
+import { Injectable, BadRequestException, ForbiddenException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, IsNull, Not } from 'typeorm';
+import { Repository, IsNull, Not, Like, In } from 'typeorm';
 import * as argon2 from 'argon2';
 import { User } from '../users/entities/user.entity';
 import { QuotaTransaction } from '../quotas/entities/quota-transaction.entity';
+import { QuotaSystemState } from '../quotas/entities/quota-system-state.entity';
+import { Earning } from '../earnings/entities/earning.entity';
+import { PayoutRequest } from '../payouts/entities/payout-request.entity';
 import { GlobalFinancialSettings } from './entities/global-financial-settings.entity';
 import { TransactionType, TransactionStatus } from '../../shared/interfaces/enums';
 import { getCurrentPeriod, generateRandomCode } from '../../shared/utils/helpers';
@@ -15,6 +18,9 @@ export class AdminManagerService {
   constructor(
     @InjectRepository(User) private readonly userRepo: Repository<User>,
     @InjectRepository(QuotaTransaction) private readonly txnRepo: Repository<QuotaTransaction>,
+    @InjectRepository(QuotaSystemState) private readonly stateRepo: Repository<QuotaSystemState>,
+    @InjectRepository(Earning) private readonly earningRepo: Repository<Earning>,
+    @InjectRepository(PayoutRequest) private readonly payoutRepo: Repository<PayoutRequest>,
     @InjectRepository(GlobalFinancialSettings) private readonly settingsRepo: Repository<GlobalFinancialSettings>,
   ) {}
 
@@ -28,6 +34,11 @@ export class AdminManagerService {
     if (!valid) {
       throw new BadRequestException('Senha de gerente inválida');
     }
+  }
+
+  async hasPassword(): Promise<{ hasPassword: boolean }> {
+    const settings = await this.settingsRepo.findOne({ where: { id: 1 } });
+    return { hasPassword: !!settings?.managerPasswordHash };
   }
 
   async setPassword(password: string) {
@@ -168,5 +179,56 @@ export class AdminManagerService {
       order: { deletedAt: 'DESC' },
       select: ['id', 'name', 'email', 'deletedAt'],
     });
+  }
+
+  async purgeTestData(): Promise<{ deletedUsers: number; deletedTransactions: number; deletedEarnings: number; deletedPayouts: number }> {
+    if (process.env.NODE_ENV === 'production') {
+      throw new ForbiddenException('Operação não permitida em produção');
+    }
+
+    const testUsers = await this.userRepo.find({
+      where: { email: Like('e2e_test_%') },
+      withDeleted: true,
+      select: ['id'],
+    });
+
+    if (testUsers.length === 0) {
+      return { deletedUsers: 0, deletedTransactions: 0, deletedEarnings: 0, deletedPayouts: 0 };
+    }
+
+    const ids = testUsers.map(u => u.id);
+
+    // Soma as cotas de compra dos usuários de teste para subtrair do contador global
+    const testQuotasRow = await this.txnRepo
+      .createQueryBuilder('t')
+      .select('SUM(t.quotas_affected)', 'total')
+      .where('t.userId IN (:...ids)', { ids })
+      .andWhere('t.type = :type', { type: TransactionType.PURCHASE })
+      .andWhere('t.status = :status', { status: TransactionStatus.COMPLETED })
+      .getRawOne();
+    const testQuotas = parseInt(testQuotasRow?.total || '0', 10);
+
+    const { affected: deletedTransactions = 0 } = await this.txnRepo.delete({ userId: In(ids) });
+    const { affected: deletedEarnings = 0 } = await this.earningRepo.delete({ userId: In(ids) });
+    const { affected: deletedPayouts = 0 } = await this.payoutRepo.delete({ userId: In(ids) });
+    await this.userRepo.delete({ id: In(ids) });
+
+    // Corrige o contador global de cotas vendidas
+    if (testQuotas > 0) {
+      const state = await this.stateRepo.findOne({ where: { id: 1 } });
+      if (state) {
+        state.totalQuotasSold = Math.max(0, state.totalQuotasSold - testQuotas);
+        await this.stateRepo.save(state);
+      }
+    }
+
+    this.logger.warn(`🧹 Test data purged: ${testUsers.length} users, ${deletedTransactions} txns, ${deletedEarnings} earnings, ${deletedPayouts} payouts`);
+
+    return {
+      deletedUsers: testUsers.length,
+      deletedTransactions: deletedTransactions ?? 0,
+      deletedEarnings: deletedEarnings ?? 0,
+      deletedPayouts: deletedPayouts ?? 0,
+    };
   }
 }

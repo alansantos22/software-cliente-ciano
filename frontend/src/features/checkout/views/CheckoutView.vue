@@ -204,10 +204,6 @@ function onPixPaid() {
   });
 }
 
-function goToDashboard() {
-  router.push('/dashboard');
-}
-
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function getTargetLevel(total: number): string {
   if (total >= 60) return 'imperial';

@@ -12,8 +12,11 @@ export interface RegisterPayload {
   phone: string;
   city: string;
   state: string;
+  pixType?: string;
   pixKey: string;
-  password: string;
+  quotaCount?: number;
+  quotaType?: string;
+  password?: string;
   referralCode?: string;
 }
 

@@ -4,7 +4,7 @@
 // ============================================================
 
 import { defineStore } from 'pinia';
-import { ref, computed } from 'vue';
+import { ref } from 'vue';
 import { adminService } from '@/shared/services/admin.service';
 
 export interface ManagerUser {
@@ -50,14 +50,21 @@ export const useAdminManagerStore = defineStore('adminManager', () => {
   }
 
   // ── Password ───────────────────────────────────────────────
+  async function checkPasswordExists(): Promise<void> {
+    try {
+      const res = await adminService.hasManagerPassword();
+      hasPassword.value = res.data?.hasPassword === true;
+    } catch { /* fail silently */ }
+  }
+
   async function setPassword(password: string): Promise<void> {
-    await adminService.setManagerPassword(password);
+    await adminService.setManagerPassword({ password });
     hasPassword.value = true;
   }
 
   async function verifyPassword(password: string): Promise<boolean> {
     try {
-      const res = await adminService.verifyManagerPassword(password);
+      const res = await adminService.verifyManagerPassword({ password, operation: 'verify' });
       return res.data?.valid === true;
     } catch {
       return false;
@@ -86,7 +93,7 @@ export const useAdminManagerStore = defineStore('adminManager', () => {
     pwd: string,
   ): Promise<{ ok: boolean; error?: string }> {
     try {
-      await adminService.addQuotas(userId, qty, pwd);
+      await adminService.addQuotas(userId, { quantity: qty, managerPassword: pwd });
       await loadUsers();
       return { ok: true };
     } catch (e: any) {
@@ -100,7 +107,7 @@ export const useAdminManagerStore = defineStore('adminManager', () => {
     pwd: string,
   ): Promise<{ ok: boolean; error?: string }> {
     try {
-      await adminService.removeQuotas(userId, qty, pwd);
+      await adminService.removeQuotas(userId, { quantity: qty, managerPassword: pwd });
       await loadUsers();
       return { ok: true };
     } catch (e: any) {
@@ -114,7 +121,7 @@ export const useAdminManagerStore = defineStore('adminManager', () => {
     pwd: string,
   ): Promise<{ ok: boolean; error?: string }> {
     try {
-      await adminService.changeSponsor(userId, newSponsorId, pwd);
+      await adminService.changeSponsor(userId, { newSponsorId, managerPassword: pwd });
       await loadUsers();
       return { ok: true };
     } catch (e: any) {
@@ -127,7 +134,7 @@ export const useAdminManagerStore = defineStore('adminManager', () => {
     pwd: string,
   ): Promise<{ ok: boolean; error?: string }> {
     try {
-      await adminService.deleteUser(userId, pwd);
+      await adminService.deleteUser(userId, { managerPassword: pwd });
       await loadUsers();
       await loadTrash();
       return { ok: true };
@@ -141,7 +148,7 @@ export const useAdminManagerStore = defineStore('adminManager', () => {
     pwd: string,
   ): Promise<{ ok: boolean; error?: string }> {
     try {
-      await adminService.restoreUser(userId, pwd);
+      await adminService.restoreUser(userId, { managerPassword: pwd });
       await loadUsers();
       await loadTrash();
       return { ok: true };
@@ -156,6 +163,7 @@ export const useAdminManagerStore = defineStore('adminManager', () => {
     hasPassword,
     loadUsers,
     loadTrash,
+    checkPasswordExists,
     setPassword,
     verifyPassword,
     getDaysRemaining,

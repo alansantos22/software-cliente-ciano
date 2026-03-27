@@ -1,0 +1,19 @@
+{
+  "name": "ciano-e2e-tests",
+  "version": "1.0.0",
+  "description": "Testes E2E automatizados do sistema Ciano",
+  "scripts": {
+    "test": "playwright test",
+    "test:api": "playwright test tests/api/ --project=api",
+    "test:ui": "playwright test tests/ui/ --project=ui",
+    "test:auth": "playwright test tests/api/01-auth.spec.ts tests/ui/auth.spec.ts",
+    "test:security": "playwright test tests/api/07-security.spec.ts",
+    "test:admin": "playwright test tests/api/08-admin.spec.ts",
+    "test:headed": "playwright test tests/ui/ --headed",
+    "test:report": "playwright show-report",
+    "test:debug": "playwright test --debug"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.49.0"
+  }
+}

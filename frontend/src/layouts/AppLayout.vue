@@ -97,7 +97,7 @@
                   v-for="n in notifications"
                   :key="n.id"
                   class="notif-item"
-                  :class="[`notif-item--${n.type}`, { 'notif-item--read': n.read }]"
+                  :class="[`notif-item--${n.type}`, { 'notif-item--read': n.isRead }]"
                   @click="readNotification(n.id)"
                 >
                   <span class="notif-item__icon">
@@ -105,11 +105,14 @@
                   </span>
                   <div class="notif-item__body">
                     <p class="notif-item__title">{{ n.title }}</p>
-                    <p class="notif-item__desc">{{ n.desc }}</p>
-                    <span class="notif-item__time">{{ n.time }}</span>
+                    <p class="notif-item__desc">{{ n.description }}</p>
+                    <span class="notif-item__time">{{ formatTimeAgo(n.createdAt) }}</span>
                   </div>
-                  <span v-if="!n.read" class="notif-item__dot" />
+                  <span v-if="!n.isRead" class="notif-item__dot" />
                 </div>
+              <div v-if="notifications.length === 0" class="notif-empty">
+                Nenhuma notificação no momento.
+              </div>
               </div>
             </div>
           </div>
@@ -153,11 +156,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useAuthStore } from '@/shared/stores/auth.store';
 import { useAppStore } from '@/shared/stores/app.store';
 import { DsDropdown } from '@/design-system';
+import { notificationsService, type AppNotification } from '@/shared/services/notifications.service';
 
 const route = useRoute();
 const router = useRouter();
@@ -179,61 +183,73 @@ const userRoleLabel = computed(() =>
   authStore.isAdmin ? 'Administrador' : 'Sócio'
 );
 
-interface Notification {
-  id: number;
-  type: 'payment' | 'network' | 'warning';
-  icon: string;
-  title: string;
-  desc: string;
-  time: string;
-  read: boolean;
+const notificationOpen = ref(false);
+const notifications = ref<AppNotification[]>([]);
+const unreadCount = ref(0);
+
+let fetchDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+
+onMounted(async () => {
+  try {
+    unreadCount.value = await notificationsService.getUnreadCount();
+  } catch {
+    // silently fail
+  }
+});
+
+function formatTimeAgo(dateStr: string): string {
+  const date = new Date(dateStr);
+  const diffMins = Math.floor((Date.now() - date.getTime()) / 60000);
+  if (diffMins < 1) return 'Agora mesmo';
+  if (diffMins < 60) return `Há ${diffMins} min`;
+  const diffHours = Math.floor(diffMins / 60);
+  if (diffHours < 24) return `Há ${diffHours} hora${diffHours > 1 ? 's' : ''}`;
+  const diffDays = Math.floor(diffHours / 24);
+  if (diffDays < 30) return `Há ${diffDays} dia${diffDays > 1 ? 's' : ''}`;
+  return date.toLocaleDateString('pt-BR');
 }
 
-const notificationOpen = ref(false);
-
-const notifications = ref<Notification[]>([
-  {
-    id: 1,
-    type: 'payment',
-    icon: 'money-bill-wave',
-    title: 'Pagamento de Janeiro processado',
-    desc: 'R$ 5.200,00 será creditado no dia 5 do mês.',
-    time: 'Há 2 horas',
-    read: false,
-  },
-  {
-    id: 2,
-    type: 'network',
-    icon: 'users',
-    title: 'Nova indicação na sua rede',
-    desc: 'Carlos Alves acabou de entrar como seu indicado direto.',
-    time: 'Há 1 dia',
-    read: false,
-  },
-  {
-    id: 3,
-    type: 'warning',
-    icon: 'triangle-exclamation',
-    title: 'Conta vence em breve',
-    desc: 'Sua conta vence em 8 dias. Renove para não perder seus benefícios.',
-    time: 'Há 2 dias',
-    read: false,
-  },
-]);
-
-const unreadCount = computed(() => notifications.value.filter(n => !n.read).length);
+async function fetchNotifications() {
+  try {
+    notifications.value = await notificationsService.getAll();
+    unreadCount.value = notifications.value.filter(n => !n.isRead).length;
+  } catch {
+    // silently fail
+  }
+}
 
 function toggleNotifications() {
   notificationOpen.value = !notificationOpen.value;
+  if (notificationOpen.value) {
+    if (fetchDebounceTimer) clearTimeout(fetchDebounceTimer);
+    fetchDebounceTimer = setTimeout(() => {
+      fetchNotifications();
+      fetchDebounceTimer = null;
+    }, 300);
+  }
 }
 
-function markAllRead() {
-  notifications.value.forEach(n => (n.read = true));
+async function markAllRead() {
+  notifications.value.forEach(n => (n.isRead = true));
+  unreadCount.value = 0;
+  try {
+    await notificationsService.markAllRead();
+  } catch {
+    // silently fail
+  }
 }
 
-function readNotification(id: number) {
+async function readNotification(id: string) {
   const n = notifications.value.find(n => n.id === id);
-  if (n) n.read = true;
+  if (n && !n.isRead) {
+    n.isRead = true;
+    unreadCount.value = Math.max(0, unreadCount.value - 1);
+    try {
+      await notificationsService.markRead(id);
+    } catch {
+      // silently fail
+    }
+  }
 }
 
 const pageTitle = computed(() => {
@@ -804,6 +820,11 @@ function logout() {
     color: var(--color-warning);
   }
 
+  &--error &__icon {
+    background: rgba(var(--error-rgb), 0.12);
+    color: var(--color-error);
+  }
+
   &__body {
     flex: 1;
     min-width: 0;
@@ -839,6 +860,13 @@ function logout() {
     flex-shrink: 0;
     margin-top: 6px;
   }
+}
+
+.notif-empty {
+  padding: $spacing-6 $spacing-5;
+  text-align: center;
+  font-size: 0.875rem;
+  color: var(--text-tertiary);
 }
 
 // ============================================================

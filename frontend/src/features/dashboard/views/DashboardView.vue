@@ -48,7 +48,7 @@
         <div class="dashboard-view__career-col">
           <LevelProgressBar
             :current-level="career.currentLevel"
-            :next-level="career.nextLevel"
+            :next-level="career.nextLevel || 'diamante'"
             :current-value="career.currentValue"
             :target-value="career.targetValue"
             :bonus-percent="career.bonusPercentUnlock"
@@ -327,9 +327,11 @@ interface SplitTickerData {
   changePercent: number;
 }
 
+type LevelKey = 'bronze' | 'prata' | 'ouro' | 'diamante';
+
 interface CareerProgressData {
-  currentLevel: string;
-  nextLevel: string;
+  currentLevel: LevelKey;
+  nextLevel: LevelKey | '';
   currentValue: number;
   targetValue: number;
   bonusPercentUnlock: number;
@@ -394,7 +396,7 @@ const ticker = ref<SplitTickerData>({
 });
 
 const career = ref<CareerProgressData>({
-  currentLevel: 'socio',
+  currentLevel: 'bronze',
   nextLevel: '',
   currentValue: 0,
   targetValue: 0,
@@ -579,8 +581,8 @@ onMounted(async () => {
       const nextLevel = levelProgression[currentLevel] || '';
 
       career.value = {
-        currentLevel,
-        nextLevel,
+        currentLevel: currentLevel as LevelKey,
+        nextLevel: nextLevel as LevelKey | '',
         currentValue: kpiRes.data.qualifiedCount || kpiRes.data.quotaBalance || 0,
         targetValue: levelTargets[nextLevel] || 0,
         bonusPercentUnlock: nextLevel ? 2 : 0,

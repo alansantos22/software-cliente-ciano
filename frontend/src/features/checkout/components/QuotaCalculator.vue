@@ -171,7 +171,6 @@ const emit = defineEmits<{
 // ─── State ────────────────────────────────────────────────────────────────────
 const selectedQuotas = ref(1);
 const justUnlockedLevel = ref<string | null>(null);
-const previousTotalQuotas = ref(props.purchasedQuotas + 1);
 const isEditing = ref(false);
 const counterInputRef = ref<HTMLInputElement | null>(null);
 
@@ -238,11 +237,11 @@ const totalQuotas = computed(() => props.purchasedQuotas + selectedQuotas.value)
 const totalPrice = computed(() => selectedQuotas.value * props.quotaPrice);
 
 const targetLevel = computed(() => {
-  return [...levels].reverse().find((l) => totalQuotas.value >= l.min) ?? levels[0];
+  return [...levels].reverse().find((l) => totalQuotas.value >= l.min) ?? levels[0]!;
 });
 
 const currentLevelFromUser = computed(() => {
-  return [...levels].reverse().find((l) => props.purchasedQuotas >= l.min) ?? levels[0];
+  return [...levels].reverse().find((l) => props.purchasedQuotas >= l.min) ?? levels[0]!;
 });
 
 const isUpgrading = computed(() => targetLevel.value.key !== currentLevelFromUser.value.key);

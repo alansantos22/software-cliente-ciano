@@ -33,11 +33,11 @@ export const adminService = {
   },
 
   // ── Payouts ──
-  calculateDistribution(payload: { month: string }) {
+  calculateDistribution(payload: { month: string; netProfit: number }) {
     return api.post('/admin/payouts/calculate-distribution', payload);
   },
 
-  generateBatch(payload: { month: string }) {
+  generateBatch(payload: { month: string; netProfit: number }) {
     return api.post('/admin/payouts/generate-batch', payload);
   },
 
@@ -62,6 +62,10 @@ export const adminService = {
   },
 
   // ── Manager ──
+  hasManagerPassword() {
+    return api.get('/admin/manager/has-password');
+  },
+
   setManagerPassword(payload: { password: string }) {
     return api.post('/admin/manager/set-password', payload);
   },
@@ -96,5 +100,10 @@ export const adminService = {
 
   getTrash() {
     return api.get('/admin/manager/trash');
+  },
+
+  // ── Audit Log ──
+  getTransactionLog(params?: { type?: string; userId?: string; month?: string; page?: number; limit?: number }) {
+    return api.get('/admin/audit/transactions', { params });
   },
 };

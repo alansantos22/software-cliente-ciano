@@ -21,9 +21,14 @@
           <span>{{ todayFormatted }}</span>
         </p>
       </div>
-      <RouterLink to="/admin/payouts" class="admin-cmd__header-link">
-        Gerenciar Pagamentos →
-      </RouterLink>
+      <div class="admin-cmd__header-actions">
+        <RouterLink to="/admin/audit" class="admin-cmd__header-link">
+          Movimentações →
+        </RouterLink>
+        <RouterLink to="/admin/payouts" class="admin-cmd__header-link">
+          Gerenciar Pagamentos →
+        </RouterLink>
+      </div>
     </header>
 
     <!-- ===================================================== -->
@@ -789,5 +794,12 @@ onMounted(async () => {
   white-space: nowrap;
 
   &:hover { text-decoration: underline; }
+}
+
+.admin-cmd__header-actions {
+  display: flex;
+  gap: $spacing-2;
+  flex-wrap: wrap;
+  align-items: center;
 }
 </style>

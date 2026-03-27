@@ -9,7 +9,7 @@
         'user-row',
         `user-row--${rowStatus}`,
         { 'user-row--expanded': isExpanded },
-        { 'user-row--has-children': node.children.length > 0 },
+        { 'user-row--has-children': (node.children?.length ?? 0) > 0 },
       ]"
     >
       <!-- Expand/Collapse toggle -->
@@ -99,7 +99,7 @@
         :key="child.id"
         :node="child"
         :depth="depth + 1"
-        @select-user="(n: NetworkNode) => emit('select-user', n)"
+        @select-user="(n) => emit('select-user', n)"
       />
     </div>
   </div>
@@ -111,11 +111,18 @@ import { ref, computed } from 'vue';
 interface NetworkNode {
   id: string;
   name: string;
-  title?: string;
-  level?: number;
-  depth?: number;
-  children?: NetworkNode[];
-  [key: string]: unknown;
+  email: string;
+  phone: string;
+  title: string;
+  partnerLevel: string;
+  quotaCount: number;
+  directCount: number;
+  teamCount: number;
+  totalVolume: number;
+  isActive: boolean;
+  expiresAt: string;
+  level: number;
+  children: NetworkNode[];
 }
 
 defineOptions({ name: 'NetworkUserRow' });

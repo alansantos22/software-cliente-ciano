@@ -125,8 +125,8 @@ const methodLabels: Record<string, string> = {
 const totalQuotas = computed(() => props.purchasedQuotas + props.quotas);
 const totalAmount = computed(() => props.quotas * props.quotaPrice);
 
-const targetLevel = computed(() => {
-  return [...levels].reverse().find((l) => totalQuotas.value >= l.min) ?? levels[0];
+const targetLevel = computed((): (typeof levels)[number] => {
+  return [...levels].reverse().find((l) => totalQuotas.value >= l.min) ?? levels[0]!;
 });
 
 const ctaLabel = computed(() => {

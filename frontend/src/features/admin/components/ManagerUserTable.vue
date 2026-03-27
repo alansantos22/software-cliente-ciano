@@ -42,7 +42,7 @@
             <!-- Nível -->
             <td>
               <span :class="['mgr-level', `mgr-level--${user.partnerLevel}`]">
-                {{ levelLabel[user.partnerLevel] }}
+                {{ getLevelLabel(user.partnerLevel) }}
               </span>
             </td>
 
@@ -152,6 +152,10 @@ function getInitials(name: string): string {
     .map(w => w[0])
     .join('')
     .toUpperCase();
+}
+
+function getLevelLabel(level: string): string {
+  return levelLabel[level as PartnerLevel] ?? level;
 }
 
 function getSponsorName(sponsorId: string | null): string {
