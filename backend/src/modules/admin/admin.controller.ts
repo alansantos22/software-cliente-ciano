@@ -141,4 +141,23 @@ export class AdminController {
   updateCareerPlan(@Param('titleId') titleId: number, @Body() dto: UpdateCareerPlanDto) {
     return this.adminService.updateCareerPlan(titleId, dto as any);
   }
+
+  // ─── Audit Log ─────────────────────────────────────────
+
+  @Get('audit/transactions')
+  getTransactionLog(
+    @Query('type') type?: string,
+    @Query('userId') userId?: string,
+    @Query('month') month?: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    return this.adminService.getTransactionLog({
+      type,
+      userId,
+      month,
+      page: page ? parseInt(page, 10) : undefined,
+      limit: limit ? parseInt(limit, 10) : undefined,
+    });
+  }
 }

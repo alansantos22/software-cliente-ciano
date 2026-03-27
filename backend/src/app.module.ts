@@ -31,6 +31,7 @@ import { AdminModule } from './modules/admin/admin.module';
 import { ProfileModule } from './modules/profile/profile.module';
 import { OnboardingModule } from './modules/onboarding/onboarding.module';
 import { SettingsModule } from './modules/settings/settings.module';
+import { NotificationsModule } from './modules/notifications/notifications.module';
 import { JobsModule } from './jobs/jobs.module';
 
 // Guards, interceptors, filters
@@ -100,6 +101,7 @@ import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
     ProfileModule,
     OnboardingModule,
     SettingsModule,
+    NotificationsModule,
 
     // Jobs
     JobsModule,

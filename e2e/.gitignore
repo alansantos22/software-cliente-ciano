@@ -1,0 +1,14 @@
+# Dependências
+node_modules/
+
+# Artefatos do Playwright
+playwright-report/
+test-results/
+.playwright/
+
+# Capturas de tela, vídeos e traces
+**/*.png
+**/*.jpg
+**/*.jpeg
+**/*.webm
+**/*.zip

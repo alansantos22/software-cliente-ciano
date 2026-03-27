@@ -337,9 +337,9 @@
                   :key="level.title"
                   class="rule-row"
                 >
-                  <div class="rule-row__badge" :style="{ borderColor: careerData[index].color }">
-                    <font-awesome-icon :icon="careerData[index].icon" :style="{ color: careerData[index].color }" />
-                    <strong :style="{ color: careerData[index].color }">{{ level.title }}</strong>
+                  <div class="rule-row__badge" :style="{ borderColor: careerData[index]?.color }">
+                    <font-awesome-icon :icon="careerData[index]?.icon" :style="{ color: careerData[index]?.color }" />
+                    <strong :style="{ color: careerData[index]?.color }">{{ level.title }}</strong>
                   </div>
                   <div class="rule-row__builder">
                     <span class="rule-row__connector">Ter</span>
@@ -389,21 +389,21 @@
                   <template #cell-title="{ row }">
                     <div class="title-cell">
                       <font-awesome-icon :icon="row.icon" :style="{ color: row.color }" />
-                      <strong :style="{ color: row.color }">{{ row.title }}</strong>
+                      <strong :style="{ color: String(row.color) }">{{ row.title }}</strong>
                     </div>
                   </template>
                   <template #cell-repurchaseLevels="{ index }">
-                    <DsInput v-model.number="config.careerLevels[index].repurchaseLevels" type="number" min="0">
+                    <DsInput v-model.number="careerLevel(index).repurchaseLevels" type="number" min="0">
                       <template #suffix>nív.</template>
                     </DsInput>
                   </template>
                   <template #cell-teamLevels="{ index }">
-                    <DsInput v-model.number="config.careerLevels[index].teamLevels" type="number" min="0">
+                    <DsInput v-model.number="careerLevel(index).teamLevels" type="number" min="0">
                       <template #suffix>nív.</template>
                     </DsInput>
                   </template>
                   <template #cell-leadershipPercent="{ index }">
-                    <DsInput v-model.number="config.careerLevels[index].leadershipPercent" type="number" min="0" max="100" step="0.5">
+                    <DsInput v-model.number="careerLevel(index).leadershipPercent" type="number" min="0" max="100" step="0.5">
                       <template #suffix>%</template>
                     </DsInput>
                   </template>
@@ -649,6 +649,10 @@ const careerData = [
   { title: 'Diamante', icon: 'gem',   color: '#00BCD4' },
 ];
 
+function careerLevel(index: number) {
+  return config.careerLevels[index] as NonNullable<typeof config.careerLevels[0]>;
+}
+
 // Field registry for diff
 const fieldRegistry: Record<string, { label: string; format: FieldFormat; tab: TabId }> = {
   quotaValue:              { label: 'Valor da Cota',               format: 'currency', tab: 'global' },
@@ -713,7 +717,7 @@ const pendingDiff = computed<DiffEntry[]>(() => {
     const saved = (savedConfig as Record<string,unknown>)[key];
     const current = (config as unknown as Record<string,unknown>)[key];
     if (saved !== current) {
-      const { label, format, tab } = fieldRegistry[key];
+      const { label, format, tab } = fieldRegistry[key]!;
       diffs.push({ key, label, oldFormatted: formatFieldValue(saved,format), newFormatted: formatFieldValue(current,format), tab });
     }
   }

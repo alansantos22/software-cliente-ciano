@@ -419,6 +419,7 @@ watch(showConfirm, (v) => {
 });
 
 onMounted(() => {
+  store.checkPasswordExists();
   store.loadUsers();
   store.loadTrash();
 });

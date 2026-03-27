@@ -98,11 +98,18 @@ import { DsModal } from '@/design-system';
 interface NetworkNode {
   id: string;
   name: string;
-  title?: string;
-  level?: number;
-  depth?: number;
-  children?: NetworkNode[];
-  [key: string]: unknown;
+  email: string;
+  phone: string;
+  title: string;
+  partnerLevel: string;
+  quotaCount: number;
+  directCount: number;
+  teamCount: number;
+  totalVolume: number;
+  isActive: boolean;
+  expiresAt: string;
+  level: number;
+  children: NetworkNode[];
 }
 
 interface Props {
@@ -172,11 +179,11 @@ const PARTNER_MAP: Record<string, string> = {
 };
 
 const titleStyle = computed(() => {
-  const s = TITLE_MAP[props.node?.title ?? 'none'] ?? TITLE_MAP.none;
+  const s = TITLE_MAP[props.node?.title ?? 'none'] ?? TITLE_MAP['none']!;
   return { color: s.color, background: s.bg };
 });
 
-const titleLabel = computed(() => (TITLE_MAP[props.node?.title ?? 'none'] ?? TITLE_MAP.none).label);
+const titleLabel = computed(() => (TITLE_MAP[props.node?.title ?? 'none'] ?? TITLE_MAP['none']!).label);
 const partnerLabel = computed(() => PARTNER_MAP[props.node?.partnerLevel ?? 'socio'] ?? 'Sócio');
 
 // ── Helpers ──────────────────────────────────────────────────────────────────

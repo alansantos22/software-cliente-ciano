@@ -16,6 +16,11 @@ import {
 export class AdminManagerController {
   constructor(private readonly managerService: AdminManagerService) {}
 
+  @Get('has-password')
+  hasPassword() {
+    return this.managerService.hasPassword();
+  }
+
   @Post('set-password')
   setPassword(@Body() dto: SetManagerPasswordDto) {
     return this.managerService.setPassword(dto.password);
@@ -59,5 +64,10 @@ export class AdminManagerController {
   @Get('trash')
   getTrash() {
     return this.managerService.getTrash();
+  }
+
+  @Delete('test-cleanup')
+  purgeTestData() {
+    return this.managerService.purgeTestData();
   }
 }

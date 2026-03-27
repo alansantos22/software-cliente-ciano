@@ -41,6 +41,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
     }
 
     const errorResponse = {
+      success: false,
       statusCode: status,
       timestamp: new Date().toISOString(),
       path: request.url,

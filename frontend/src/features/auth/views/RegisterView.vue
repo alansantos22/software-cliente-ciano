@@ -242,15 +242,15 @@ function isValidCPF(raw: string): boolean {
   if (d.length !== 11) return false;
   if (/^(\d)\1+$/.test(d)) return false; // all same digits (000.000.000-00 etc)
   let sum = 0;
-  for (let i = 0; i < 9; i++) sum += parseInt(d[i]) * (10 - i);
+  for (let i = 0; i < 9; i++) sum += parseInt(d[i]!) * (10 - i);
   let r = (sum * 10) % 11;
   if (r === 10 || r === 11) r = 0;
-  if (r !== parseInt(d[9])) return false;
+  if (r !== parseInt(d[9]!)) return false;
   sum = 0;
-  for (let i = 0; i < 10; i++) sum += parseInt(d[i]) * (11 - i);
+  for (let i = 0; i < 10; i++) sum += parseInt(d[i]!) * (11 - i);
   r = (sum * 10) % 11;
   if (r === 10 || r === 11) r = 0;
-  return r === parseInt(d[10]);
+  return r === parseInt(d[10]!);
 }
 
 // Máscara automática — CPF: 000.000.000-00
@@ -341,7 +341,7 @@ function validateField(field: string): void {
 
   switch (field) {
     case 'fullName':
-      if (!f.fullName.trim()) e.fullName = 'Nome é obrigatório';
+      if (!f.fullName?.trim()) e.fullName = 'Nome é obrigatório';
       break;
 
     case 'email':

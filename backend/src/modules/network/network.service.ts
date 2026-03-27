@@ -1,9 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { IsNull, Repository } from 'typeorm';
 import { User } from '../users/entities/user.entity';
 import { Earning } from '../earnings/entities/earning.entity';
-import { UserTitle } from '../../shared/interfaces/enums';
+import { UserRole } from '../../shared/interfaces/enums';
 
 export interface NetworkNode {
   id: string;
@@ -44,9 +44,14 @@ export class NetworkService {
   }
 
   async getTree(userId: string): Promise<NetworkNode[]> {
-    const directs = await this.userRepo.find({
-      where: { sponsorId: userId, deletedAt: null as unknown as Date },
-    });
+    const requestingUser = await this.userRepo.findOne({ where: { id: userId } });
+
+    const whereConditions: any[] = [{ sponsorId: userId, deletedAt: null as unknown as Date }];
+    if (requestingUser?.role === UserRole.ADMIN) {
+      whereConditions.push({ sponsorId: IsNull(), role: UserRole.USER, deletedAt: null as unknown as Date });
+    }
+
+    const directs = await this.userRepo.find({ where: whereConditions });
 
     const nodes: NetworkNode[] = [];
     for (const direct of directs) {

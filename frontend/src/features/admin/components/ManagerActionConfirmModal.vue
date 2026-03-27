@@ -81,7 +81,6 @@ const emit = defineEmits<{
 }>();
 
 const passwordValue = ref('');
-const passwordInputRef = ref<InstanceType<typeof DsInput> | null>(null);
 
 // Limpa o campo toda vez que o modal abre
 watch(

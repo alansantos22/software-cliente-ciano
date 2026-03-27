@@ -131,6 +131,18 @@ const routes: RouteRecordRaw[] = [
         component: () => import('@/features/admin/views/AdminManagerView.vue'),
         meta: { requiresAuth: true, requiresAdmin: true, title: 'Gestão Protegida' },
       },
+      {
+        path: 'admin/users',
+        name: 'admin-users',
+        component: () => import('@/features/admin/views/AdminUsersView.vue'),
+        meta: { requiresAuth: true, requiresAdmin: true, title: 'CRM de Usuários' },
+      },
+      {
+        path: 'admin/audit',
+        name: 'admin-audit',
+        component: () => import('@/features/admin/views/AdminAuditView.vue'),
+        meta: { requiresAuth: true, requiresAdmin: true, title: 'Movimentações' },
+      },
     ],
   },
 

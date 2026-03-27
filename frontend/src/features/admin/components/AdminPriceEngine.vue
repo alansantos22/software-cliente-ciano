@@ -172,12 +172,6 @@ const urgencyClass = computed(() => {
   return 'urgency--ok';
 });
 
-const urgencyIcon = computed(() => {
-  if (quotasRemaining.value <= 20) return 'critical';
-  if (quotasRemaining.value <= 60) return 'warning';
-  return 'ok';
-});
-
 // Methods
 function formatCurrency(value: number): string {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
