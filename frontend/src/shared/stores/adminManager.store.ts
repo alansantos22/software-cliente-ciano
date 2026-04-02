@@ -115,6 +115,20 @@ export const useAdminManagerStore = defineStore('adminManager', () => {
     }
   }
 
+  async function setUserActive(
+    userId: string,
+    isActive: boolean,
+    pwd: string,
+  ): Promise<{ ok: boolean; error?: string }> {
+    try {
+      await adminService.setUserActive(userId, { isActive, managerPassword: pwd });
+      await loadUsers();
+      return { ok: true };
+    } catch (e: any) {
+      return { ok: false, error: e?.response?.data?.message || 'Erro ao alterar status do usuário.' };
+    }
+  }
+
   async function changeSponsor(
     userId: string,
     newSponsorId: string,
@@ -171,6 +185,7 @@ export const useAdminManagerStore = defineStore('adminManager', () => {
     getSponsorOptions,
     addQuotas,
     removeQuotas,
+    setUserActive,
     changeSponsor,
     deleteUser,
     restoreUser,

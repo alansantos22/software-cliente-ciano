@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsNumber, IsEnum, IsInt, IsArray, Min, Max, ValidateNested } from 'class-validator';
+import { IsString, IsOptional, IsNumber, IsEnum, IsInt, IsArray, IsBoolean, Min, Max, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ClosingDayMode, PixKeyType } from '../../../shared/interfaces/enums';
 
@@ -92,6 +92,10 @@ export class RemoveQuotasDto extends ManagerOperationDto {
 
 export class ChangeSponsorDto extends ManagerOperationDto {
   @IsString() newSponsorId: string;
+}
+
+export class SetUserActiveDto extends ManagerOperationDto {
+  @IsBoolean() isActive: boolean;
 }
 
 export class DeleteUserDto extends ManagerOperationDto {}

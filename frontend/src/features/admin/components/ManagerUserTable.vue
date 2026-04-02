@@ -71,6 +71,13 @@
                       <font-awesome-icon icon="arrows-rotate" />
                       Alterar Patrocinador
                     </button>
+                    <button
+                      :class="['mgr-action-menu__item', user.isActive ? 'mgr-action-menu__item--warning' : 'mgr-action-menu__item--success']"
+                      @click="action('activate', user)"
+                    >
+                      <font-awesome-icon :icon="user.isActive ? 'user-slash' : 'user-check'" />
+                      {{ user.isActive ? 'Desativar Conta' : 'Ativar Conta' }}
+                    </button>
                     <div class="mgr-action-menu__divider" />
                     <button class="mgr-action-menu__item mgr-action-menu__item--danger" @click="action('delete', user)">
                       <font-awesome-icon icon="trash" />
@@ -96,7 +103,7 @@
 import { ref, onMounted, onUnmounted } from 'vue';
 import { useAdminManagerStore } from '@/shared/stores/adminManager.store';
 
-export type ManagerAction = 'add' | 'remove' | 'sponsor' | 'delete';
+export type ManagerAction = 'add' | 'remove' | 'activate' | 'sponsor' | 'delete';
 
 type PartnerLevel = 'socio' | 'platinum' | 'vip' | 'imperial';
 
@@ -344,6 +351,16 @@ function getSponsorName(sponsorId: string | null): string {
     &--danger {
       color: $error;
       &:hover { background: rgba($error, 0.08); }
+    }
+
+    &--warning {
+      color: var(--color-warning);
+      &:hover { background: rgba(var(--warning-rgb), 0.08); }
+    }
+
+    &--success {
+      color: var(--color-success);
+      &:hover { background: rgba(var(--success-rgb), 0.08); }
     }
   }
 

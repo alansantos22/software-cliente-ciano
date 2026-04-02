@@ -202,7 +202,7 @@ import ManagerUserTable from '../components/ManagerUserTable.vue';
 import ManagerTrashPanel from '../components/ManagerTrashPanel.vue';
 
 // ── Tipos ──────────────────────────────────────────────────────
-type ActionType = 'add' | 'remove' | 'sponsor' | 'delete' | 'restore';
+type ActionType = 'add' | 'remove' | 'activate' | 'sponsor' | 'delete' | 'restore';
 
 interface PendingAction {
   type: ActionType;
@@ -304,7 +304,7 @@ function showSuccess(msg: string) {
 }
 
 // ── Eventos da tabela ─────────────────────────────────────────
-function handleTableAction(type: 'add' | 'remove' | 'sponsor' | 'delete', user: ManagerUser) {
+function handleTableAction(type: 'add' | 'remove' | 'activate' | 'sponsor' | 'delete', user: ManagerUser) {
   const actions: Record<typeof type, PendingAction> = {
     add: {
       type: 'add',
@@ -321,6 +321,16 @@ function handleTableAction(type: 'add' | 'remove' | 'sponsor' | 'delete', user: 
       description: `Informe quantas cotas deseja retirar de ${user.name}. O nível pode ser reduzido se as cotas mínimas não forem mantidas.`,
       confirmLabel: 'Retirar Cotas',
       variant: 'danger',
+    },
+    activate: {
+      type: 'activate',
+      user,
+      title: user.isActive ? 'Desativar Conta' : 'Ativar Conta',
+      description: user.isActive
+        ? `A conta de ${user.name} será desativada. O usuário perderá acesso à plataforma.`
+        : `A conta de ${user.name} será ativada manualmente. O usuário poderá acessar a plataforma normalmente.`,
+      confirmLabel: user.isActive ? 'Desativar' : 'Ativar',
+      variant: user.isActive ? 'danger' : 'default',
     },
     sponsor: {
       type: 'sponsor',
@@ -383,6 +393,10 @@ async function handleConfirm(password: string) {
       result = await store.removeQuotas(user.id, extraQty.value, password);
       break;
 
+    case 'activate':
+      result = await store.setUserActive(user.id, !(user as any).isActive, password);
+      break;
+
     case 'sponsor':
       result = await store.changeSponsor(user.id, extraSponsorId.value, password);
       break;
@@ -403,6 +417,9 @@ async function handleConfirm(password: string) {
     const successMessages: Record<ActionType, string> = {
       add: `${extraQty.value} cota(s) adicionada(s) com sucesso.`,
       remove: `${extraQty.value} cota(s) retirada(s) com sucesso.`,
+      activate: (pendingAction.value?.user as any)?.isActive
+        ? `Conta de ${user.name} desativada com sucesso.`
+        : `Conta de ${user.name} ativada com sucesso.`,
       sponsor: 'Patrocinador alterado com sucesso.',
       delete: `Cadastro de ${user.name} movido para a lixeira.`,
       restore: `Cadastro de ${user.name} restaurado com sucesso.`,
