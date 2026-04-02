@@ -7,6 +7,7 @@ import {
   AddQuotasDto,
   RemoveQuotasDto,
   ChangeSponsorDto,
+  SetUserActiveDto,
   DeleteUserDto,
   RestoreUserDto,
 } from './dto/admin.dto';
@@ -49,6 +50,11 @@ export class AdminManagerController {
   @Patch('users/:userId/sponsor')
   changeSponsor(@Param('userId') userId: string, @Body() dto: ChangeSponsorDto) {
     return this.managerService.changeSponsor(userId, dto.newSponsorId, dto.managerPassword);
+  }
+
+  @Patch('users/:userId/set-active')
+  setUserActive(@Param('userId') userId: string, @Body() dto: SetUserActiveDto) {
+    return this.managerService.setUserActive(userId, dto.isActive, dto.managerPassword);
   }
 
   @Delete('users/:userId')

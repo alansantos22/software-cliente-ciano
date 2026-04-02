@@ -34,11 +34,11 @@ export const adminService = {
 
   // ── Payouts ──
   calculateDistribution(payload: { month: string; netProfit: number }) {
-    return api.post('/admin/payouts/calculate-distribution', payload);
+    return api.post('/admin/payouts/calculate-distribution', { profitMonth: payload.month, netProfit: payload.netProfit });
   },
 
   generateBatch(payload: { month: string; netProfit: number }) {
-    return api.post('/admin/payouts/generate-batch', payload);
+    return api.post('/admin/payouts/generate-batch', { profitMonth: payload.month, netProfit: payload.netProfit });
   },
 
   getPayouts(params?: { status?: string; month?: string }) {
@@ -84,6 +84,10 @@ export const adminService = {
 
   removeQuotas(userId: string, payload: { quantity: number; managerPassword: string }) {
     return api.post(`/admin/manager/users/${userId}/remove-quotas`, payload);
+  },
+
+  setUserActive(userId: string, payload: { isActive: boolean; managerPassword: string }) {
+    return api.patch(`/admin/manager/users/${userId}/set-active`, payload);
   },
 
   changeSponsor(userId: string, payload: { newSponsorId: string; managerPassword: string }) {

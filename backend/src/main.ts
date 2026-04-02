@@ -10,7 +10,7 @@ import { ensureDatabaseExists } from './core/database/database-init';
 import * as dotenv from 'dotenv';
 
 async function bootstrap() {
-  dotenv.config({ path: '.env.development' });
+  dotenv.config({ path: `.env.${process.env.NODE_ENV || 'development'}` });
   const logger = new Logger('Bootstrap');
 
   // Ensure the database exists before TypeORM connects

@@ -143,17 +143,43 @@ export class AdminManagerService {
     return { message: 'Patrocinador alterado com sucesso' };
   }
 
+  async setUserActive(userId: string, isActive: boolean, managerPassword: string) {
+    await this.verifyManagerPassword(managerPassword);
+
+    const user = await this.userRepo.findOne({ where: { id: userId } });
+    if (!user) throw new BadRequestException('Usuário não encontrado');
+
+    user.isActive = isActive;
+    await this.userRepo.save(user);
+
+    const action = isActive ? 'ativado' : 'desativado';
+    this.logger.warn(`⚙️ Admin ${action} user ${userId}`);
+    return { message: `Usuário ${action} com sucesso`, isActive };
+  }
+
   async deleteUser(userId: string, managerPassword: string) {
     await this.verifyManagerPassword(managerPassword);
 
     const user = await this.userRepo.findOne({ where: { id: userId } });
     if (!user) throw new BadRequestException('Usuário não encontrado');
 
+    // Sobe os downlines diretos para o patrocinador do usuário deletado
+    const downlines = await this.userRepo.find({ where: { sponsorId: userId } });
+    if (downlines.length > 0) {
+      await this.userRepo.update({ sponsorId: userId }, { sponsorId: user.sponsorId });
+
+      if (user.sponsorId) {
+        await this.userRepo.increment({ id: user.sponsorId }, 'directCount', downlines.length);
+      }
+
+      this.logger.warn(`⚙️ Reparented ${downlines.length} downline(s) from ${userId} to sponsor ${user.sponsorId ?? 'root'}`);
+    }
+
     user.deletedAt = new Date();
     await this.userRepo.save(user);
 
     this.logger.warn(`⚙️ Admin soft-deleted user ${userId}`);
-    return { message: 'Usuário movido para lixeira' };
+    return { message: 'Usuário movido para lixeira', reparentedDownlines: downlines.length };
   }
 
   async restoreUser(userId: string, managerPassword: string) {

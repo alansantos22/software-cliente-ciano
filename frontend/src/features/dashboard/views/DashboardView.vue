@@ -82,6 +82,18 @@
           </div>
         </div>
 
+        <!-- Total de Cotas -->
+        <div class="kpi-card kpi-card--quotas" @click="goToQuotas" style="cursor: pointer">
+          <div class="kpi-card__icon" style="color: #0891b2">
+            <font-awesome-icon icon="layer-group" />
+          </div>
+          <div class="kpi-card__body">
+            <span class="kpi-card__label">Total de Cotas</span>
+            <span class="kpi-card__value">{{ kpi.quotaBalance ?? 0 }} <span class="kpi-card__value-unit">cotas</span></span>
+            <span class="kpi-card__sub">Suas cotas acumuladas</span>
+          </div>
+        </div>
+
         <!-- Saldo a receber no próximo pagamento -->
         <div class="kpi-card kpi-card--wallet kpi-card--highlight">
           <div class="kpi-card__icon" style="color: #7c3aed">
