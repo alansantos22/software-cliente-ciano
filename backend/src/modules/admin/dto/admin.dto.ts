@@ -11,8 +11,7 @@ export class UpdateGlobalConfigDto {
   @IsOptional() @IsInt() @Min(1) totalQuotasAvailable?: number;
   @IsOptional() @IsEnum(ClosingDayMode) closingDayMode?: ClosingDayMode;
   @IsOptional() @IsInt() @Min(1) @Max(31) closingDay?: number;
-  @IsOptional() @IsInt() @Min(1) @Max(31) paymentDayStart?: number;
-  @IsOptional() @IsInt() @Min(1) @Max(31) paymentDayEnd?: number;
+  @IsOptional() @IsInt() @Min(1) @Max(28) paymentDay?: number;
 }
 
 export class UpdateMonthlyConfigDto {

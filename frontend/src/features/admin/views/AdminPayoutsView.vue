@@ -566,36 +566,45 @@ function exportPayouts() {
   alert('Exportação em desenvolvimento');
 }
 
-function processSelected() {
-  alert(`Processando ${selectedPayouts.value.length} pagamentos`);
+async function processSelected() {
+  if (selectedPayouts.value.length === 0) return;
+  try {
+    await adminService.bulkPayoutAction({ payoutIds: selectedPayouts.value, action: 'processing' });
+    await loadPayouts();
+  } catch { /* fail silently */ }
 }
 
 /** Confirma TODOS os pagamentos com status 'processing' de uma vez */
-function confirmAllProcessing() {
-  payouts.value
+async function confirmAllProcessing() {
+  const processingIds = payouts.value
     .filter(p => p.status === 'processing')
-    .forEach(p => confirmPayout(p));
-  recalcStats();
+    .map(p => p.id);
+  if (processingIds.length === 0) return;
+  try {
+    await adminService.bulkPayoutAction({ payoutIds: processingIds, action: 'completed' });
+    await loadPayouts();
+  } catch { /* fail silently */ }
 }
 
-function processPayout(payout: PayoutRequest) {
-  const idx = payouts.value.findIndex(p => p.id === payout.id);
-  if (idx !== -1 && payouts.value[idx]) payouts.value[idx].status = 'processing';
+async function processPayout(payout: PayoutRequest) {
+  try {
+    await adminService.processPayout(payout.id);
+    await loadPayouts();
+  } catch { /* fail silently */ }
 }
 
-function confirmPayout(payout: PayoutRequest) {
-  const idx = payouts.value.findIndex(p => p.id === payout.id);
-  if (idx !== -1 && payouts.value[idx]) payouts.value[idx].status = 'completed';
+async function confirmPayout(payout: PayoutRequest) {
+  try {
+    await adminService.confirmPayout(payout.id, { action: 'completed' });
+    await loadPayouts();
+  } catch { /* fail silently */ }
 }
 
-function markAsPaid(payout: PayoutRequest) {
-  const idx = payouts.value.findIndex(p => p.id === payout.id);
-  if (idx !== -1 && payouts.value[idx]) {
-    payouts.value[idx].status = 'completed';
-    payouts.value[idx].completedAt = new Date().toISOString();
-    payouts.value[idx].transactionId = `MANUAL-${Date.now()}`;
-  }
-  recalcStats();
+async function markAsPaid(payout: PayoutRequest) {
+  try {
+    await adminService.confirmPayout(payout.id, { action: 'completed', transactionId: `MANUAL-${Date.now()}` });
+    await loadPayouts();
+  } catch { /* fail silently */ }
 }
 
 function downloadReceipt(payout: PayoutRequest) {

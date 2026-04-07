@@ -32,6 +32,10 @@ export const adminService = {
     return api.get('/admin/financial/config');
   },
 
+  updateFinancialConfig(payload: Record<string, unknown>) {
+    return api.put('/admin/financial/config', payload);
+  },
+
   // ── Payouts ──
   calculateDistribution(payload: { profitMonth: string; netProfit: number }) {
     return api.post('/admin/payouts/calculate-distribution', payload);
@@ -53,7 +57,7 @@ export const adminService = {
     return api.patch(`/admin/payouts/${payoutId}/process`);
   },
 
-  confirmPayout(payoutId: string, payload: { transactionId?: string; action: string; rejectionReason?: string }) {
+  confirmPayout(payoutId: string, payload: { transactionId?: string; action: string; failureReason?: string }) {
     return api.patch(`/admin/payouts/${payoutId}/confirm`, payload);
   },
 
