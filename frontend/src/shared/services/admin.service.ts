@@ -33,12 +33,12 @@ export const adminService = {
   },
 
   // ── Payouts ──
-  calculateDistribution(payload: { month: string; netProfit: number }) {
-    return api.post('/admin/payouts/calculate-distribution', { profitMonth: payload.month, netProfit: payload.netProfit });
+  calculateDistribution(payload: { profitMonth: string; netProfit: number }) {
+    return api.post('/admin/payouts/calculate-distribution', payload);
   },
 
-  generateBatch(payload: { month: string; netProfit: number }) {
-    return api.post('/admin/payouts/generate-batch', { profitMonth: payload.month, netProfit: payload.netProfit });
+  generateBatch(payload: { profitMonth: string; netProfit: number }) {
+    return api.post('/admin/payouts/generate-batch', payload);
   },
 
   getPayouts(params?: { status?: string; month?: string }) {

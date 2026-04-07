@@ -14,6 +14,7 @@ export interface ManagerUser {
   role: string;
   isActive: boolean;
   purchasedQuotas: number;
+  splitQuotas: number;
   quotaBalance: number;
   sponsorId: string | null;
   pixKey?: string;

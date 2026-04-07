@@ -271,7 +271,7 @@ export class AdminService {
     };
   }
 
-  async generateBatch(profitMonth: string, netProfit: number, dividendPool: number, adminId: string) {
+  async generateBatch(profitMonth: string, netProfit: number, adminId: string) {
     const preview = await this.calculateDistribution(profitMonth, netProfit);
 
     // Check for existing batch

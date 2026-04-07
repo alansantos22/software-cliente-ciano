@@ -48,7 +48,7 @@ export class CalculateDistributionDto {
 export class GenerateBatchDto {
   @IsString() profitMonth: string;
   @IsNumber() @Min(0) netProfit: number;
-  @IsNumber() @Min(0) dividendPool: number;
+  // dividendPool is computed server-side from GlobalFinancialSettings
 }
 
 export class ProcessPayoutActionDto {

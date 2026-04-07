@@ -608,12 +608,21 @@ async function calculateDistribution() {
   if (netProfit.value <= 0) return;
   try {
     const res = await adminService.calculateDistribution({
-      month: profitMonth.value,
+      profitMonth: profitMonth.value,
       netProfit: netProfit.value,
     });
     if (res.data) {
-      distributionPreview.value = res.data.preview || [];
-      totalActiveQuotas.value = res.data.totalActiveQuotas || 0;
+      // Map backend field names to table column keys
+      distributionPreview.value = (res.data.distributions || []).map((d: any) => ({
+        user: d.userName,
+        quotas: d.quotaBalance,
+        share: `${d.percentageShare}%`,
+        amount: d.totalAmount,
+        quotaAmount: d.quotaAmount,
+        networkAmount: d.networkAmount,
+        pix: d.pixKey,
+      }));
+      totalActiveQuotas.value = res.data.totalQuotasInSystem || 0;
       if (res.data.dividendPoolPercent) dividendPoolPercent.value = res.data.dividendPoolPercent;
     }
     showDistribution.value = true;
@@ -625,11 +634,12 @@ async function calculateDistribution() {
 async function generatePayoutsFromProfit() {
   try {
     const res = await adminService.generateBatch({
-      month: profitMonth.value,
+      profitMonth: profitMonth.value,
       netProfit: netProfit.value,
     });
-    if (res.data && Array.isArray(res.data)) {
-      payouts.value = [...res.data, ...payouts.value];
+    if (res.data) {
+      // generateBatch returns batch metadata; reload full payout list
+      await loadPayouts();
     }
     batchApproved.value = true;
     generationSuccess.value = true;
@@ -657,10 +667,18 @@ function confirmPayoutRow(row: Record<string, unknown>)  { confirmPayout(row as 
 function markAsPaidRow(row: Record<string, unknown>)     { markAsPaid(row as unknown as PayoutRequest); }
 function downloadReceiptRow(row: Record<string, unknown>) { downloadReceipt(row as unknown as PayoutRequest); }
 
+// ─── Load Payouts (reutilizável) ──────────────────────────────
+async function loadPayouts() {
+  try {
+    const res = await adminService.getPayouts({ month: filters.value.month });
+    if (res.data && Array.isArray(res.data)) {
+      payouts.value = res.data;
+      recalcStats();
+    }
+  } catch { /* fail silently */ }
+}
+
 // ─── Mount ────────────────────────────────────────────────────
-// Nenhum pagamento pré-existente: a lista só é populada quando o admin
-// aprova um lote no fechamento mensal. Não existem saques solicitados
-// por usuários neste sistema.
 onMounted(async () => {
   isLoading.value = true;
   try {

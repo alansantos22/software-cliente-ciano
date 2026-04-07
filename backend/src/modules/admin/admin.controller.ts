@@ -63,7 +63,7 @@ export class AdminController {
 
   @Post('payouts/generate-batch')
   generateBatch(@CurrentUser() user: User, @Body() dto: GenerateBatchDto) {
-    return this.adminService.generateBatch(dto.profitMonth, dto.netProfit, dto.dividendPool, user.id);
+    return this.adminService.generateBatch(dto.profitMonth, dto.netProfit, user.id);
   }
 
   @Get('payouts')
