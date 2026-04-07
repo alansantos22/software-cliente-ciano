@@ -566,36 +566,45 @@ function exportPayouts() {
   alert('Exportação em desenvolvimento');
 }
 
-function processSelected() {
-  alert(`Processando ${selectedPayouts.value.length} pagamentos`);
+async function processSelected() {
+  if (selectedPayouts.value.length === 0) return;
+  try {
+    await adminService.bulkPayoutAction({ payoutIds: selectedPayouts.value, action: 'processing' });
+    await loadPayouts();
+  } catch { /* fail silently */ }
 }
 
 /** Confirma TODOS os pagamentos com status 'processing' de uma vez */
-function confirmAllProcessing() {
-  payouts.value
+async function confirmAllProcessing() {
+  const processingIds = payouts.value
     .filter(p => p.status === 'processing')
-    .forEach(p => confirmPayout(p));
-  recalcStats();
+    .map(p => p.id);
+  if (processingIds.length === 0) return;
+  try {
+    await adminService.bulkPayoutAction({ payoutIds: processingIds, action: 'completed' });
+    await loadPayouts();
+  } catch { /* fail silently */ }
 }
 
-function processPayout(payout: PayoutRequest) {
-  const idx = payouts.value.findIndex(p => p.id === payout.id);
-  if (idx !== -1 && payouts.value[idx]) payouts.value[idx].status = 'processing';
+async function processPayout(payout: PayoutRequest) {
+  try {
+    await adminService.processPayout(payout.id);
+    await loadPayouts();
+  } catch { /* fail silently */ }
 }
 
-function confirmPayout(payout: PayoutRequest) {
-  const idx = payouts.value.findIndex(p => p.id === payout.id);
-  if (idx !== -1 && payouts.value[idx]) payouts.value[idx].status = 'completed';
+async function confirmPayout(payout: PayoutRequest) {
+  try {
+    await adminService.confirmPayout(payout.id, { action: 'completed' });
+    await loadPayouts();
+  } catch { /* fail silently */ }
 }
 
-function markAsPaid(payout: PayoutRequest) {
-  const idx = payouts.value.findIndex(p => p.id === payout.id);
-  if (idx !== -1 && payouts.value[idx]) {
-    payouts.value[idx].status = 'completed';
-    payouts.value[idx].completedAt = new Date().toISOString();
-    payouts.value[idx].transactionId = `MANUAL-${Date.now()}`;
-  }
-  recalcStats();
+async function markAsPaid(payout: PayoutRequest) {
+  try {
+    await adminService.confirmPayout(payout.id, { action: 'completed', transactionId: `MANUAL-${Date.now()}` });
+    await loadPayouts();
+  } catch { /* fail silently */ }
 }
 
 function downloadReceipt(payout: PayoutRequest) {
@@ -608,12 +617,21 @@ async function calculateDistribution() {
   if (netProfit.value <= 0) return;
   try {
     const res = await adminService.calculateDistribution({
-      month: profitMonth.value,
+      profitMonth: profitMonth.value,
       netProfit: netProfit.value,
     });
     if (res.data) {
-      distributionPreview.value = res.data.preview || [];
-      totalActiveQuotas.value = res.data.totalActiveQuotas || 0;
+      // Map backend field names to table column keys
+      distributionPreview.value = (res.data.distributions || []).map((d: any) => ({
+        user: d.userName,
+        quotas: d.quotaBalance,
+        share: `${d.percentageShare}%`,
+        amount: d.totalAmount,
+        quotaAmount: d.quotaAmount,
+        networkAmount: d.networkAmount,
+        pix: d.pixKey,
+      }));
+      totalActiveQuotas.value = res.data.totalQuotasInSystem || 0;
       if (res.data.dividendPoolPercent) dividendPoolPercent.value = res.data.dividendPoolPercent;
     }
     showDistribution.value = true;
@@ -625,11 +643,12 @@ async function calculateDistribution() {
 async function generatePayoutsFromProfit() {
   try {
     const res = await adminService.generateBatch({
-      month: profitMonth.value,
+      profitMonth: profitMonth.value,
       netProfit: netProfit.value,
     });
-    if (res.data && Array.isArray(res.data)) {
-      payouts.value = [...res.data, ...payouts.value];
+    if (res.data) {
+      // generateBatch returns batch metadata; reload full payout list
+      await loadPayouts();
     }
     batchApproved.value = true;
     generationSuccess.value = true;
@@ -657,10 +676,18 @@ function confirmPayoutRow(row: Record<string, unknown>)  { confirmPayout(row as 
 function markAsPaidRow(row: Record<string, unknown>)     { markAsPaid(row as unknown as PayoutRequest); }
 function downloadReceiptRow(row: Record<string, unknown>) { downloadReceipt(row as unknown as PayoutRequest); }
 
+// ─── Load Payouts (reutilizável) ──────────────────────────────
+async function loadPayouts() {
+  try {
+    const res = await adminService.getPayouts({ month: filters.value.month });
+    if (res.data && Array.isArray(res.data)) {
+      payouts.value = res.data;
+      recalcStats();
+    }
+  } catch { /* fail silently */ }
+}
+
 // ─── Mount ────────────────────────────────────────────────────
-// Nenhum pagamento pré-existente: a lista só é populada quando o admin
-// aprova um lote no fechamento mensal. Não existem saques solicitados
-// por usuários neste sistema.
 onMounted(async () => {
   isLoading.value = true;
   try {

@@ -90,18 +90,19 @@ export class SplitEngineService {
 
     this.logger.log(`🔄 Executing SPLIT #${newSplitCount}`);
 
-    // Double all users' split_quotas
+    // Step 1: For every user with quotas (purchased or from previous splits),
+    // apply a 2:1 split: new_split_quotas = purchased_quotas + (split_quotas * 2)
+    // This ensures new_quota_balance = purchased + new_split = 2 * (purchased + split) = 2 * old_quota_balance
     await this.userRepo
       .createQueryBuilder()
       .update(User)
       .set({
-        splitQuotas: () => 'split_quotas * 2',
-        quotaBalance: () => 'purchased_quotas + (split_quotas * 2)',
+        splitQuotas: () => 'purchased_quotas + (split_quotas * 2)',
       })
-      .where('split_quotas > 0')
+      .where('purchased_quotas > 0 OR split_quotas > 0')
       .execute();
 
-    // Recalculate quota_balance for all users
+    // Step 2: Recalculate quota_balance for ALL users from the updated split_quotas
     await this.userRepo
       .createQueryBuilder()
       .update(User)

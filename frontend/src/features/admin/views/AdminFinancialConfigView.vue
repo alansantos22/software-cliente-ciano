@@ -531,7 +531,6 @@
               <font-awesome-icon icon="circle-xmark" />
               {{ pinError }}
             </p>
-            <p class="confirm-modal__pin-hint">Demo: use o PIN <code>1234</code></p>
           </div>
         </template>
       </div>
@@ -751,12 +750,26 @@ function openSaveModal() {
 
 async function confirmSave() {
   if (pendingDiff.value.length === 0) { showConfirmModal.value = false; return; }
-  if (pinInput.value.length !== 4) { pinError.value = 'PIN deve ter exatamente 4 dígitos.'; return; }
-  if (pinInput.value !== '1234') { pinError.value = 'PIN incorreto. Verifique e tente novamente.'; return; }
+  if (pinInput.value.length < 4) { pinError.value = 'PIN deve ter pelo menos 4 dígitos.'; return; }
   pinError.value = ''; isSaving.value = true;
   try {
-    await adminService.updatePriceEngine(config);
-  } catch { /* will use local state anyway */ }
+    await adminService.verifyManagerPassword({ password: pinInput.value, operation: 'update-financial-config' });
+  } catch {
+    pinError.value = 'PIN incorreto. Verifique e tente novamente.';
+    isSaving.value = false;
+    return;
+  }
+  try {
+    await adminService.updateFinancialConfig({
+      minQuotas: config.minQuotas,
+      maxQuotasPerUser: config.maxQuotasPerUser,
+      totalQuotasAvailable: config.totalQuotasAvailable,
+      closingDayMode: config.closingDayMode,
+      closingDay: config.closingDay,
+      paymentDay: config.paymentDay,
+      profitPayoutPercentage: config.dividendPool,
+    });
+  } catch { /* keep local state on error */ }
   isSaving.value = false;
   savedConfig = JSON.parse(JSON.stringify(config));
   const now = new Date();
@@ -782,7 +795,13 @@ function resetDefaults() {
 onMounted(async () => {
   try {
     const res = await adminService.getFinancialConfig();
-    if (res.data) Object.assign(config, res.data);
+    if (res.data) {
+      Object.assign(config, res.data);
+      // profitPayoutPercentage → dividendPool (field name mismatch)
+      if (res.data.profitPayoutPercentage !== undefined) {
+        config.dividendPool = res.data.profitPayoutPercentage;
+      }
+    }
   } catch { /* use defaults */ }
 });
 </script>

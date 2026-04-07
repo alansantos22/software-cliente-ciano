@@ -180,9 +180,9 @@
             <font-awesome-icon icon="cart-shopping" />
           </div>
           <div class="sales-card__body">
-            <span class="sales-card__label">Vendas Próprias</span>
-            <span class="sales-card__value">{{ kpi.ownSalesCount }} cotas</span>
-            <span class="sales-card__sub">{{ formatCurrency(kpi.ownSalesValue) }} este mês</span>
+            <span class="sales-card__label">Suas Compras</span>
+            <span class="sales-card__value">{{ kpi.ownSalesCount ?? 0 }} cotas</span>
+            <span class="sales-card__sub">{{ formatCurrency(kpi.ownSalesValue ?? 0) }} este mês</span>
           </div>
         </div>
         <div class="sales-card">
@@ -190,9 +190,9 @@
             <font-awesome-icon icon="users" />
           </div>
           <div class="sales-card__body">
-            <span class="sales-card__label">Vendas da Rede</span>
-            <span class="sales-card__value">{{ kpi.networkSalesCount }} cotas</span>
-            <span class="sales-card__sub">{{ formatCurrency(kpi.networkSalesValue) }} este mês</span>
+            <span class="sales-card__label">Compras da Rede</span>
+            <span class="sales-card__value">{{ kpi.networkSalesCount ?? 0 }} cotas</span>
+            <span class="sales-card__sub">{{ formatCurrency(kpi.networkSalesValue ?? 0) }} este mês</span>
           </div>
         </div>
       </section>

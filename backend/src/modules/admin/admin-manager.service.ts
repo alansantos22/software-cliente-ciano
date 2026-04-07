@@ -56,7 +56,7 @@ export class AdminManagerService {
     return this.userRepo.find({
       where: { role: 'user' as any, deletedAt: IsNull() },
       order: { createdAt: 'DESC' },
-      select: ['id', 'name', 'email', 'cpf', 'title', 'partnerLevel', 'quotaBalance', 'isActive', 'createdAt'],
+      select: ['id', 'name', 'email', 'cpf', 'title', 'partnerLevel', 'quotaBalance', 'purchasedQuotas', 'splitQuotas', 'sponsorId', 'isActive', 'createdAt'],
     });
   }
 
