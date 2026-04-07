@@ -5,7 +5,7 @@
         <thead>
           <tr>
             <th>Usuário</th>
-            <th title="Cotas compradas diretamente">Cotas</th>
+            <th title="Saldo total de cotas">Cotas</th>
             <th title="Cotas recebidas via split">Split</th>
             <th>Patrocinador</th>
             <th>Nível</th>
@@ -24,9 +24,9 @@
               </div>
             </td>
 
-            <!-- Cotas compradas -->
+            <!-- Cotas -->
             <td>
-              <span class="mgr-quotas">{{ user.purchasedQuotas }}</span>
+              <span class="mgr-quotas">{{ user.quotaBalance }}</span>
             </td>
 
             <!-- Split -->
@@ -48,17 +48,25 @@
 
             <!-- Ações -->
             <td class="mgr-user-table__actions-cell">
-              <div class="mgr-action-menu" :ref="el => setRef(el, user.id)">
+              <div class="mgr-action-menu">
                 <button
                   class="mgr-action-menu__trigger"
+                  :ref="el => setRef(el, user.id)"
                   :aria-label="`Ações para ${user.name}`"
                   @click.stop="toggleMenu(user.id)"
                 >
                   <font-awesome-icon icon="ellipsis-vertical" />
                 </button>
+              </div>
 
+              <Teleport to="body">
                 <transition name="menu-drop">
-                  <div v-if="openMenuId === user.id" class="mgr-action-menu__dropdown">
+                  <div
+                    v-if="openMenuId === user.id"
+                    class="mgr-action-menu__dropdown"
+                    :style="dropdownStyle"
+                    @click.stop
+                  >
                     <button class="mgr-action-menu__item" @click="action('add', user)">
                       <font-awesome-icon icon="plus" />
                       Adicionar Cotas
@@ -85,7 +93,7 @@
                     </button>
                   </div>
                 </transition>
-              </div>
+              </Teleport>
             </td>
 
           </tr>
@@ -126,20 +134,33 @@ const levelLabel: Record<PartnerLevel, string> = {
 
 // ── Menu dropdown ────────────────────────────────────────────
 const openMenuId = ref<string | null>(null);
-const menuRefs = new Map<string, Element | null>();
+const triggerRefs = new Map<string, HTMLElement | null>();
+const dropdownStyle = ref<Record<string, string>>({});
 
 function setRef(el: unknown, id: string) {
-  menuRefs.set(id, el as Element | null);
+  triggerRefs.set(id, el as HTMLElement | null);
 }
 
 function toggleMenu(id: string) {
-  openMenuId.value = openMenuId.value === id ? null : id;
+  if (openMenuId.value === id) {
+    openMenuId.value = null;
+    return;
+  }
+  const btn = triggerRefs.get(id);
+  if (btn) {
+    const rect = (btn as HTMLElement).getBoundingClientRect();
+    dropdownStyle.value = {
+      position: 'fixed',
+      top: `${rect.bottom + 4}px`,
+      right: `${window.innerWidth - rect.right}px`,
+      zIndex: '9999',
+    };
+  }
+  openMenuId.value = id;
 }
 
-function handleDocClick(e: MouseEvent) {
-  if (!openMenuId.value) return;
-  const ref = menuRefs.get(openMenuId.value);
-  if (ref && !ref.contains(e.target as Node)) openMenuId.value = null;
+function handleDocClick() {
+  if (openMenuId.value) openMenuId.value = null;
 }
 
 onMounted(() => document.addEventListener('click', handleDocClick));
@@ -316,10 +337,6 @@ function getSponsorName(sponsorId: string | null): string {
   }
 
   &__dropdown {
-    position: absolute;
-    right: 0;
-    top: calc(100% + 4px);
-    z-index: 100;
     background: var(--bg-primary);
     border: 1px solid var(--border-color);
     border-radius: 0.5rem;
