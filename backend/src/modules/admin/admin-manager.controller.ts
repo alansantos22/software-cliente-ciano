@@ -10,6 +10,7 @@ import {
   SetUserActiveDto,
   DeleteUserDto,
   RestoreUserDto,
+  SimulatePurchaseDto,
 } from './dto/admin.dto';
 
 @Roles(Role.ADMIN)
@@ -70,6 +71,11 @@ export class AdminManagerController {
   @Get('trash')
   getTrash() {
     return this.managerService.getTrash();
+  }
+
+  @Post('users/:userId/simulate-purchase')
+  simulatePurchase(@Param('userId') userId: string, @Body() dto: SimulatePurchaseDto) {
+    return this.managerService.simulatePurchase(userId, dto.quantity, dto.managerPassword, dto.reason);
   }
 
   @Delete('test-cleanup')

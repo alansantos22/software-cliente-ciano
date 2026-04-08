@@ -15,6 +15,8 @@ import { TitleRequirement } from './entities/title-requirement.entity';
 import { AdminPaymentCheck } from './entities/admin-payment-check.entity';
 import { PartnerLevelRequirement } from './entities/partner-level-requirement.entity';
 import { SplitModule } from '../../core/split/split.module';
+import { BonusModule } from '../../core/bonus/bonus.module';
+import { TitleModule } from '../../core/title/title.module';
 
 @Module({
   imports: [
@@ -31,6 +33,8 @@ import { SplitModule } from '../../core/split/split.module';
       PartnerLevelRequirement,
     ]),
     SplitModule,
+    BonusModule,
+    TitleModule,
   ],
   controllers: [AdminController, AdminManagerController],
   providers: [AdminService, AdminManagerService],

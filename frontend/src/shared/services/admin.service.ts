@@ -110,6 +110,10 @@ export const adminService = {
     return api.get('/admin/manager/trash');
   },
 
+  simulatePurchase(userId: string, payload: { quantity: number; managerPassword: string; reason?: string }) {
+    return api.post(`/admin/manager/users/${userId}/simulate-purchase`, payload);
+  },
+
   // ── Audit Log ──
   getTransactionLog(params?: { type?: string; userId?: string; month?: string; page?: number; limit?: number }) {
     return api.get('/admin/audit/transactions', { params });

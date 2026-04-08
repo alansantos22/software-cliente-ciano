@@ -100,3 +100,8 @@ export class SetUserActiveDto extends ManagerOperationDto {
 export class DeleteUserDto extends ManagerOperationDto {}
 
 export class RestoreUserDto extends ManagerOperationDto {}
+
+export class SimulatePurchaseDto extends ManagerOperationDto {
+  @IsInt() @Min(1) quantity: number;
+  @IsOptional() @IsString() reason?: string;
+}

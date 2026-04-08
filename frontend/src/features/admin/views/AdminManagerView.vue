@@ -152,9 +152,9 @@
     >
       <template #extra>
 
-        <!-- Adicionar / Retirar Cotas -->
+        <!-- Adicionar / Retirar / Simular Cotas -->
         <div
-          v-if="pendingAction.type === 'add' || pendingAction.type === 'remove'"
+          v-if="pendingAction.type === 'add' || pendingAction.type === 'remove' || pendingAction.type === 'simulate'"
           class="mgr-extra"
         >
           <label class="mgr-extra__label">
@@ -202,7 +202,7 @@ import ManagerUserTable from '../components/ManagerUserTable.vue';
 import ManagerTrashPanel from '../components/ManagerTrashPanel.vue';
 
 // ── Tipos ──────────────────────────────────────────────────────
-type ActionType = 'add' | 'remove' | 'activate' | 'sponsor' | 'delete' | 'restore';
+type ActionType = 'add' | 'remove' | 'activate' | 'sponsor' | 'delete' | 'restore' | 'simulate';
 
 interface PendingAction {
   type: ActionType;
@@ -304,7 +304,7 @@ function showSuccess(msg: string) {
 }
 
 // ── Eventos da tabela ─────────────────────────────────────────
-function handleTableAction(type: 'add' | 'remove' | 'activate' | 'sponsor' | 'delete', user: ManagerUser) {
+function handleTableAction(type: 'add' | 'remove' | 'activate' | 'sponsor' | 'delete' | 'simulate', user: ManagerUser) {
   const actions: Record<typeof type, PendingAction> = {
     add: {
       type: 'add',
@@ -347,6 +347,14 @@ function handleTableAction(type: 'add' | 'remove' | 'activate' | 'sponsor' | 'de
       description: `O cadastro de ${user.name} será movido para a lixeira e excluído permanentemente em 30 dias. Você pode restaurá-lo durante esse período.`,
       confirmLabel: 'Mover para Lixeira',
       variant: 'danger',
+    },
+    simulate: {
+      type: 'simulate',
+      user,
+      title: 'Simular Compra (PIX)',
+      description: `Simular uma compra real de cotas para ${user.name}. Bônus, nível de parceiro e contador de split serão processados normalmente. A transação aparece marcada como [SIMULADO] no audit log.`,
+      confirmLabel: 'Confirmar Simulação',
+      variant: 'default',
     },
   };
   openAction(actions[type]);
@@ -393,6 +401,15 @@ async function handleConfirm(password: string) {
       result = await store.removeQuotas(user.id, extraQty.value, password);
       break;
 
+    case 'simulate':
+      if (extraQty.value < 1) {
+        actionError.value = 'Informe uma quantidade válida (mínimo 1).';
+        actionLoading.value = false;
+        return;
+      }
+      result = await store.simulatePurchase(user.id, extraQty.value, password);
+      break;
+
     case 'activate':
       result = await store.setUserActive(user.id, !(user as any).isActive, password);
       break;
@@ -417,6 +434,7 @@ async function handleConfirm(password: string) {
     const successMessages: Record<ActionType, string> = {
       add: `${extraQty.value} cota(s) adicionada(s) com sucesso.`,
       remove: `${extraQty.value} cota(s) retirada(s) com sucesso.`,
+      simulate: `Compra simulada: ${extraQty.value} cota(s) para ${user.name} processada(s) com sucesso.`,
       activate: (pendingAction.value?.user as any)?.isActive
         ? `Conta de ${user.name} desativada com sucesso.`
         : `Conta de ${user.name} ativada com sucesso.`,

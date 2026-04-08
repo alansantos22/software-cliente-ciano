@@ -75,6 +75,10 @@
                       <font-awesome-icon icon="minus" />
                       Retirar Cotas
                     </button>
+                    <button class="mgr-action-menu__item mgr-action-menu__item--simulate" @click="action('simulate', user)">
+                      <font-awesome-icon icon="qrcode" />
+                      Simular Compra (PIX)
+                    </button>
                     <button class="mgr-action-menu__item" @click="action('sponsor', user)">
                       <font-awesome-icon icon="arrows-rotate" />
                       Alterar Patrocinador
@@ -111,7 +115,7 @@
 import { ref, onMounted, onUnmounted } from 'vue';
 import { useAdminManagerStore } from '@/shared/stores/adminManager.store';
 
-export type ManagerAction = 'add' | 'remove' | 'activate' | 'sponsor' | 'delete';
+export type ManagerAction = 'add' | 'remove' | 'activate' | 'sponsor' | 'delete' | 'simulate';
 
 type PartnerLevel = 'socio' | 'platinum' | 'vip' | 'imperial';
 
@@ -378,6 +382,12 @@ function getSponsorName(sponsorId: string | null): string {
     &--success {
       color: var(--color-success);
       &:hover { background: rgba(var(--success-rgb), 0.08); }
+    }
+
+    &--simulate {
+      color: $primary-600;
+      font-weight: 500;
+      &:hover { background: rgba($primary-500, 0.08); }
     }
   }
 

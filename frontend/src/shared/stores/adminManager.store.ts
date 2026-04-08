@@ -172,6 +172,21 @@ export const useAdminManagerStore = defineStore('adminManager', () => {
     }
   }
 
+  async function simulatePurchase(
+    userId: string,
+    qty: number,
+    pwd: string,
+    reason?: string,
+  ): Promise<{ ok: boolean; error?: string; data?: Record<string, unknown> }> {
+    try {
+      const res = await adminService.simulatePurchase(userId, { quantity: qty, managerPassword: pwd, reason });
+      await loadUsers();
+      return { ok: true, data: res.data };
+    } catch (e: any) {
+      return { ok: false, error: e?.response?.data?.message || 'Erro ao simular compra.' };
+    }
+  }
+
   return {
     users,
     trashUsers,
@@ -190,5 +205,6 @@ export const useAdminManagerStore = defineStore('adminManager', () => {
     changeSponsor,
     deleteUser,
     restoreUser,
+    simulatePurchase,
   };
 });
