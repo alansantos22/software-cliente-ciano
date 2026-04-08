@@ -8,7 +8,10 @@ import { QuotaSystemState } from '../quotas/entities/quota-system-state.entity';
 import { Earning } from '../earnings/entities/earning.entity';
 import { PayoutRequest } from '../payouts/entities/payout-request.entity';
 import { GlobalFinancialSettings } from './entities/global-financial-settings.entity';
-import { TransactionType, TransactionStatus } from '../../shared/interfaces/enums';
+import { BonusCalculatorService } from '../../core/bonus/bonus-calculator.service';
+import { SplitEngineService } from '../../core/split/split-engine.service';
+import { TitleCalculatorService } from '../../core/title/title-calculator.service';
+import { TransactionType, TransactionStatus, PartnerLevel } from '../../shared/interfaces/enums';
 import { getCurrentPeriod, generateRandomCode } from '../../shared/utils/helpers';
 
 @Injectable()
@@ -22,6 +25,9 @@ export class AdminManagerService {
     @InjectRepository(Earning) private readonly earningRepo: Repository<Earning>,
     @InjectRepository(PayoutRequest) private readonly payoutRepo: Repository<PayoutRequest>,
     @InjectRepository(GlobalFinancialSettings) private readonly settingsRepo: Repository<GlobalFinancialSettings>,
+    private readonly bonusCalc: BonusCalculatorService,
+    private readonly splitEngine: SplitEngineService,
+    private readonly titleCalc: TitleCalculatorService,
   ) {}
 
   private async verifyManagerPassword(password: string): Promise<void> {
@@ -196,6 +202,76 @@ export class AdminManagerService {
 
     this.logger.warn(`⚙️ Admin restored user ${userId}`);
     return { message: 'Usuário restaurado com sucesso' };
+  }
+
+  async simulatePurchase(userId: string, quantity: number, managerPassword: string, reason?: string) {
+    await this.verifyManagerPassword(managerPassword);
+
+    const user = await this.userRepo.findOne({ where: { id: userId } });
+    if (!user) throw new BadRequestException('Usuário não encontrado');
+
+    const state = await this.splitEngine.getState();
+    const price = Number(state.currentQuotaPrice);
+    const totalAmount = price * quantity;
+    const month = getCurrentPeriod();
+    const isFirstPurchase = user.purchasedQuotas === 0;
+    const label = reason ? ` — ${reason}` : '';
+
+    // 1. Criar transação marcada como simulada
+    const txn = this.txnRepo.create({
+      userId: user.id,
+      type: TransactionType.PURCHASE,
+      amount: totalAmount,
+      quotasAffected: quantity,
+      description: `[SIMULADO] Compra de ${quantity} cota(s) a R$${price.toFixed(2)}${label}`,
+      status: TransactionStatus.COMPLETED,
+      referenceMonth: month,
+      completedAt: new Date(),
+    });
+    await this.txnRepo.save(txn);
+
+    // 2. Atualizar cotas e nível do usuário
+    user.purchasedQuotas += quantity;
+    user.quotaBalance = user.purchasedQuotas + user.splitQuotas;
+    user.lastPurchaseDate = new Date();
+    user.isActive = true;
+
+    if (user.purchasedQuotas >= 60) user.partnerLevel = PartnerLevel.IMPERIAL;
+    else if (user.purchasedQuotas >= 20) user.partnerLevel = PartnerLevel.VIP;
+    else if (user.purchasedQuotas >= 10) user.partnerLevel = PartnerLevel.PLATINUM;
+    else user.partnerLevel = PartnerLevel.SOCIO;
+
+    await this.userRepo.save(user);
+
+    // 3. Calcular bônus para upline (igualzinho uma compra real)
+    if (isFirstPurchase) {
+      await this.bonusCalc.calculateFirstPurchaseBonus(user, totalAmount, new Date());
+    } else {
+      await this.bonusCalc.calculateRepurchaseBonus(user, totalAmount, new Date());
+    }
+
+    // 4. Atualizar contador global de cotas vendidas
+    await this.splitEngine.incrementQuotasSold(quantity);
+
+    // 5. Verificar aumento de preço / split
+    await this.splitEngine.checkAndProcess();
+
+    // 6. Recalcular título do patrocinador na upline
+    if (user.sponsorId) {
+      await this.titleCalc.recalculateTitle(user.sponsorId);
+    }
+
+    this.logger.warn(`🧪 Admin SIMULOU compra de ${quantity} cota(s) para ${user.name} (R$${totalAmount})`);
+
+    return {
+      transactionId: txn.id,
+      quantity,
+      totalAmount,
+      unitPrice: price,
+      newBalance: user.quotaBalance,
+      partnerLevel: user.partnerLevel,
+      simulated: true,
+    };
   }
 
   async getTrash() {
