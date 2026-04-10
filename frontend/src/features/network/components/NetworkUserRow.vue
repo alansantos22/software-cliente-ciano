@@ -141,7 +141,7 @@ const props = withDefaults(defineProps<Props>(), { depth: 0 });
 const isExpanded = ref(true);
 
 // ── Status ──────────────────────────────────────────────────────────────────
-const TODAY = new Date('2026-02-18');
+const TODAY = new Date();
 
 const daysUntilExpiry = computed(() => {
   const exp = new Date(props.node.expiresAt);

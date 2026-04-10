@@ -597,8 +597,8 @@ const pinInput         = ref('');
 const pinError         = ref('');
 
 const auditInfo = reactive({
-  user: 'Administrador Master',
-  date: '02/03/2026 às 14:30',
+  user: '—',
+  date: '—',
 });
 
 const tabs = [
@@ -632,6 +632,7 @@ const config = reactive({
 });
 
 let savedConfig = JSON.parse(JSON.stringify(config));
+const careerLevelIds: number[] = [];
 
 // Career Table
 const careerColumns = [
@@ -770,6 +771,45 @@ async function confirmSave() {
       profitPayoutPercentage: config.dividendPool,
     });
   } catch { /* keep local state on error */ }
+
+  // Save commissions to current month config
+  try {
+    const now = new Date();
+    const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    await adminService.updateMonthlyConfig(currentMonth, {
+      firstPurchaseBonusPercent:      config.firstPurchaseBonus,
+      repurchaseBonusL1Percent:       config.repurchaseBonusL1,
+      repurchaseBonusL2to6Percent:    config.repurchaseBonusL2to6,
+      teamBonusPercent:               config.teamBonus,
+      dividendPoolPercent:            config.dividendPool,
+    });
+  } catch { /* non-critical */ }
+
+  // Save career plan
+  try {
+    const titleToKey: Record<string, string> = { Bronze: 'bronze', Prata: 'silver', Ouro: 'gold', Diamante: 'diamond' };
+    for (let i = 0; i < config.careerLevels.length; i++) {
+      const level = config.careerLevels[i];
+      const id    = careerLevelIds[i];
+      if (!id) continue;
+      await adminService.updateCareerPlan(id, {
+        title:               titleToKey[level.title],
+        reqType:             level.req.type,
+        reqQuantity:         level.req.quantity,
+        reqLevel:            level.req.level === 'qualquer' ? null : level.req.level,
+        repurchaseLevels:    level.repurchaseLevels,
+        teamLevels:          level.teamLevels,
+        leadershipPercent:   level.leadershipPercent,
+        minNetworkMovement:  level.minNetworkMovement || null,
+        networkLevelsDepth:  level.networkLevelsDepth,
+      });
+    }
+  } catch { /* non-critical */ }
+
+  // Save presentation metrics
+  try {
+    await presentationStore.saveMetrics();
+  } catch { /* non-critical */ }
   isSaving.value = false;
   savedConfig = JSON.parse(JSON.stringify(config));
   const now = new Date();
@@ -801,8 +841,61 @@ onMounted(async () => {
       if (res.data.profitPayoutPercentage !== undefined) {
         config.dividendPool = res.data.profitPayoutPercentage;
       }
+      if (res.data.updatedAt) {
+        const d = new Date(res.data.updatedAt);
+        auditInfo.date = `${d.toLocaleDateString('pt-BR')} às ${d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
+      }
     }
   } catch { /* use defaults */ }
+
+  // Load commissions from current month config
+  try {
+    const now = new Date();
+    const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    const monthRes = await adminService.getMonthlyConfig(currentMonth);
+    if (monthRes.data) {
+      if (monthRes.data.firstPurchaseBonusPercent !== undefined) config.firstPurchaseBonus   = monthRes.data.firstPurchaseBonusPercent;
+      if (monthRes.data.repurchaseBonusL1Percent  !== undefined) config.repurchaseBonusL1   = monthRes.data.repurchaseBonusL1Percent;
+      if (monthRes.data.repurchaseBonusL2to6Percent !== undefined) config.repurchaseBonusL2to6 = monthRes.data.repurchaseBonusL2to6Percent;
+      if (monthRes.data.teamBonusPercent          !== undefined) config.teamBonus           = monthRes.data.teamBonusPercent;
+      if (monthRes.data.dividendPoolPercent        !== undefined) config.dividendPool        = monthRes.data.dividendPoolPercent;
+    }
+  } catch { /* use defaults */ }
+
+  // Load career plan from API
+  try {
+    const careerRes = await adminService.getCareerPlan();
+    if (careerRes.data && Array.isArray(careerRes.data)) {
+      const titleMap: Record<string, string> = { bronze: 'Bronze', silver: 'Prata', gold: 'Ouro', diamond: 'Diamante' };
+      const typeMap: Record<string, 'pessoas_ativas' | 'indicado' | 'linhas'> = {
+        pessoas_ativas: 'pessoas_ativas', indicado: 'indicado', linhas: 'linhas',
+      };
+      const levelMap: Record<string, 'qualquer' | 'bronze' | 'prata' | 'ouro'> = {
+        qualquer: 'qualquer', bronze: 'bronze', prata: 'prata', ouro: 'ouro',
+      };
+      careerRes.data.forEach((row: any) => {
+        const label = titleMap[row.title];
+        const idx   = config.careerLevels.findIndex(l => l.title === label);
+        if (idx === -1) return;
+        careerLevelIds[idx] = row.id;
+        config.careerLevels[idx].repurchaseLevels      = row.repurchaseLevels      ?? config.careerLevels[idx].repurchaseLevels;
+        config.careerLevels[idx].teamLevels            = row.teamLevels            ?? config.careerLevels[idx].teamLevels;
+        config.careerLevels[idx].leadershipPercent     = Number(row.leadershipPercent)    ?? config.careerLevels[idx].leadershipPercent;
+        config.careerLevels[idx].minNetworkMovement    = Number(row.minNetworkMovement)   ?? config.careerLevels[idx].minNetworkMovement;
+        config.careerLevels[idx].networkLevelsDepth    = row.networkLevelsDepth    ?? config.careerLevels[idx].networkLevelsDepth;
+        if (row.reqType)     config.careerLevels[idx].req.type     = typeMap[row.reqType]  ?? config.careerLevels[idx].req.type;
+        if (row.reqQuantity !== null) config.careerLevels[idx].req.quantity = row.reqQuantity;
+        if (row.reqLevel)    (config.careerLevels[idx].req as any).level = levelMap[row.reqLevel] ?? config.careerLevels[idx].req.level;
+      });
+    }
+  } catch { /* use defaults */ }
+
+  // Load presentation metrics into store
+  try {
+    await presentationStore.loadMetrics();
+  } catch { /* keep defaults */ }
+
+  savedConfig = JSON.parse(JSON.stringify(config));
 });
 </script>
 <style lang="scss" scoped>

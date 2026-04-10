@@ -123,7 +123,7 @@ defineEmits<{
   'update:modelValue': [value: boolean];
 }>();
 
-const TODAY = new Date('2026-02-18');
+const TODAY = new Date();
 
 // ── Initials ──────────────────────────────────────────────────────────────────
 const initials = computed(() => {

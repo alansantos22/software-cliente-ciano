@@ -59,6 +59,7 @@ export class QuotasService {
 
     return {
       purchasedQuotas: user.purchasedQuotas,
+      adminGrantedQuotas: user.adminGrantedQuotas ?? 0,
       splitQuotas: user.splitQuotas,
       quotaBalance: user.quotaBalance,
       currentPrice: Number(state.currentQuotaPrice),
@@ -110,7 +111,7 @@ export class QuotasService {
 
     // 2-5. Update user quotas and partner level
     user.purchasedQuotas += quantity;
-    user.quotaBalance = user.purchasedQuotas + user.splitQuotas;
+    user.quotaBalance = user.purchasedQuotas + (user.adminGrantedQuotas ?? 0) + user.splitQuotas;
     user.lastPurchaseDate = new Date();
     user.isActive = true;
 

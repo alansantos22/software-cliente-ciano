@@ -69,10 +69,10 @@
       <div class="split-alert">
         <span class="split-alert__icon"><font-awesome-icon icon="hourglass" /></span>
         <span>
-          O preço da cota vai subir no próximo split em:
-          <strong class="split-alert__timer">{{ countdownDisplay }}</strong>
+          Faltam apenas
+          <strong class="split-alert__timer">{{ splitAlertText }}</strong>
         </span>
-        <span class="split-alert__tag">Preço atual garantido por tempo limitado</span>
+        <span class="split-alert__tag">para o próximo {{ nextEventLabel }}</span>
       </div>
 
       <div class="section-header">
@@ -167,7 +167,7 @@
 
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { DsButton } from '@/design-system';
 import { quotasService } from '@/shared/services/quotas.service';
@@ -296,39 +296,29 @@ const packages = computed<Package[]>(() => [
   },
 ]);
 
-// ─── Split countdown ──────────────────────────────────────
-const splitDate = new Date();
-splitDate.setDate(splitDate.getDate() + 4);
+// ─── Split quota progress (from API) ─────────────────────
+const nextEventTarget  = ref(0);
+const nextEventLabel   = ref('split');
+const totalQuotasSold  = ref(0);
 
-const remaining = ref(computeRemaining());
-let countdownTimer: ReturnType<typeof setInterval> | null = null;
+const quotasUntilEvent = computed(() =>
+  Math.max(0, nextEventTarget.value - totalQuotasSold.value),
+);
 
-function computeRemaining() {
-  const diff = Math.max(0, splitDate.getTime() - Date.now());
-  const d = Math.floor(diff / 86_400_000);
-  const h = Math.floor((diff % 86_400_000) / 3_600_000);
-  const m = Math.floor((diff % 3_600_000) / 60_000);
-  const s = Math.floor((diff % 60_000) / 1_000);
-  return { d, h, m, s };
-}
-
-const countdownDisplay = computed(() => {
-  const { d, h, m, s } = remaining.value;
-  if (d > 0) return `${d}d ${String(h).padStart(2,'0')}h ${String(m).padStart(2,'0')}m`;
-  return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+const splitAlertText = computed(() => {
+  if (nextEventTarget.value === 0) return 'em breve';
+  return `${quotasUntilEvent.value} cotas`;
 });
 
 onMounted(async () => {
-  countdownTimer = setInterval(() => { remaining.value = computeRemaining(); }, 1000);
   try {
     const res = await quotasService.getConfig();
-    if (res.data?.currentPrice) quotaPrice.value = res.data.currentPrice;
-    if (res.data?.estimatedYieldPerQuota) grossYieldPerQuota.value = res.data.estimatedYieldPerQuota;
+    if (res.data?.currentPrice)            quotaPrice.value           = res.data.currentPrice;
+    if (res.data?.estimatedYieldPerQuota)  grossYieldPerQuota.value   = res.data.estimatedYieldPerQuota;
+    if (res.data?.nextEventTarget)         nextEventTarget.value      = res.data.nextEventTarget;
+    if (res.data?.nextEventLabel)          nextEventLabel.value       = res.data.nextEventLabel;
+    if (res.data?.totalQuotasSold)         totalQuotasSold.value      = res.data.totalQuotasSold;
   } catch { /* use defaults */ }
-});
-
-onUnmounted(() => {
-  if (countdownTimer) clearInterval(countdownTimer);
 });
 
 // ─── Helpers ───────────────────────────────────────────────

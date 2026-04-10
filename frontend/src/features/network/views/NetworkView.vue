@@ -140,7 +140,7 @@ import NetworkUserRow     from '../components/NetworkUserRow.vue';
 import NetworkUserDetailModal from '../components/NetworkUserDetailModal.vue';
 
 const authStore = useAuthStore();
-const TODAY = new Date('2026-02-18');
+const TODAY = new Date();
 
 // ── State ─────────────────────────────────────────────────────────────────────
 const rootNodes    = ref<NetworkNode[]>([]);
@@ -258,8 +258,7 @@ const filteredNodes = computed<NetworkNode[]>(() => {
 });
 
 // ── Current user title for progress bar ──────────────────────────────────────
-// Showing 'gold' so the user sees a meaningful progression (demo: max is diamond)
-const userTitle = computed(() => 'gold' as const);
+const userTitle = computed(() => (authStore.user?.title ?? 'none') as 'none' | 'bronze' | 'silver' | 'gold' | 'diamond');
 </script>
 
 <style lang="scss" scoped>

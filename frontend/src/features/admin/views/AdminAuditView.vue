@@ -19,7 +19,8 @@
       <select v-model="filterType" class="audit__select">
         <option value="">Todos os tipos</option>
         <option value="purchase">Compra</option>
-        <option value="adjustment">Ajuste Admin</option>
+        <option value="admin_grant">Concessão Admin</option>
+        <option value="adjustment">Ajuste</option>
         <option value="split">Split</option>
         <option value="bonus">Bônus</option>
         <option value="reversal">Estorno</option>
@@ -207,7 +208,8 @@ function formatCurrency(value: number): string {
 function getTypeLabel(type: string): string {
   const map: Record<string, string> = {
     purchase: 'Compra',
-    adjustment: 'Ajuste Admin',
+    admin_grant: 'Concessão Admin',
+    adjustment: 'Ajuste',
     split: 'Split',
     bonus: 'Bônus',
     reversal: 'Estorno',
@@ -218,6 +220,7 @@ function getTypeLabel(type: string): string {
 function getTypeIcon(type: string): string {
   const map: Record<string, string> = {
     purchase: 'cart-shopping',
+    admin_grant: 'user-plus',
     adjustment: 'screwdriver-wrench',
     split: 'code-branch',
     bonus: 'gift',
@@ -427,11 +430,12 @@ function getStatusLabel(status: string): string {
   font-weight: 700;
   white-space: nowrap;
 
-  &--purchase   { background: rgba(var(--success-rgb), 0.1);  color: var(--color-success); border: 1px solid rgba(var(--success-rgb), 0.3); }
-  &--adjustment { background: rgba(var(--warning-rgb), 0.12); color: #92400e;              border: 1px solid rgba(var(--warning-rgb), 0.35); }
-  &--split      { background: rgba(var(--primary-500-rgb), 0.1); color: var(--primary-700); border: 1px solid rgba(var(--primary-500-rgb), 0.3); }
-  &--bonus      { background: rgba(var(--secondary-500-rgb), 0.1); color: var(--secondary-700); border: 1px solid rgba(var(--secondary-500-rgb), 0.3); }
-  &--reversal   { background: rgba(var(--error-rgb), 0.1);   color: var(--color-error);   border: 1px solid rgba(var(--error-rgb), 0.3); }
+  &--purchase    { background: rgba(var(--success-rgb), 0.1);  color: var(--color-success); border: 1px solid rgba(var(--success-rgb), 0.3); }
+  &--admin_grant { background: rgba(217, 119, 6, 0.12);        color: #92400e;              border: 1px solid rgba(217, 119, 6, 0.35); }
+  &--adjustment  { background: rgba(var(--warning-rgb), 0.12); color: #92400e;              border: 1px solid rgba(var(--warning-rgb), 0.35); }
+  &--split       { background: rgba(var(--primary-500-rgb), 0.1); color: var(--primary-700); border: 1px solid rgba(var(--primary-500-rgb), 0.3); }
+  &--bonus       { background: rgba(var(--secondary-500-rgb), 0.1); color: var(--secondary-700); border: 1px solid rgba(var(--secondary-500-rgb), 0.3); }
+  &--reversal    { background: rgba(var(--error-rgb), 0.1);   color: var(--color-error);   border: 1px solid rgba(var(--error-rgb), 0.3); }
 }
 
 .audit__quotas {

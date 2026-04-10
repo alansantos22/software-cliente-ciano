@@ -66,6 +66,9 @@ export class DashboardService {
 
     return {
       quotaBalance: user.quotaBalance,
+      purchasedQuotas: user.purchasedQuotas,
+      adminGrantedQuotas: user.adminGrantedQuotas ?? 0,
+      splitQuotas: user.splitQuotas,
       estimatedPatrimony: user.quotaBalance * Number(state?.currentQuotaPrice || 2000),
       currentPrice: Number(state?.currentQuotaPrice || 2000),
       totalEarnings: Number(user.totalEarnings),

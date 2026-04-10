@@ -24,6 +24,7 @@ export enum TransactionType {
   WITHDRAWAL = 'withdrawal',
   REFUND = 'refund',
   ADJUSTMENT = 'adjustment',
+  ADMIN_GRANT = 'admin_grant',
 }
 
 export enum TransactionStatus {
