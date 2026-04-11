@@ -21,6 +21,7 @@ import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { UserRole } from '../../shared/interfaces/enums';
 import { generateRandomCode } from '../../shared/utils/helpers';
+import { EmailService } from '../../shared/email/email.service';
 
 @Injectable()
 export class AuthService {
@@ -32,6 +33,7 @@ export class AuthService {
     @InjectRepository(PasswordResetToken) private readonly resetRepo: Repository<PasswordResetToken>,
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
+    private readonly emailService: EmailService,
   ) {}
 
   async login(dto: LoginDto) {
@@ -159,8 +161,7 @@ export class AuthService {
 
     await this.resetRepo.save(resetToken);
 
-    // TODO: Integrate real email service
-    this.logger.warn(`🔑 [DEV] Password reset token for ${user.email}: ${token}`);
+    await this.emailService.sendPasswordResetEmail(user.email, user.name, token);
 
     return { message: 'Se o email existir, um link de recuperação será enviado' };
   }

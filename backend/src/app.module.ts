@@ -11,7 +11,11 @@ import {
   databaseConfig,
   jwtConfig,
   throttleConfig,
+  emailConfig,
 } from './config';
+
+// Shared modules
+import { EmailModule } from './shared/email/email.module';
 
 // Core modules
 import { DatabaseModule } from './core/database/database.module';
@@ -46,7 +50,7 @@ import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: `.env.${process.env.NODE_ENV || 'development'}`,
-      load: [appConfig, databaseConfig, jwtConfig, throttleConfig],
+      load: [appConfig, databaseConfig, jwtConfig, throttleConfig, emailConfig],
     }),
 
     // Database
@@ -82,6 +86,9 @@ import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 
     // Scheduled Tasks
     ScheduleModule.forRoot(),
+
+    // Shared
+    EmailModule,
 
     // Core
     DatabaseModule,

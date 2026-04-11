@@ -178,7 +178,7 @@ function openUserDetail(node: NetworkNode) {
 
 // ── Referral link ─────────────────────────────────────────────────────────────
 const referralLink = computed(
-  () => `https://ciano.com.br/r/${authStore.user?.referralCode ?? 'ABC123'}`,
+  () => `https://redeciano.com.br/r/${authStore.user?.referralCode ?? 'ABC123'}`,
 );
 
 // ── Flat nodes (all, excluding root) ─────────────────────────────────────────

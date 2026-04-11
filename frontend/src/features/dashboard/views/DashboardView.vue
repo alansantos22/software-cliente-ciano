@@ -23,7 +23,7 @@
             <span class="referral-card__eyebrow">Seu código de patrocínio</span>
             <div class="referral-card__code-row">
               <span class="referral-card__code">{{ authStore.user?.referralCode ?? '—' }}</span>
-              <span class="referral-card__link">ciano.com.br/r/{{ authStore.user?.referralCode ?? '' }}</span>
+              <span class="referral-card__link">redeciano.com.br/r/{{ authStore.user?.referralCode ?? '' }}</span>
             </div>
             <p class="referral-card__desc">Compartilhe este link e ganhe comissões em cada nova adesão da sua rede.</p>
           </div>
@@ -540,7 +540,7 @@ function goToNetwork()  { router.push('/network'); }
 function goToQuotas()   { router.push('/quotas'); }
 
 async function copyReferralLink() {
-  const link = `https://ciano.com.br/r/${authStore.user?.referralCode}`;
+  const link = `https://redeciano.com.br/r/${authStore.user?.referralCode}`;
   try {
     await navigator.clipboard.writeText(link);
   } catch {

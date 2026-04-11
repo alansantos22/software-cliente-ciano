@@ -79,8 +79,13 @@ export const useAuthStore = defineStore('auth', () => {
       isLoading.value = true;
       const { data } = await authService.me();
       user.value = data;
-    } catch {
-      clearAuth();
+    } catch (error: any) {
+      // Só desloga em erros de autenticação (401/403).
+      // Erros temporários de rede, timeout ou servidor (5xx) não devem derrubar a sessão.
+      const status = error?.response?.status;
+      if (status === 401 || status === 403) {
+        clearAuth();
+      }
     } finally {
       isLoading.value = false;
     }
