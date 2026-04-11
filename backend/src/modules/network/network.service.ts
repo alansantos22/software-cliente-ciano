@@ -113,7 +113,7 @@ export class NetworkService {
 
       totalVolume += node.totalVolume;
 
-      if (node.title !== 'none') qualifiedBronzes++;
+      if (node.isActive && node.title !== 'none') qualifiedBronzes++;
     }
 
     // Count qualified lines
@@ -170,7 +170,7 @@ export class NetworkService {
     const hierarchy: Record<string, number> = { none: 0, bronze: 1, silver: 2, gold: 3, diamond: 4 };
     const minVal = hierarchy[minTitle] || 0;
 
-    if ((hierarchy[node.title] || 0) >= minVal) return true;
+    if (node.isActive && (hierarchy[node.title] || 0) >= minVal) return true;
 
     for (const child of node.children) {
       if (this.nodeOrChildHasTitle(child, minTitle)) return true;

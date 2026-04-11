@@ -85,6 +85,9 @@ export class User {
   @Column({ type: 'int', default: 0, name: 'purchased_quotas' })
   purchasedQuotas: number;
 
+  @Column({ type: 'int', default: 0, name: 'admin_granted_quotas' })
+  adminGrantedQuotas: number;
+
   @Column({ type: 'int', default: 0, name: 'split_quotas' })
   splitQuotas: number;
 

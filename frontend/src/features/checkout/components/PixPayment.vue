@@ -87,7 +87,7 @@
             adesão da sua rede.
           </p>
           <div class="referral__link-box">
-            <span class="referral__link">ciano.com.br/{{ referralCode }}</span>
+            <span class="referral__link">redeciano.com.br/{{ referralCode }}</span>
             <button
               class="referral__copy-btn"
               :class="{ 'referral__copy-btn--copied': isReferralCopied }"
@@ -197,7 +197,7 @@ async function copyPixCode() {
 }
 
 async function copyReferralLink() {
-  const link = `ciano.com.br/${props.referralCode}`;
+  const link = `redeciano.com.br/${props.referralCode}`;
   try {
     await navigator.clipboard.writeText(link);
   } catch {

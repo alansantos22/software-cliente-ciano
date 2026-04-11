@@ -46,7 +46,11 @@
             <!-- Cotas -->
             <td class="crm-table__quotas-cell">
               <div class="crm-quotas">
-                <span class="crm-quotas__bought">{{ user.purchasedQuotas }}</span>
+                <span class="crm-quotas__total" :title="`Total: ${user.quotaBalance} cotas`">{{ user.quotaBalance }}</span>
+                <span class="crm-quotas__bought" title="Cotas compradas">{{ user.purchasedQuotas }} compradas</span>
+                <span class="crm-quotas__admin" v-if="(user.adminGrantedQuotas ?? 0) > 0" title="Cotas concedidas pelo admin">
+                  +{{ user.adminGrantedQuotas }} admin
+                </span>
                 <span class="crm-quotas__split" v-if="user.splitQuotas > 0" title="Cotas de Split">
                   +{{ user.splitQuotas }} split
                 </span>
@@ -383,10 +387,21 @@ function getTitleLabel(title: UserTitle): string {
   flex-direction: column;
   gap: 2px;
 
-  &__bought {
+  &__total {
     font-weight: 700;
     font-size: 0.9rem;
     color: var(--text-primary);
+  }
+
+  &__bought {
+    font-size: 0.72rem;
+    color: var(--text-secondary);
+  }
+
+  &__admin {
+    font-size: 0.72rem;
+    color: #f59e0b;
+    font-weight: 600;
   }
 
   &__split {

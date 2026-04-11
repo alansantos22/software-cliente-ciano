@@ -74,7 +74,7 @@
       <p class="referral__eyebrow">Enquanto aguardamos a compensação...</p>
       <h3>Compartilhe e já comece a ganhar</h3>
       <div class="referral__link-row">
-        <span class="referral__link">ciano.com.br/{{ referralCode }}</span>
+        <span class="referral__link">redeciano.com.br/{{ referralCode }}</span>
         <button
           class="referral__btn"
           :class="{ 'referral__btn--copied': isReferralCopied }"
@@ -126,7 +126,7 @@ async function copyCode() {
 
 async function copyReferral() {
   try {
-    await navigator.clipboard.writeText(`ciano.com.br/${props.referralCode}`);
+    await navigator.clipboard.writeText(`redeciano.com.br/${props.referralCode}`);
   } catch (_) { /* fallback */ }
   isReferralCopied.value = true;
   setTimeout(() => { isReferralCopied.value = false; }, 2500);

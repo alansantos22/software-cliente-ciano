@@ -79,7 +79,7 @@
           </p>
           <div class="referral__box">
             <div class="referral__link-display">
-              <span>ciano.com.br/</span><strong>{{ referralCode }}</strong>
+              <span>redeciano.com.br/</span><strong>{{ referralCode }}</strong>
             </div>
             <button
               class="referral__copy-btn"
@@ -232,7 +232,7 @@ function launchConfetti() {
 }
 
 async function copyLink() {
-  const link = `ciano.com.br/${referralCode.value}`;
+  const link = `redeciano.com.br/${referralCode.value}`;
   try {
     await navigator.clipboard.writeText(link);
   } catch (_) {

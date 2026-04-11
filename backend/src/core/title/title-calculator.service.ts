@@ -25,6 +25,15 @@ export class TitleCalculatorService {
     const user = await this.userRepo.findOne({ where: { id: userId } });
     if (!user) return UserTitle.NONE;
 
+    // Inactive users cannot hold any title
+    if (!this.isActive(user)) {
+      if (user.title !== UserTitle.NONE) {
+        await this.userRepo.update(userId, { title: UserTitle.NONE });
+        this.logger.log(`🔻 ${user.name}: ${user.title} → none (inativo)`);
+      }
+      return UserTitle.NONE;
+    }
+
     const requirements = await this.titleReqRepo.find({ order: { id: 'DESC' } });
     let newTitle = UserTitle.NONE;
 
@@ -102,7 +111,7 @@ export class TitleCalculatorService {
     const minTitleValue = titleHierarchy[minLevel] || 0;
 
     const qualifiedCount = directs.filter(
-      (d) => (titleHierarchy[d.title] || 0) >= minTitleValue,
+      (d) => this.isActive(d) && (titleHierarchy[d.title] || 0) >= minTitleValue,
     ).length;
 
     return qualifiedCount >= quantity;
@@ -157,7 +166,7 @@ export class TitleCalculatorService {
     // Check the root user first
     const rootUser = await this.userRepo.findOne({ where: { id: rootId } });
     if (!rootUser) return false;
-    if ((titleHierarchy[rootUser.title] || 0) >= minTitleValue) return true;
+    if (this.isActive(rootUser) && (titleHierarchy[rootUser.title] || 0) >= minTitleValue) return true;
 
     // BFS to check entire sub-tree
     const queue = [rootId];
@@ -173,7 +182,7 @@ export class TitleCalculatorService {
       });
 
       for (const child of children) {
-        if ((titleHierarchy[child.title] || 0) >= minTitleValue) return true;
+        if (this.isActive(child) && (titleHierarchy[child.title] || 0) >= minTitleValue) return true;
         queue.push(child.id);
       }
     }

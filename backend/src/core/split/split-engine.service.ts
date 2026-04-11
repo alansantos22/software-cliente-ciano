@@ -33,7 +33,7 @@ export class SplitEngineService {
    */
   async checkAndProcess(): Promise<void> {
     const state = await this.getState();
-    const target = this.calculateTarget(state.splitCount);
+    const target = state.nextEventTarget || this.calculateTarget(state.splitCount);
 
     if (state.totalQuotasSold < target) return;
 
@@ -73,14 +73,15 @@ export class SplitEngineService {
     });
     await this.eventRepo.save(event);
 
-    // Update state
+    // Update state — move the target forward by one lot size from where we are now
+    const lotSize = this.calculateTarget(state.splitCount);
     state.currentPhase = newPhase;
     state.currentQuotaPrice = newPrice;
-    state.nextEventTarget = this.calculateTarget(state.splitCount);
+    state.nextEventTarget = state.totalQuotasSold + lotSize;
     state.nextEventLabel = newPhase >= 3 ? 'Split' : 'Aumento de Preço';
     await this.stateRepo.save(state);
 
-    this.logger.log(`📈 Price increase: phase ${newPhase}, R$${newPrice}`);
+    this.logger.log(`📈 Price increase: phase ${newPhase}, R$${newPrice}, next target: ${state.nextEventTarget}`);
   }
 
   private async executeSplit(state: QuotaSystemState): Promise<void> {
@@ -90,24 +91,24 @@ export class SplitEngineService {
 
     this.logger.log(`🔄 Executing SPLIT #${newSplitCount}`);
 
-    // Step 1: For every user with quotas (purchased or from previous splits),
-    // apply a 2:1 split: new_split_quotas = purchased_quotas + (split_quotas * 2)
-    // This ensures new_quota_balance = purchased + new_split = 2 * (purchased + split) = 2 * old_quota_balance
+    // Step 1: For every user with quotas (purchased, admin-granted, or from previous splits),
+    // apply a 2:1 split: new_split_quotas = purchased_quotas + admin_granted_quotas + (split_quotas * 2)
+    // This ensures new_quota_balance = 2 * old_quota_balance for all quota types
     await this.userRepo
       .createQueryBuilder()
       .update(User)
       .set({
-        splitQuotas: () => 'purchased_quotas + (split_quotas * 2)',
+        splitQuotas: () => 'purchased_quotas + admin_granted_quotas + (split_quotas * 2)',
       })
-      .where('purchased_quotas > 0 OR split_quotas > 0')
+      .where('purchased_quotas > 0 OR admin_granted_quotas > 0 OR split_quotas > 0')
       .execute();
 
-    // Step 2: Recalculate quota_balance for ALL users from the updated split_quotas
+    // Step 2: Recalculate quota_balance for ALL users from the updated fields
     await this.userRepo
       .createQueryBuilder()
       .update(User)
       .set({
-        quotaBalance: () => 'purchased_quotas + split_quotas',
+        quotaBalance: () => 'purchased_quotas + admin_granted_quotas + split_quotas',
       })
       .execute();
 
@@ -129,16 +130,17 @@ export class SplitEngineService {
       .select('SUM(u.split_quotas)', 'total')
       .getRawOne();
 
-    // Reset state
+    // Reset state — new lot size is based on the new splitCount, target advances from current sold
+    const newLotSize = this.calculateTarget(newSplitCount);
     state.currentQuotaPrice = newPrice;
     state.currentPhase = 0;
     state.splitCount = newSplitCount;
     state.totalSplitQuotas = parseInt(result?.total || '0', 10);
-    state.nextEventTarget = this.calculateTarget(newSplitCount);
+    state.nextEventTarget = state.totalQuotasSold + newLotSize;
     state.nextEventLabel = 'Aumento de Preço';
     await this.stateRepo.save(state);
 
-    this.logger.log(`✅ Split #${newSplitCount} completed. New price: R$${newPrice}`);
+    this.logger.log(`✅ Split #${newSplitCount} completed. New price: R$${newPrice}, next target: ${state.nextEventTarget}`);
   }
 
   async incrementQuotasSold(quantity: number): Promise<void> {

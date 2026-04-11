@@ -37,8 +37,13 @@ api.interceptors.response.use(
   async (error: AxiosError) => {
     const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
 
-    // Handle 401 Unauthorized - Token expired (skip for login/register endpoints)
-    const isAuthEndpoint = originalRequest.url?.includes('/auth/login') || originalRequest.url?.includes('/auth/register');
+    // Handle 401 Unauthorized - Token expired
+    // Skip auth endpoints to avoid infinite loops
+    const isAuthEndpoint =
+      originalRequest.url?.includes('/auth/login') ||
+      originalRequest.url?.includes('/auth/register') ||
+      originalRequest.url?.includes('/auth/refresh');
+
     if (error.response?.status === 401 && !originalRequest._retry && !isAuthEndpoint) {
       originalRequest._retry = true;
 
@@ -51,7 +56,9 @@ api.interceptors.response.use(
             { refreshToken }
           );
 
-          const { accessToken, refreshToken: newRefreshToken } = response.data;
+          // Backend wraps all responses in { success, data, ... } envelope
+          const payload = response.data?.data ?? response.data;
+          const { accessToken, refreshToken: newRefreshToken } = payload;
 
           const authStore = useAuthStore();
           authStore.setTokens(accessToken, newRefreshToken);

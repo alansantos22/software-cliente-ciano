@@ -62,7 +62,7 @@ export class AdminManagerService {
     return this.userRepo.find({
       where: { role: 'user' as any, deletedAt: IsNull() },
       order: { createdAt: 'DESC' },
-      select: ['id', 'name', 'email', 'cpf', 'title', 'partnerLevel', 'quotaBalance', 'purchasedQuotas', 'splitQuotas', 'sponsorId', 'isActive', 'createdAt'],
+      select: ['id', 'name', 'email', 'cpf', 'title', 'partnerLevel', 'quotaBalance', 'purchasedQuotas', 'adminGrantedQuotas', 'splitQuotas', 'sponsorId', 'isActive', 'createdAt'],
     });
   }
 
@@ -72,24 +72,24 @@ export class AdminManagerService {
     const user = await this.userRepo.findOne({ where: { id: userId } });
     if (!user) throw new BadRequestException('Usuário não encontrado');
 
-    user.purchasedQuotas += quantity;
-    user.quotaBalance = user.purchasedQuotas + user.splitQuotas;
+    user.adminGrantedQuotas = (user.adminGrantedQuotas ?? 0) + quantity;
+    user.quotaBalance = user.purchasedQuotas + user.adminGrantedQuotas + user.splitQuotas;
     await this.userRepo.save(user);
 
     const txn = this.txnRepo.create({
       userId: user.id,
-      type: TransactionType.ADJUSTMENT,
+      type: TransactionType.ADMIN_GRANT,
       amount: 0,
       quotasAffected: quantity,
-      description: `Ajuste admin: +${quantity} cotas${reason ? ` — ${reason}` : ''}`,
+      description: `Concessão admin: +${quantity} cota(s)${reason ? ` — ${reason}` : ''}`,
       status: TransactionStatus.COMPLETED,
       referenceMonth: getCurrentPeriod(),
       completedAt: new Date(),
     });
     await this.txnRepo.save(txn);
 
-    this.logger.warn(`⚙️ Admin added ${quantity} quotas to user ${userId}`);
-    return { message: `${quantity} cotas adicionadas`, newBalance: user.quotaBalance };
+    this.logger.warn(`⚙️ Admin granted ${quantity} quota(s) to user ${userId}`);
+    return { message: `${quantity} cotas concedidas`, newBalance: user.quotaBalance };
   }
 
   async removeQuotas(userId: string, quantity: number, managerPassword: string, reason?: string) {
@@ -98,27 +98,30 @@ export class AdminManagerService {
     const user = await this.userRepo.findOne({ where: { id: userId } });
     if (!user) throw new BadRequestException('Usuário não encontrado');
 
-    if (user.purchasedQuotas < quantity) {
-      throw new BadRequestException('Usuário não possui cotas suficientes');
+    const available = user.adminGrantedQuotas ?? 0;
+    if (available < quantity) {
+      throw new BadRequestException(
+        `Somente cotas concedidas pelo admin podem ser removidas. Disponível: ${available} cota(s).`,
+      );
     }
 
-    user.purchasedQuotas -= quantity;
-    user.quotaBalance = user.purchasedQuotas + user.splitQuotas;
+    user.adminGrantedQuotas = available - quantity;
+    user.quotaBalance = user.purchasedQuotas + user.adminGrantedQuotas + user.splitQuotas;
     await this.userRepo.save(user);
 
     const txn = this.txnRepo.create({
       userId: user.id,
-      type: TransactionType.ADJUSTMENT,
+      type: TransactionType.ADMIN_GRANT,
       amount: 0,
       quotasAffected: -quantity,
-      description: `Ajuste admin: -${quantity} cotas${reason ? ` — ${reason}` : ''}`,
+      description: `Remoção admin: -${quantity} cota(s)${reason ? ` — ${reason}` : ''}`,
       status: TransactionStatus.COMPLETED,
       referenceMonth: getCurrentPeriod(),
       completedAt: new Date(),
     });
     await this.txnRepo.save(txn);
 
-    this.logger.warn(`⚙️ Admin removed ${quantity} quotas from user ${userId}`);
+    this.logger.warn(`⚙️ Admin removed ${quantity} granted quota(s) from user ${userId}`);
     return { message: `${quantity} cotas removidas`, newBalance: user.quotaBalance };
   }
 

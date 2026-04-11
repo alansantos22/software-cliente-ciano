@@ -5,8 +5,10 @@
         <thead>
           <tr>
             <th>Usuário</th>
-            <th title="Saldo total de cotas">Cotas</th>
+            <th title="Cotas compradas pelo usuário">Compradas</th>
+            <th title="Cotas concedidas pelo admin">Admin</th>
             <th title="Cotas recebidas via split">Split</th>
+            <th title="Saldo total (compradas + admin + split)">Total</th>
             <th>Patrocinador</th>
             <th>Nível</th>
             <th class="mgr-user-table__th--center">Ações</th>
@@ -24,14 +26,29 @@
               </div>
             </td>
 
-            <!-- Cotas -->
+            <!-- Cotas compradas -->
             <td>
-              <span class="mgr-quotas">{{ user.quotaBalance }}</span>
+              <span class="mgr-quotas">{{ user.purchasedQuotas }}</span>
+            </td>
+
+            <!-- Cotas admin -->
+            <td>
+              <span
+                :class="['mgr-admin-quotas', { 'mgr-admin-quotas--zero': !(user.adminGrantedQuotas ?? 0) }]"
+                :title="(user.adminGrantedQuotas ?? 0) > 0 ? 'Cotas concedidas pelo admin' : 'Nenhuma cota admin'"
+              >
+                {{ (user.adminGrantedQuotas ?? 0) > 0 ? `+${user.adminGrantedQuotas}` : '—' }}
+              </span>
             </td>
 
             <!-- Split -->
             <td>
               <span class="mgr-split">{{ user.splitQuotas > 0 ? `+${user.splitQuotas}` : '—' }}</span>
+            </td>
+
+            <!-- Total -->
+            <td>
+              <span class="mgr-quotas mgr-quotas--total">{{ user.quotaBalance }}</span>
             </td>
 
             <!-- Patrocinador -->
@@ -103,7 +120,7 @@
           </tr>
 
           <tr v-if="users.length === 0">
-            <td colspan="6" class="mgr-user-table__empty">Nenhum usuário encontrado.</td>
+            <td colspan="8" class="mgr-user-table__empty">Nenhum usuário encontrado.</td>
           </tr>
         </tbody>
       </table>
@@ -299,7 +316,20 @@ function getSponsorName(sponsorId: string | null): string {
 .mgr-quotas {
   font-weight: 700;
   color: var(--text-primary);
+  &--total {
+    color: $primary-600;
+  }
 }
+
+.mgr-admin-quotas {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #d97706;
+
+  &--zero {
+    color: var(--text-muted, #9ca3af);
+    font-weight: 400;
+  }}
 
 .mgr-split {
   font-size: 0.8125rem;

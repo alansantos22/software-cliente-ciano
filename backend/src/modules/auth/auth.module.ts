@@ -10,10 +10,12 @@ import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { User } from '../users/entities/user.entity';
 import { RefreshToken } from './entities/refresh-token.entity';
 import { PasswordResetToken } from './entities/password-reset-token.entity';
+import { EmailModule } from '../../shared/email/email.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([User, RefreshToken, PasswordResetToken]),
+    EmailModule,
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.registerAsync({
       inject: [ConfigService],

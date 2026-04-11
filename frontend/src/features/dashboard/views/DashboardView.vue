@@ -23,7 +23,7 @@
             <span class="referral-card__eyebrow">Seu código de patrocínio</span>
             <div class="referral-card__code-row">
               <span class="referral-card__code">{{ authStore.user?.referralCode ?? '—' }}</span>
-              <span class="referral-card__link">ciano.com.br/r/{{ authStore.user?.referralCode ?? '' }}</span>
+              <span class="referral-card__link">redeciano.com.br/r/{{ authStore.user?.referralCode ?? '' }}</span>
             </div>
             <p class="referral-card__desc">Compartilhe este link e ganhe comissões em cada nova adesão da sua rede.</p>
           </div>
@@ -540,7 +540,7 @@ function goToNetwork()  { router.push('/network'); }
 function goToQuotas()   { router.push('/quotas'); }
 
 async function copyReferralLink() {
-  const link = `https://ciano.com.br/r/${authStore.user?.referralCode}`;
+  const link = `https://redeciano.com.br/r/${authStore.user?.referralCode}`;
   try {
     await navigator.clipboard.writeText(link);
   } catch {
@@ -610,9 +610,11 @@ onMounted(async () => {
     if (chartRes.data) {
       ticker.value = {
         currentPrice: chartRes.data.currentPrice || 0,
-        splitProgress: chartRes.data.totalSold ? Math.round((chartRes.data.totalSold / chartRes.data.nextEventTarget) * 100) : 0,
+        splitProgress: chartRes.data.totalSold && chartRes.data.nextEventTarget
+          ? Math.min(100, Math.round((chartRes.data.totalSold / chartRes.data.nextEventTarget) * 100))
+          : 0,
         nextEventLabel: chartRes.data.nextEventLabel || '',
-        quotasToNextEvent: (chartRes.data.nextEventTarget || 0) - (chartRes.data.totalSold || 0),
+        quotasToNextEvent: Math.max(0, (chartRes.data.nextEventTarget || 0) - (chartRes.data.totalSold || 0)),
         changePercent: 0,
       };
     }

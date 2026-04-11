@@ -173,7 +173,7 @@ export class AdminService {
     return this.userRepo.find({
       where: { deletedAt: IsNull() },
       order: { totalEarnings: 'DESC' },
-      select: ['id', 'name', 'title', 'totalEarnings', 'isActive', 'email', 'purchasedQuotas', 'splitQuotas', 'quotaBalance', 'partnerLevel', 'lastPurchaseDate'],
+      select: ['id', 'name', 'title', 'totalEarnings', 'isActive', 'email', 'purchasedQuotas', 'adminGrantedQuotas', 'splitQuotas', 'quotaBalance', 'partnerLevel', 'lastPurchaseDate'],
     });
   }
 

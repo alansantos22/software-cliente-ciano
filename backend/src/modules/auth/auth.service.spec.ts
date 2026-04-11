@@ -8,6 +8,7 @@ import { AuthService } from './auth.service';
 import { User } from '../users/entities/user.entity';
 import { RefreshToken } from './entities/refresh-token.entity';
 import { PasswordResetToken } from './entities/password-reset-token.entity';
+import { EmailService } from '../../shared/email/email.service';
 import { UserRole } from '../../shared/interfaces/enums';
 
 // Mock argon2
@@ -90,6 +91,7 @@ describe('AuthService', () => {
         { provide: getRepositoryToken(PasswordResetToken), useValue: resetRepo },
         { provide: JwtService, useValue: jwtService },
         { provide: ConfigService, useValue: configService },
+        { provide: EmailService, useValue: { sendPasswordResetEmail: jest.fn().mockResolvedValue(undefined) } },
       ],
     }).compile();
 

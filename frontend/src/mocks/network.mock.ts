@@ -294,7 +294,7 @@ export function calculateNetworkStats(tree: NetworkNode): NetworkStats {
     const lineId = child.id;
     const lineFlat = flattenNetwork(child);
     const bronzesInLine = lineFlat.filter(
-      (n) => n.title === 'bronze' || n.title === 'silver' || n.title === 'gold' || n.title === 'diamond',
+      (n) => n.isActive && (n.title === 'bronze' || n.title === 'silver' || n.title === 'gold' || n.title === 'diamond'),
     ).length;
     if (bronzesInLine > 0) bronzesByLine.set(lineId, bronzesInLine);
   }
@@ -306,7 +306,7 @@ export function calculateNetworkStats(tree: NetworkNode): NetworkStats {
     activeMembers: flat.filter((n) => n.isActive).length,
     inactiveMembers: flat.filter((n) => !n.isActive).length,
     qualifiedBronzes: flat.filter(
-      (n) => n.title === 'bronze' || n.title === 'silver' || n.title === 'gold' || n.title === 'diamond',
+      (n) => n.isActive && (n.title === 'bronze' || n.title === 'silver' || n.title === 'gold' || n.title === 'diamond'),
     ).length,
     qualifiedLines: bronzesByLine.size,
     titleDistribution: { none: 0, bronze: 0, silver: 0, gold: 0, diamond: 0 },

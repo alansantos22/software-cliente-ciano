@@ -118,4 +118,31 @@ export const adminService = {
   getTransactionLog(params?: { type?: string; userId?: string; month?: string; page?: number; limit?: number }) {
     return api.get('/admin/audit/transactions', { params });
   },
+
+  // ── Presentation Metrics ──
+  getPresentationMetrics() {
+    return api.get('/admin/presentation-metrics');
+  },
+
+  updatePresentationMetrics(metrics: unknown) {
+    return api.put('/admin/presentation-metrics', { metrics });
+  },
+
+  // ── Career Plan ──
+  getCareerPlan() {
+    return api.get('/admin/career-plan');
+  },
+
+  updateCareerPlan(titleId: number, data: Record<string, unknown>) {
+    return api.put(`/admin/career-plan/${titleId}`, data);
+  },
+
+  // ── Monthly Config ──
+  getMonthlyConfig(month: string) {
+    return api.get(`/admin/financial/monthly/${month}`);
+  },
+
+  updateMonthlyConfig(month: string, data: Record<string, unknown>) {
+    return api.put(`/admin/financial/monthly/${month}`, data);
+  },
 };
