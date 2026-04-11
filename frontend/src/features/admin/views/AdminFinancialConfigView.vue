@@ -791,7 +791,7 @@ async function confirmSave() {
     for (let i = 0; i < config.careerLevels.length; i++) {
       const level = config.careerLevels[i];
       const id    = careerLevelIds[i];
-      if (!id) continue;
+      if (!level || !id) continue;
       await adminService.updateCareerPlan(id, {
         title:               titleToKey[level.title],
         reqType:             level.req.type,
@@ -878,14 +878,16 @@ onMounted(async () => {
         const idx   = config.careerLevels.findIndex(l => l.title === label);
         if (idx === -1) return;
         careerLevelIds[idx] = row.id;
-        config.careerLevels[idx].repurchaseLevels      = row.repurchaseLevels      ?? config.careerLevels[idx].repurchaseLevels;
-        config.careerLevels[idx].teamLevels            = row.teamLevels            ?? config.careerLevels[idx].teamLevels;
-        config.careerLevels[idx].leadershipPercent     = Number(row.leadershipPercent)    ?? config.careerLevels[idx].leadershipPercent;
-        config.careerLevels[idx].minNetworkMovement    = Number(row.minNetworkMovement)   ?? config.careerLevels[idx].minNetworkMovement;
-        config.careerLevels[idx].networkLevelsDepth    = row.networkLevelsDepth    ?? config.careerLevels[idx].networkLevelsDepth;
-        if (row.reqType)     config.careerLevels[idx].req.type     = typeMap[row.reqType]  ?? config.careerLevels[idx].req.type;
-        if (row.reqQuantity !== null) config.careerLevels[idx].req.quantity = row.reqQuantity;
-        if (row.reqLevel)    (config.careerLevels[idx].req as any).level = levelMap[row.reqLevel] ?? config.careerLevels[idx].req.level;
+        const entry = config.careerLevels[idx];
+        if (!entry) return;
+        entry.repurchaseLevels      = row.repurchaseLevels      ?? entry.repurchaseLevels;
+        entry.teamLevels            = row.teamLevels            ?? entry.teamLevels;
+        entry.leadershipPercent     = Number(row.leadershipPercent)    ?? entry.leadershipPercent;
+        entry.minNetworkMovement    = Number(row.minNetworkMovement)   ?? entry.minNetworkMovement;
+        entry.networkLevelsDepth    = row.networkLevelsDepth    ?? entry.networkLevelsDepth;
+        if (row.reqType)     entry.req.type     = typeMap[row.reqType]  ?? entry.req.type;
+        if (row.reqQuantity !== null) entry.req.quantity = row.reqQuantity;
+        if (row.reqLevel)    (entry.req as any).level = levelMap[row.reqLevel] ?? entry.req.level;
       });
     }
   } catch { /* use defaults */ }
