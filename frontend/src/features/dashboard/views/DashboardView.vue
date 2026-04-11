@@ -610,9 +610,11 @@ onMounted(async () => {
     if (chartRes.data) {
       ticker.value = {
         currentPrice: chartRes.data.currentPrice || 0,
-        splitProgress: chartRes.data.totalSold ? Math.round((chartRes.data.totalSold / chartRes.data.nextEventTarget) * 100) : 0,
+        splitProgress: chartRes.data.totalSold && chartRes.data.nextEventTarget
+          ? Math.min(100, Math.round((chartRes.data.totalSold / chartRes.data.nextEventTarget) * 100))
+          : 0,
         nextEventLabel: chartRes.data.nextEventLabel || '',
-        quotasToNextEvent: (chartRes.data.nextEventTarget || 0) - (chartRes.data.totalSold || 0),
+        quotasToNextEvent: Math.max(0, (chartRes.data.nextEventTarget || 0) - (chartRes.data.totalSold || 0)),
         changePercent: 0,
       };
     }

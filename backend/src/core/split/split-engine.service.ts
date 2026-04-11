@@ -33,7 +33,7 @@ export class SplitEngineService {
    */
   async checkAndProcess(): Promise<void> {
     const state = await this.getState();
-    const target = this.calculateTarget(state.splitCount);
+    const target = state.nextEventTarget || this.calculateTarget(state.splitCount);
 
     if (state.totalQuotasSold < target) return;
 
@@ -73,14 +73,15 @@ export class SplitEngineService {
     });
     await this.eventRepo.save(event);
 
-    // Update state
+    // Update state — move the target forward by one lot size from where we are now
+    const lotSize = this.calculateTarget(state.splitCount);
     state.currentPhase = newPhase;
     state.currentQuotaPrice = newPrice;
-    state.nextEventTarget = this.calculateTarget(state.splitCount);
+    state.nextEventTarget = state.totalQuotasSold + lotSize;
     state.nextEventLabel = newPhase >= 3 ? 'Split' : 'Aumento de Preço';
     await this.stateRepo.save(state);
 
-    this.logger.log(`📈 Price increase: phase ${newPhase}, R$${newPrice}`);
+    this.logger.log(`📈 Price increase: phase ${newPhase}, R$${newPrice}, next target: ${state.nextEventTarget}`);
   }
 
   private async executeSplit(state: QuotaSystemState): Promise<void> {
@@ -129,16 +130,17 @@ export class SplitEngineService {
       .select('SUM(u.split_quotas)', 'total')
       .getRawOne();
 
-    // Reset state
+    // Reset state — new lot size is based on the new splitCount, target advances from current sold
+    const newLotSize = this.calculateTarget(newSplitCount);
     state.currentQuotaPrice = newPrice;
     state.currentPhase = 0;
     state.splitCount = newSplitCount;
     state.totalSplitQuotas = parseInt(result?.total || '0', 10);
-    state.nextEventTarget = this.calculateTarget(newSplitCount);
+    state.nextEventTarget = state.totalQuotasSold + newLotSize;
     state.nextEventLabel = 'Aumento de Preço';
     await this.stateRepo.save(state);
 
-    this.logger.log(`✅ Split #${newSplitCount} completed. New price: R$${newPrice}`);
+    this.logger.log(`✅ Split #${newSplitCount} completed. New price: R$${newPrice}, next target: ${state.nextEventTarget}`);
   }
 
   async incrementQuotasSold(quantity: number): Promise<void> {
