@@ -292,7 +292,7 @@ export class AdminService {
         amount: dist.totalAmount,
         percentageShare: dist.percentageShare,
         netProfitRef: netProfit,
-        dividendPoolRef: dividendPool,
+        dividendPoolRef: preview.dividendPool,
         pixKey: dist.pixKey,
         pixKeyType: dist.pixKeyType as any,
         generatedBy: adminId,
