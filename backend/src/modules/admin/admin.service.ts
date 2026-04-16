@@ -115,6 +115,7 @@ export class AdminService {
       totalRevenue: totalRev,
       dividendPool: monthRev * dividendPoolPercent / 100,
       dividendPoolPercent,
+      dividendPoolNote: monthRev > 0 ? 'Estimativa baseada na receita do mês' : 'Aguardando receita do mês',
       pendingPayoutsCount,
       pendingPayoutsTotal: parseFloat(pendingPayoutsTotalRow?.total || '0'),
     };

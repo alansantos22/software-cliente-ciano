@@ -13,9 +13,12 @@ export class EarningsService {
     @InjectRepository(MonthlyEarningSummary) private readonly summaryRepo: Repository<MonthlyEarningSummary>,
   ) {}
 
-  async getEarnings(userId: string, page = 1, pageSize = 20) {
+  async getEarnings(userId: string, page = 1, pageSize = 20, month?: string) {
+    const where: any = { userId };
+    if (month) where.referenceMonth = month;
+
     const [items, total] = await this.earningRepo.findAndCount({
-      where: { userId },
+      where,
       order: { createdAt: 'DESC' },
       skip: (page - 1) * pageSize,
       take: pageSize,

@@ -32,26 +32,22 @@
 
 ---
 
-## 🟠 BLOCO 3 — HISTÓRICO E DASHBOARD
+## 🟠 BLOCO 3 — HISTÓRICO E DASHBOARD ✅ COMPLETO
 
-- [ ] **3.1** Histórico vazio — earnings não filtra por mês selecionado
-  - **Arquivo**: `EarningsView.vue` `loadEarnings()`
-  - **Problema**: Chama `earningsService.list(1, 100)` sem passar mês selecionado
-  - **Correção**: Passar `selectedMonth.value` como parâmetro na API
+- [x] **3.1** Histórico vazio — earnings não filtra por mês selecionado ✅
+  - Backend: `getEarnings()` agora aceita param `month` e filtra por `referenceMonth`
+  - Frontend: `earningsService.list()` passa `month`, `loadEarnings()` envia `selectedMonth.value`
 
-- [ ] **3.2** NaN no histórico
-  - **Arquivo**: `EarningsView.vue`
-  - **Problema**: `formatCurrency(value)` sem proteção contra null/undefined
-  - **Correção**: Sanitizar com `Number(e.amount) || 0`
+- [x] **3.2** NaN no histórico ✅
+  - `amount: Number(e.amount) || 0` no mapeamento
+  - `formatCurrency()` protegida com `Number(value) || 0`
 
-- [ ] **3.3** Remover "Saldo Líquido" do histórico
-  - **Arquivo**: `EarningsView.vue` linhas 26-33
-  - **Mudança**: Remover o 4º card. Grid de 4 → 3 colunas
+- [x] **3.3** Remover "Saldo Líquido" do histórico ✅
+  - Card removido do template, grid ajustado para `repeat(3, 1fr)`
 
-- [ ] **3.4** Caixa de Dividendos — corrigir cálculo
-  - **Arquivo**: `admin.service.ts` `getDashboardKpis()`
-  - **Problema**: `dividendPool = monthRev * dividendPoolPercent / 100` usa receita de vendas
-  - **Correção**: Usar lucro informado no último pagamento, ou exibir como estimativa
+- [x] **3.4** Caixa de Dividendos — nota de estimativa ✅
+  - Backend: retorna `dividendPoolNote` indicando que é estimativa
+  - Frontend: exibe nota em itálico abaixo do subtítulo
 
 ---
 
@@ -124,7 +120,7 @@
 |-------|--------|-----------|
 | 1 — Motor de Preço | ✅ COMPLETO | 9/9 |
 | 2 — Bônus/Pagamentos | ✅ COMPLETO | 3/3 |
-| 3 — Histórico/Dashboard | ⬜ PENDENTE | 0/4 |
+| 3 — Histórico/Dashboard | ✅ COMPLETO | 4/4 |
 | 4 — Títulos/Níveis | ⬜ PENDENTE | 0/2 |
 | 5 — UX/UI | ⬜ PENDENTE | 0/6 |
 | 6 — Infraestrutura | ⏳ PARCIAL | 1/4 |

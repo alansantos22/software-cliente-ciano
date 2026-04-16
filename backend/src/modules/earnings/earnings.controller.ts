@@ -13,8 +13,9 @@ export class EarningsController {
     @CurrentUser() user: User,
     @Query('page') page = 1,
     @Query('pageSize') pageSize = 20,
+    @Query('month') month?: string,
   ) {
-    return this.earningsService.getEarnings(user.id, page, pageSize);
+    return this.earningsService.getEarnings(user.id, page, pageSize, month);
   }
 
   @Get('overview')

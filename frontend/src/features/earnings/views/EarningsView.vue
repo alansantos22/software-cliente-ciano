@@ -20,13 +20,6 @@
         <span class="summary-card__value">{{ formatCurrency(totalOut) }}</span>
         <span class="summary-card__icon"><font-awesome-icon icon="cart-shopping" /></span>
       </div>
-      <div class="summary-card summary-card--blue">
-        <span class="summary-card__label">Saldo Líquido</span>
-        <span class="summary-card__value" :class="balance >= 0 ? 'text--positive' : 'text--negative'">
-          {{ formatCurrency(balance) }}
-        </span>
-        <span class="summary-card__icon"><font-awesome-icon icon="wallet" /></span>
-      </div>
     </section>
 
     <!-- Filters -->
@@ -158,14 +151,14 @@ const bonusTypeLabel: Record<string, string> = {
 
 async function loadEarnings() {
   try {
-    const { data } = await earningsService.list(1, 100);
+    const { data } = await earningsService.list(1, 100, selectedMonth.value);
     if (data?.items) {
       allRows.value = data.items.map((e: any, i: number) => ({
         id: i + 1,
         type: bonusTypeLabel[e.bonusType] || e.bonusType,
         rawType: e.bonusType,
         description: e.description || '',
-        amount: e.amount || 0,
+        amount: Number(e.amount) || 0,
         date: (e.createdAt || '').slice(0, 10),
         cutoffEligible: e.cutoffEligible ?? true,
       }));
@@ -243,7 +236,8 @@ const balance = computed(() => totalIn.value - totalOut.value);
 
 // ─── Helpers ──────────────────────────────────────────
 function formatCurrency(value: number): string {
-  return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
+  const safe = Number(value) || 0;
+  return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(safe);
 }
 
 function formatDate(date: string): string {
@@ -287,14 +281,10 @@ function getTypeIcon(rawType: string): string {
   // ── Summary Cards ──────────────────────────────────
   &__summary {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(3, 1fr);
     gap: 1rem;
 
     @media (max-width: 768px) {
-      grid-template-columns: repeat(2, 1fr);
-    }
-
-    @media (max-width: 480px) {
       grid-template-columns: 1fr;
     }
   }

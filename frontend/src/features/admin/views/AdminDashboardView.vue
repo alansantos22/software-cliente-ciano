@@ -79,6 +79,7 @@
         </div>
         <div class="kpi-dividend__value">{{ formatCurrency(kpis.dividendPool) }}</div>
         <p class="kpi-dividend__subtitle">Comprometido para pagar no dia {{ paymentDay }}</p>
+        <p v-if="kpis.dividendPoolNote" class="kpi-dividend__note">{{ kpis.dividendPoolNote }}</p>
         <div class="kpi-dividend__bar">
           <div
             class="kpi-dividend__bar-fill"
@@ -234,6 +235,7 @@ interface KpiState {
   monthQuotasTrend: number;
   totalRevenue: number;
   dividendPool: number;
+  dividendPoolNote: string;
 }
 
 const kpis = ref<KpiState>({
@@ -245,6 +247,7 @@ const kpis = ref<KpiState>({
   monthQuotasTrend: 0,
   totalRevenue: 0,
   dividendPool: 0,
+  dividendPoolNote: '',
 });
 
 const dividendPoolPercent = computed(() => {
@@ -537,6 +540,13 @@ onMounted(async () => {
     font-size: 0.78rem;
     color: var(--accent-700);
     margin: 0;
+  }
+
+  &__note {
+    font-size: 0.72rem;
+    color: var(--warning-600, #b45309);
+    font-style: italic;
+    margin: 2px 0 0;
   }
 
   &__bar {
