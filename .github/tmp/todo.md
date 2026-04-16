@@ -51,17 +51,17 @@
 
 ---
 
-## 🟠 BLOCO 4 — TÍTULOS E NÍVEIS
+## 🟠 BLOCO 4 — TÍTULOS E NÍVEIS ✅ COMPLETO
 
-- [ ] **4.1** Separar nível societário (Imperial) do título de rede (Bronze/Prata/Ouro/Diamante)
-  - **Arquivo**: `DashboardView.vue` linhas 577-600
-  - **Problema**: `career.currentLevel` usa `kpiRes.data.partnerLevel` (socio/platinum/vip/imperial), mas `LevelProgressBar` espera títulos de rede
-  - **Correção**: Usar `kpiRes.data.title` para LevelProgressBar, mostrar partnerLevel separadamente
+- [x] **4.1** Separar nível societário do título de rede ✅
+  - Agora usa `kpiRes.data.title` (none/bronze/silver/gold/diamond)
+  - Mapeamento EN→PT: silver→prata, gold→ouro, diamond→diamante
+  - Interface `DashboardKpiData` atualizada com `title`, `directCount`, `daysUntilExpiry`
 
-- [ ] **4.2** Progressão mostrando meta errada
-  - **Arquivo**: `DashboardView.vue` linhas 579-600
-  - **Problema**: Mapeamento `levelProgression` mistura partner levels com titles
-  - **Correção**: Recalcular baseado no `title` do usuário
+- [x] **4.2** Progressão mostrando meta errada ✅
+  - `levelProgression` agora é bronze→prata→ouro→diamante (sem partner levels)
+  - `levelTargets` corrigido: prata=1, ouro=2, diamante=3 (bronzes qualificados)
+  - `currentValue` usa `directCount` ao invés de `qualifiedCount || quotaBalance`
 
 ---
 
@@ -121,7 +121,7 @@
 | 1 — Motor de Preço | ✅ COMPLETO | 9/9 |
 | 2 — Bônus/Pagamentos | ✅ COMPLETO | 3/3 |
 | 3 — Histórico/Dashboard | ✅ COMPLETO | 4/4 |
-| 4 — Títulos/Níveis | ⬜ PENDENTE | 0/2 |
+| 4 — Títulos/Níveis | ✅ COMPLETO | 2/2 |
 | 5 — UX/UI | ⬜ PENDENTE | 0/6 |
 | 6 — Infraestrutura | ⏳ PARCIAL | 1/4 |
 | **TOTAL** | | **13/28** |
