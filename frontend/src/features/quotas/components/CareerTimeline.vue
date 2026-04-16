@@ -15,7 +15,7 @@
         <div v-if="idx < tiers.length - 1" class="tier-node__connector" />
 
         <!-- Icon bubble -->
-        <div class="tier-node__bubble" @mouseenter="activeTierIndex = idx">
+        <div class="tier-node__bubble" @mouseenter="activeTierIndex = idx" @mouseleave="activeTierIndex = -1">
           <span class="tier-node__icon"><font-awesome-icon :icon="tier.icon" :style="{ color: tier.color }" /></span>
         </div>
 

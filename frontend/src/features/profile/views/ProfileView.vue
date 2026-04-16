@@ -119,7 +119,20 @@
       </template>
 
       <form class="profile-view__form" @submit.prevent="saveFinancialData">
-        <div class="profile-view__grid profile-view__grid--single">
+        <div class="profile-view__grid">
+          <div class="profile-view__select-field">
+            <label class="profile-view__select-label">{{ t('profile.pixKeyType') }}</label>
+            <select
+              v-model="form.pixKeyType"
+              class="profile-view__select"
+              :disabled="!editingPix"
+            >
+              <option value="cpf">CPF</option>
+              <option value="email">E-mail</option>
+              <option value="phone">Telefone</option>
+              <option value="random">Chave aleatória</option>
+            </select>
+          </div>
           <DsInput
             v-model="form.pixKey"
             :label="t('profile.pixKey')"
@@ -258,6 +271,7 @@ const form = reactive({
   phone: '',
   city: '',
   state: '',
+  pixKeyType: 'cpf',
   pixKey: '',
 });
 
@@ -269,6 +283,7 @@ function loadFormData() {
     form.phone = user.value.phone;
     form.city = user.value.city;
     form.state = user.value.state;
+    form.pixKeyType = user.value.pixKeyType || 'cpf';
     form.pixKey = user.value.pixKey;
   }
 }
@@ -321,7 +336,7 @@ async function saveFinancialData() {
   savingPix.value = true;
   try {
     await profileService.updatePix({
-      pixKeyType: 'cpf',
+      pixKeyType: form.pixKeyType,
       pixKey: form.pixKey,
     });
     await authStore.fetchUser();
@@ -486,6 +501,33 @@ function showFeedback(type: typeof feedback.type, message: string) {
     display: flex;
     justify-content: flex-end;
     gap: $spacing-3;
+  }
+
+  &__select-field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  &__select-label {
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+  }
+
+  &__select {
+    height: 42px;
+    padding: 0 $spacing-3;
+    border: 1px solid var(--border-primary);
+    border-radius: $radius-md;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    font-size: 0.9rem;
+
+    &:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
   }
 
   // ── Info Grid ──

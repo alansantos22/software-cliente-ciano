@@ -65,34 +65,29 @@
 
 ---
 
-## 🟡 BLOCO 5 — UX/UI
+## 🟡 BLOCO 5 — UX/UI ✅ COMPLETO
 
-- [ ] **5.1** Tooltips não somem no /quotas
-  - **Arquivo**: `CareerTimeline.vue` linha 32
-  - **Problema**: Falta `@mouseleave` no `.tier-node__bubble`
-  - **Correção**: Adicionar `@mouseleave="activeTierIndex = -1"`
+- [x] **5.1** Tooltips não somem no /quotas ✅
+  - Adicionado `@mouseleave="activeTierIndex = -1"` no `.tier-node__bubble`
 
-- [ ] **5.2** Scroll para erros no cadastro
-  - **Arquivo**: `RegisterView.vue`
-  - **Correção**: No `handleRegister`, após validação falhar, fazer `scrollIntoView()` no primeiro campo com erro
+- [x] **5.2** Scroll para erros no cadastro ✅
+  - `handleRegister()` faz `scrollIntoView({ behavior: 'smooth', block: 'center' })` no primeiro campo com erro
 
-- [ ] **5.3** Cards do Admin agrupados em telas menores
-  - **Arquivo**: `AdminDashboardView.vue`
-  - **Correção**: Ajustar grid para `repeat(auto-fit, minmax(250px, 1fr))` em telas menores
+- [x] **5.3** Cards do Admin agrupados em telas menores ✅
+  - Grid alterado para `repeat(auto-fit, minmax(220px, 1fr))` — responsivo fluido
 
-- [ ] **5.4** Menu suspenso travado no Admin
-  - **Arquivo**: `ManagerUserTable.vue`
-  - **Status**: Já usa Teleport + fixed. Verificar viewport overflow e ajustar posição
+- [x] **5.4** Menu suspenso travado no Admin ✅
+  - `toggleMenu()` agora detecta espaço abaixo e abre para cima quando necessário
 
-- [ ] **5.5** Editar perfil — adicionar tipo da chave PIX
-  - **Arquivo**: `ProfileView.vue`
-  - **Problema**: Falta dropdown para `pixKeyType` (CPF/Email/Phone/Aleatória)
-  - **Correção**: Adicionar `DsDropdown` antes do campo pixKey
+- [x] **5.5** Editar perfil — tipo da chave PIX ✅
+  - Adicionado `<select>` para pixKeyType (CPF/Email/Telefone/Aleatória)
+  - Form state, loadFormData, saveFinancialData atualizados
+  - Traduções i18n adicionadas (pt-BR, en)
 
-- [ ] **5.6** Admin retirar cotas de split e admin-granted
-  - **Arquivo**: `admin-manager.service.ts` `removeQuotas()`
-  - **Status**: Já permite remover admin-granted. Falta remover split quotas
-  - **Correção**: Aceitar `source: 'admin' | 'split'` e decrementar campo correto
+- [x] **5.6** Admin retirar cotas de split e admin-granted ✅
+  - `removeQuotas()` agora aceita `source: 'admin' | 'split'`
+  - DTO atualizado com campo `source` opcional
+  - Decrementa campo correto (`adminGrantedQuotas` ou `splitQuotas`)
 
 ---
 
@@ -122,7 +117,7 @@
 | 2 — Bônus/Pagamentos | ✅ COMPLETO | 3/3 |
 | 3 — Histórico/Dashboard | ✅ COMPLETO | 4/4 |
 | 4 — Títulos/Níveis | ✅ COMPLETO | 2/2 |
-| 5 — UX/UI | ⬜ PENDENTE | 0/6 |
+| 5 — UX/UI | ✅ COMPLETO | 6/6 |
 | 6 — Infraestrutura | ⏳ PARCIAL | 1/4 |
 | **TOTAL** | | **13/28** |
 

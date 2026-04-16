@@ -86,6 +86,7 @@ export class AddQuotasDto extends ManagerOperationDto {
 export class RemoveQuotasDto extends ManagerOperationDto {
   @IsInt() @Min(1) quantity: number;
   @IsOptional() @IsString() reason?: string;
+  @IsOptional() @IsString() source?: 'admin' | 'split';
 }
 
 export class ChangeSponsorDto extends ManagerOperationDto {
