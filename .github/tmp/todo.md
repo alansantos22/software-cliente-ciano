@@ -1,8 +1,8 @@
-# TODO DETALHADO — Sistema de Cotas Ciano (Pousadas)
+# TODO - BLOCO 1: Motor de Preço + Bônus + Erro Generate-Batch
 
-**Data/Hora:** 2026-02-18  
-**Última Atualização:** 2026-02-26  
-**Status Geral:** ✅ REGRAS DE NEGÓCIO: PAGAMENTO, CORTE E GANHOS IMPLEMENTADOS
+**Data/Hora:** 2026-04-16
+**Sessão:** bloco-1-motor-preco
+**Status Geral:** ⏳ EM PROGRESSO
 
 ---
 

@@ -4,6 +4,7 @@ import {
   Column,
   UpdateDateColumn,
 } from 'typeorm';
+import { SplitEventType } from '../../../shared/interfaces/enums';
 
 @Entity('quota_system_state')
 export class QuotaSystemState {
@@ -30,6 +31,12 @@ export class QuotaSystemState {
 
   @Column({ type: 'varchar', length: 100, default: 'Aumento de Preço', name: 'next_event_label' })
   nextEventLabel: string;
+
+  @Column({ type: 'enum', enum: SplitEventType, nullable: true, name: 'pending_event_type' })
+  pendingEventType: SplitEventType | null;
+
+  @Column({ type: 'datetime', nullable: true, name: 'pending_event_date' })
+  pendingEventDate: Date | null;
 
   @UpdateDateColumn({ name: 'updated_at' })
   updatedAt: Date;

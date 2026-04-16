@@ -10,12 +10,12 @@ export class SplitCheckJob {
 
   @Cron('0 0 * * *') // Daily at 00:00 UTC
   async handleSplitCheck() {
-    this.logger.log('🔍 Checking split/price conditions...');
+    this.logger.log('🔍 Applying pending price/split events...');
     try {
-      await this.splitEngine.checkAndProcess();
-      this.logger.log('✅ Split/price check completed');
+      await this.splitEngine.applyPendingEvent();
+      this.logger.log('✅ Pending event check completed');
     } catch (error) {
-      this.logger.error(`❌ Split check failed: ${error.message}`, error.stack);
+      this.logger.error(`❌ Pending event check failed: ${error.message}`, error.stack);
     }
   }
 }

@@ -11,6 +11,7 @@ export class SplitEngineService {
   private readonly logger = new Logger(SplitEngineService.name);
   private readonly BASE_PRICE = 2000;
   private readonly PRICE_INCREMENT = 500;
+  private readonly MAX_PHASE = 2; // Phases: 0 (R$2000), 1 (R$2500), 2 (R$3000)
 
   constructor(
     @InjectRepository(QuotaSystemState) private readonly stateRepo: Repository<QuotaSystemState>,
@@ -21,7 +22,12 @@ export class SplitEngineService {
   async getState(): Promise<QuotaSystemState> {
     let state = await this.stateRepo.findOne({ where: { id: 1 } });
     if (!state) {
-      state = this.stateRepo.create({ id: 1 });
+      // First run: splitCount=0 starts at phase 1 (R$2500)
+      state = this.stateRepo.create({
+        id: 1,
+        currentPhase: 1,
+        currentQuotaPrice: this.BASE_PRICE + this.PRICE_INCREMENT, // R$2500
+      });
       await this.stateRepo.save(state);
     }
     return state;
@@ -29,19 +35,48 @@ export class SplitEngineService {
 
   /**
    * Called after each quota purchase.
-   * Check if we need to advance phase or trigger split.
+   * Check if we need to schedule a phase advance or split (pending until midnight).
    */
   async checkAndProcess(): Promise<void> {
     const state = await this.getState();
-    const target = state.nextEventTarget || this.calculateTarget(state.splitCount);
 
+    // If there's already a pending event, don't schedule another
+    if (state.pendingEventType) return;
+
+    const target = state.nextEventTarget || this.calculateTarget(state.splitCount);
     if (state.totalQuotasSold < target) return;
 
-    if (state.currentPhase < 3) {
-      await this.advancePhase(state);
+    // Schedule event for midnight — don't apply immediately
+    if (state.currentPhase < this.MAX_PHASE) {
+      // Schedule price increase
+      state.pendingEventType = SplitEventType.PRICE_INCREASE;
+      state.pendingEventDate = this.getNextMidnight();
+      await this.stateRepo.save(state);
+      this.logger.log(`⏳ Price increase scheduled for midnight. Current phase: ${state.currentPhase}`);
     } else {
+      // Schedule split (phase is at max)
+      state.pendingEventType = SplitEventType.SPLIT;
+      state.pendingEventDate = this.getNextMidnight();
+      await this.stateRepo.save(state);
+      this.logger.log(`⏳ Split scheduled for midnight. Current phase: ${state.currentPhase}`);
+    }
+  }
+
+  /**
+   * Called by the daily cron job at midnight.
+   * Applies any pending event (price increase or split).
+   */
+  async applyPendingEvent(): Promise<void> {
+    const state = await this.getState();
+    if (!state.pendingEventType) return;
+
+    if (state.pendingEventType === SplitEventType.PRICE_INCREASE) {
+      await this.advancePhase(state);
+    } else if (state.pendingEventType === SplitEventType.SPLIT) {
       await this.executeSplit(state);
     }
+
+    // Clear the pending event (already saved inside advancePhase/executeSplit)
   }
 
   /**
@@ -54,6 +89,12 @@ export class SplitEngineService {
 
   private calculateTarget(splitCount: number): number {
     return 50 * Math.pow(2, splitCount);
+  }
+
+  private getNextMidnight(): Date {
+    const now = new Date();
+    const midnight = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 0);
+    return midnight;
   }
 
   private async advancePhase(state: QuotaSystemState): Promise<void> {
@@ -78,7 +119,9 @@ export class SplitEngineService {
     state.currentPhase = newPhase;
     state.currentQuotaPrice = newPrice;
     state.nextEventTarget = state.totalQuotasSold + lotSize;
-    state.nextEventLabel = newPhase >= 3 ? 'Split' : 'Aumento de Preço';
+    state.nextEventLabel = newPhase >= this.MAX_PHASE ? 'Split' : 'Aumento de Preço';
+    state.pendingEventType = null;
+    state.pendingEventDate = null;
     await this.stateRepo.save(state);
 
     this.logger.log(`📈 Price increase: phase ${newPhase}, R$${newPrice}, next target: ${state.nextEventTarget}`);
@@ -138,6 +181,8 @@ export class SplitEngineService {
     state.totalSplitQuotas = parseInt(result?.total || '0', 10);
     state.nextEventTarget = state.totalQuotasSold + newLotSize;
     state.nextEventLabel = 'Aumento de Preço';
+    state.pendingEventType = null;
+    state.pendingEventDate = null;
     await this.stateRepo.save(state);
 
     this.logger.log(`✅ Split #${newSplitCount} completed. New price: R$${newPrice}, next target: ${state.nextEventTarget}`);

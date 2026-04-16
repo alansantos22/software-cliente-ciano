@@ -103,9 +103,8 @@
         :lot-progress="lotProgress"
         :lot-size="lotSize"
         :lot-number="lotNumber"
-        :current-constant="currentConstant"
+        :pending-event-type="pendingEventType"
         @force-split="handleForceSplit"
-        @adjust-constant="handleAdjustConstant"
       />
 
       <DsCard class="chart-card">
@@ -212,7 +211,7 @@ const currentQuotaPrice = ref(0);
 const lotProgress = ref(0);
 const lotSize = ref(0);
 const lotNumber = ref(0);
-const currentConstant = ref(0);
+const pendingEventType = ref<string | null>(null);
 const paymentDay = ref(15);
 const currentPeriod = new Date().toISOString().slice(0, 7);
 
@@ -316,11 +315,6 @@ function handleForceSplit() {
   console.info('[Admin] Force split triggered');
 }
 
-function handleAdjustConstant(value: number) {
-  currentConstant.value = value;
-  console.info('[Admin] Constant adjusted to', value);
-}
-
 function handleCrmAction(type: 'extrato' | 'bloquear' | 'mensagem', user: any) {
   if (type === 'extrato') {
     router.push(`/admin/users/${user.id}`);
@@ -354,7 +348,7 @@ onMounted(async () => {
       lotProgress.value = Number(pe.lotSold) || 0;
       lotSize.value = Number(pe.lotSize) || 50;
       lotNumber.value = Number(pe.lotNumber) || 1;
-      currentConstant.value = Number(pe.currentConstant) || 0;
+      pendingEventType.value = pe.pendingEventType || null;
     }
 
     if (titleRes.data) {

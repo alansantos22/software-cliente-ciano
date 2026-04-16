@@ -34,11 +34,11 @@ export class PayoutRequest {
   @Column({ type: 'decimal', precision: 15, scale: 2 })
   amount: number;
 
-  @Column({ type: 'varchar', length: 255, name: 'pix_key' })
-  pixKey: string;
+  @Column({ type: 'varchar', length: 255, nullable: true, name: 'pix_key' })
+  pixKey: string | null;
 
-  @Column({ type: 'enum', enum: PixKeyType, name: 'pix_key_type' })
-  pixKeyType: PixKeyType;
+  @Column({ type: 'enum', enum: PixKeyType, nullable: true, name: 'pix_key_type' })
+  pixKeyType: PixKeyType | null;
 
   @Index('idx_payout_status')
   @Column({ type: 'enum', enum: PayoutStatus, default: PayoutStatus.PENDING })

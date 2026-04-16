@@ -182,14 +182,11 @@ export class AdminService {
   async getPriceEngine() {
     const state = await this.splitEngine.getState();
     
-    // Calculate lot progress: how many quotas sold in current lot
-    // Target for lot N is 50 * 2^splitCount
-    // Previous lot threshold = sum of all previous targets
-    // For simplicity: previousTarget = splitCount > 0 ? 50 * (2^splitCount - 1) : 0
-    // Actually: each split doubles, so cumulative before current = 50 * (2^splitCount - 1)
+    // lotSold = how many quotas sold in the current lot (distance from last event to now)
+    // lotSize = target quotas per lot for current split level
+    const lotSize = state.nextEventTarget ? state.nextEventTarget - (state.nextEventTarget - 50 * Math.pow(2, state.splitCount)) : 50;
     const currentTarget = state.nextEventTarget || 50;
-    const previousTarget = state.splitCount > 0 ? 50 * (Math.pow(2, state.splitCount) - 1) : 0;
-    const lotSold = Math.max(0, state.totalQuotasSold - previousTarget);
+    const lotSold = Math.max(0, lotSize - (currentTarget - state.totalQuotasSold));
     
     return {
       quotaPrice: Number(state.currentQuotaPrice),
@@ -198,25 +195,18 @@ export class AdminService {
       currentPhase: state.currentPhase,
       nextEventTarget: currentTarget,
       nextEventLabel: state.nextEventLabel,
-      lotSize: currentTarget,
+      lotSize: lotSize,
       lotSold: lotSold,
       lotNumber: state.splitCount + 1,
-      currentConstant: state.currentPhase,
+      pendingEventType: state.pendingEventType,
+      pendingEventDate: state.pendingEventDate,
     };
   }
 
-  async updatePriceEngine(forceSplit?: boolean, adjustConstant?: number) {
+  async updatePriceEngine(forceSplit?: boolean) {
     if (forceSplit) {
       await this.splitEngine.forceSplit();
       return { message: 'Split forçado executado com sucesso' };
-    }
-
-    if (adjustConstant !== undefined) {
-      const state = await this.splitEngine.getState();
-      state.currentPhase = adjustConstant;
-      state.currentQuotaPrice = 2000 + 500 * adjustConstant;
-      await this.stateRepo.save(state);
-      return { message: `Constante ajustada para ${adjustConstant}`, newPrice: state.currentQuotaPrice };
     }
 
     return { message: 'Nenhuma ação executada' };
@@ -281,7 +271,13 @@ export class AdminService {
     }
 
     const payouts: PayoutRequest[] = [];
+    const skippedNoPixKey: string[] = [];
     for (const dist of preview.distributions) {
+      // Skip users without pixKey configured — they can't receive payment
+      if (!dist.pixKey || !dist.pixKeyType) {
+        skippedNoPixKey.push(dist.userName);
+        continue;
+      }
       const payout = this.payoutRepo.create({
         userId: dist.userId,
         userName: dist.userName,
@@ -302,12 +298,17 @@ export class AdminService {
     }
 
     await this.payoutRepo.save(payouts);
+
+    if (skippedNoPixKey.length > 0) {
+      this.logger.warn(`⚠️ Skipped ${skippedNoPixKey.length} users without PIX key: ${skippedNoPixKey.join(', ')}`);
+    }
     this.logger.log(`📋 Batch generated for ${profitMonth}: ${payouts.length} payouts`);
 
     return {
       profitMonth,
       paymentMonth: preview.paymentMonth,
       totalPayouts: payouts.length,
+      skippedNoPixKey: skippedNoPixKey.length,
       totalAmount: payouts.reduce((s, p) => s + Number(p.amount), 0),
     };
   }

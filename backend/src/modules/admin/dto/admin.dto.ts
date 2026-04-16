@@ -66,7 +66,6 @@ export class BulkPayoutActionDto {
 
 export class UpdatePriceEngineDto {
   @IsOptional() forceSplit?: boolean;
-  @IsOptional() @IsNumber() adjustConstant?: number;
 }
 
 // ─── Manager DTOs ─────────────────────────────────────

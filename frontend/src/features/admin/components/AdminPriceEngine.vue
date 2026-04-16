@@ -42,9 +42,6 @@
       <button class="price-engine__btn price-engine__btn--force" @click="startConfirm('force-split')">
         <font-awesome-icon icon="bolt" /> Forçar Virada de Lote
       </button>
-      <button class="price-engine__btn price-engine__btn--adjust" @click="startConfirm('adjust-constant')">
-        <font-awesome-icon icon="wrench" /> Ajustar Constante
-      </button>
     </div>
 
     <!-- Inline Confirmation: Force Split -->
@@ -80,38 +77,12 @@
       </div>
     </div>
 
-    <!-- Inline Confirmation: Adjust Constant -->
-    <div
-      v-if="confirmingAction === 'adjust-constant'"
-      class="price-engine__confirm price-engine__confirm--warning"
-    >
-      <p class="price-engine__confirm-msg">
-        <font-awesome-icon icon="wrench" /> <strong>Ajustar Constante de Estimativa:</strong> Define a velocidade esperada de
-        vendas para projeções de dividendo.
-      </p>
-      <label class="price-engine__confirm-label">
-        Nova constante (atual: <strong>{{ currentConstant }}</strong>):
-        <input
-          v-model.number="newConstantValue"
-          type="number"
-          min="1"
-          max="999"
-          class="price-engine__confirm-input"
-          placeholder="Ex: 7"
-        />
-      </label>
-      <div class="price-engine__confirm-btns">
-        <button class="price-engine__btn price-engine__btn--cancel" @click="cancelConfirm">
-          Cancelar
-        </button>
-        <button
-          class="price-engine__btn price-engine__btn--confirm"
-          :disabled="!newConstantValue || newConstantValue < 1"
-          @click="executeAction"
-        >
-          Aplicar
-        </button>
-      </div>
+    <!-- Pending Event Banner -->
+    <div v-if="pendingEventType" class="price-engine__pending">
+      <font-awesome-icon :icon="pendingEventType === 'split' ? 'bolt' : 'chart-line'" />
+      <span>
+        {{ pendingEventType === 'split' ? 'Split' : 'Aumento de preço' }} agendado para hoje à meia-noite.
+      </span>
     </div>
 
     <!-- Success Feedback -->
@@ -131,7 +102,7 @@ interface Props {
   lotProgress?: number;
   lotSize?: number;
   lotNumber?: number;
-  currentConstant?: number;
+  pendingEventType?: string | null;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -139,18 +110,16 @@ const props = withDefaults(defineProps<Props>(), {
   lotProgress: 140,
   lotSize: 200,
   lotNumber: 3,
-  currentConstant: 7,
+  pendingEventType: null,
 });
 
 const emit = defineEmits<{
   'force-split': [];
-  'adjust-constant': [value: number];
 }>();
 
 // State
-const confirmingAction = ref<null | 'force-split' | 'adjust-constant'>(null);
+const confirmingAction = ref<null | 'force-split'>(null);
 const confirmInput = ref('');
-const newConstantValue = ref<number>(props.currentConstant);
 const successMsg = ref('');
 
 // Computed
@@ -177,9 +146,8 @@ function formatCurrency(value: number): string {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
 }
 
-function startConfirm(action: 'force-split' | 'adjust-constant') {
+function startConfirm(action: 'force-split') {
   confirmInput.value = '';
-  newConstantValue.value = props.currentConstant;
   confirmingAction.value = action;
 }
 
@@ -192,9 +160,6 @@ function executeAction() {
   if (confirmingAction.value === 'force-split' && confirmInput.value === 'CONFIRMAR') {
     emit('force-split');
     successMsg.value = 'Virada de lote agendada com sucesso.';
-  } else if (confirmingAction.value === 'adjust-constant' && newConstantValue.value >= 1) {
-    emit('adjust-constant', newConstantValue.value);
-    successMsg.value = `Constante atualizada para ${newConstantValue.value}.`;
   }
   confirmingAction.value = null;
   confirmInput.value = '';
@@ -436,6 +401,21 @@ function executeAction() {
   &__confirm-btns {
     display: flex;
     gap: $spacing-2;
+  }
+
+  // ---- Pending Event Banner ----
+  &__pending {
+    display: flex;
+    align-items: center;
+    gap: $spacing-2;
+    margin-top: $spacing-3;
+    padding: $spacing-3 $spacing-4;
+    background: rgba(var(--color-warning-rgb, 255, 193, 7), 0.12);
+    border: 1px solid rgba(var(--color-warning-rgb, 255, 193, 7), 0.35);
+    border-radius: $radius-md;
+    font-size: 0.84rem;
+    color: var(--color-warning-light, #ffd54f);
+    font-weight: 600;
   }
 
   // ---- Success ----
