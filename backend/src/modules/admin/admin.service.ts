@@ -229,6 +229,31 @@ export class AdminService {
       where: { deletedAt: IsNull() },
     });
 
+    // Earnings by user and bonusType for the reference month
+    const monthlyEarnings = await this.earningRepo
+      .createQueryBuilder('e')
+      .select('e.user_id', 'userId')
+      .addSelect('e.bonus_type', 'bonusType')
+      .addSelect('SUM(e.amount)', 'total')
+      .where('e.reference_month = :month', { month: profitMonth })
+      .groupBy('e.user_id')
+      .addGroupBy('e.bonus_type')
+      .getRawMany<{ userId: string; bonusType: string; total: string }>();
+
+    // Build lookup: userId -> { firstPurchase, repurchase, team, leadership }
+    const earningsMap = new Map<string, { firstPurchase: number; repurchase: number; team: number; leadership: number }>();
+    for (const row of monthlyEarnings) {
+      if (!earningsMap.has(row.userId)) {
+        earningsMap.set(row.userId, { firstPurchase: 0, repurchase: 0, team: 0, leadership: 0 });
+      }
+      const entry = earningsMap.get(row.userId)!;
+      const val = parseFloat(row.total) || 0;
+      if (row.bonusType === BonusType.FIRST_PURCHASE) entry.firstPurchase = val;
+      else if (row.bonusType === BonusType.REPURCHASE) entry.repurchase = val;
+      else if (row.bonusType === BonusType.TEAM) entry.team = val;
+      else if (row.bonusType === BonusType.LEADERSHIP) entry.leadership = val;
+    }
+
     const totalQuotas = users.reduce((s, u) => s + u.quotaBalance, 0);
 
     const distributions = users
@@ -236,6 +261,8 @@ export class AdminService {
       .map((u) => {
         const share = totalQuotas > 0 ? u.quotaBalance / totalQuotas : 0;
         const quotaAmount = dividendPool * share;
+        const breakdown = earningsMap.get(u.id) || { firstPurchase: 0, repurchase: 0, team: 0, leadership: 0 };
+        const networkAmount = breakdown.firstPurchase + breakdown.repurchase + breakdown.team + breakdown.leadership;
 
         return {
           userId: u.id,
@@ -243,8 +270,13 @@ export class AdminService {
           quotaBalance: u.quotaBalance,
           percentageShare: Math.round(share * 10000) / 100,
           quotaAmount: Math.round(quotaAmount * 100) / 100,
-          networkAmount: Number(u.totalEarnings), // simplified — ideally filtered by month
-          totalAmount: Math.round((quotaAmount + Number(u.totalEarnings)) * 100) / 100,
+          networkAmount: Math.round(networkAmount * 100) / 100,
+          firstPurchaseAmount: Math.round(breakdown.firstPurchase * 100) / 100,
+          repurchaseAmount: Math.round(breakdown.repurchase * 100) / 100,
+          teamAmount: Math.round(breakdown.team * 100) / 100,
+          leadershipAmount: Math.round(breakdown.leadership * 100) / 100,
+          lifetimeEarnings: Math.round(Number(u.totalEarnings) * 100) / 100,
+          totalAmount: Math.round((quotaAmount + networkAmount) * 100) / 100,
           pixKey: u.pixKey,
           pixKeyType: u.pixKeyType,
         };
@@ -285,6 +317,11 @@ export class AdminService {
         paymentMonth: preview.paymentMonth,
         quotaAmount: dist.quotaAmount,
         networkAmount: dist.networkAmount,
+        firstPurchaseAmount: dist.firstPurchaseAmount,
+        repurchaseAmount: dist.repurchaseAmount,
+        teamAmount: dist.teamAmount,
+        leadershipAmount: dist.leadershipAmount,
+        lifetimeEarnings: dist.lifetimeEarnings,
         amount: dist.totalAmount,
         percentageShare: dist.percentageShare,
         netProfitRef: netProfit,

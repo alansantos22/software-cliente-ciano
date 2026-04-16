@@ -318,10 +318,51 @@
           <span>Pagamento em:</span>
           <strong>{{ formatMonthLabel(selectedPayout.paymentMonth) }}</strong>
         </div>
-        <div class="detail-row">
-          <span>Valor:</span>
+
+        <!-- Breakdown de Valores -->
+        <div class="detail-section">
+          <h4 class="detail-section__title">
+            <font-awesome-icon icon="receipt" /> Composição do Valor
+          </h4>
+
+          <div class="detail-row">
+            <span><font-awesome-icon icon="coins" /> Dividendos (Cotas)</span>
+            <strong>{{ formatCurrency(Number(selectedPayout.quotaAmount ?? 0)) }}</strong>
+          </div>
+
+          <div class="detail-row detail-row--sub">
+            <span><font-awesome-icon icon="user-plus" /> Bônus 1ª Compra</span>
+            <strong>{{ formatCurrency(Number(selectedPayout.firstPurchaseAmount ?? 0)) }}</strong>
+          </div>
+          <div class="detail-row detail-row--sub">
+            <span><font-awesome-icon icon="rotate" /> Bônus Recompra</span>
+            <strong>{{ formatCurrency(Number(selectedPayout.repurchaseAmount ?? 0)) }}</strong>
+          </div>
+          <div class="detail-row detail-row--sub">
+            <span><font-awesome-icon icon="users" /> Bônus Equipe</span>
+            <strong>{{ formatCurrency(Number(selectedPayout.teamAmount ?? 0)) }}</strong>
+          </div>
+          <div class="detail-row detail-row--sub">
+            <span><font-awesome-icon icon="crown" /> Bônus Liderança</span>
+            <strong>{{ formatCurrency(Number(selectedPayout.leadershipAmount ?? 0)) }}</strong>
+          </div>
+
+          <div class="detail-row detail-row--total">
+            <span>Total Rede (mês)</span>
+            <strong>{{ formatCurrency(Number(selectedPayout.networkAmount ?? 0)) }}</strong>
+          </div>
+        </div>
+
+        <div class="detail-row detail-row--highlight">
+          <span>Total a Receber</span>
           <strong class="amount-cell">{{ formatCurrency(selectedPayout.amount) }}</strong>
         </div>
+
+        <div v-if="selectedPayout.lifetimeEarnings" class="detail-row detail-row--muted">
+          <span>Ganhos Acumulados (Lifetime)</span>
+          <strong>{{ formatCurrency(Number(selectedPayout.lifetimeEarnings)) }}</strong>
+        </div>
+
         <div class="detail-row">
           <span>Chave PIX:</span>
           <strong>{{ selectedPayout.pixKey }}</strong>
@@ -383,6 +424,13 @@ interface PayoutRequest {
   userId: string;
   userName: string;
   amount: number;
+  quotaAmount?: number;
+  networkAmount?: number;
+  firstPurchaseAmount?: number;
+  repurchaseAmount?: number;
+  teamAmount?: number;
+  leadershipAmount?: number;
+  lifetimeEarnings?: number;
   pixKey: string;
   pixKeyType: string;
   status: 'pending' | 'processing' | 'completed' | 'failed' | 'cancelled';
@@ -1074,6 +1122,46 @@ onMounted(async () => {
   strong { color: var(--text-primary); }
 
   &--error strong { color: var(--color-error); }
+
+  &--sub {
+    padding-left: $spacing-4;
+    span { font-size: 0.8125rem; color: var(--text-tertiary, #999); }
+    strong { font-size: 0.875rem; }
+  }
+
+  &--total {
+    border-top: 1px dashed var(--neutral-300);
+    span { font-weight: 600; color: var(--text-primary); }
+    strong { color: var(--color-primary, #0e7490); }
+  }
+
+  &--highlight {
+    background: var(--neutral-50, #f8fafc);
+    border-radius: 8px;
+    padding: $spacing-3;
+    margin-top: $spacing-1;
+    border-bottom: none;
+    span { font-weight: 700; font-size: 0.9375rem; }
+    strong { font-size: 1.125rem; }
+  }
+
+  &--muted {
+    span { font-style: italic; color: var(--text-tertiary, #999); font-size: 0.8125rem; }
+    strong { color: var(--text-tertiary, #999); font-size: 0.8125rem; }
+  }
+}
+
+.detail-section {
+  margin-top: $spacing-2;
+
+  &__title {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: $spacing-1;
+    padding-bottom: $spacing-1;
+    border-bottom: 2px solid var(--neutral-200);
+  }
 }
 
 // ─── Wrapper da Etapa 3 ──────────────────────────────────────

@@ -1,3 +1,138 @@
+# TODO — 21 CORREÇÕES SISTEMA CIANO
+
+**Data/Hora:** 2026-04-16
+**Sessão:** finalizacao-sistema-blocos
+**Status Geral:** ⏳ EM PROGRESSO
+
+---
+
+## 🔴 BLOCO 1 — MOTOR DE PREÇO (Críticos) ✅ COMPLETO
+
+- [x] **1.1** Corrigir fases: max=2 (R$3.000), depois split — `split-engine.service.ts` ✅
+- [x] **1.2** Segurar preço até meia-noite (pendingEvent) — `split-engine.service.ts` + `quota-system-state.entity.ts` ✅
+- [x] **1.3** Notificação in-app ao bater meta — `notifications.service.ts` ✅
+- [x] **1.4** Só cotas compradas contam no lote — Verificado OK ✅
+- [x] **1.5** Corrigir contagem lotSold no admin — `admin.service.ts` ✅
+- [x] **1.6** Remover "Ajustar Constante" (front+back) — `AdminPriceEngine.vue` + `admin.service.ts` + DTO ✅
+- [x] **1.7** Migration: pending_event + pix nullable — `002-add-pending-event-and-fix-pix-nullable.sql` ✅
+- [x] **1.8** Testes reescritos — `split-engine.service.spec.ts` ✅
+- [x] **1.9** Compilação backend + frontend OK ✅
+
+---
+
+## 🔴 BLOCO 2 — BÔNUS E PAGAMENTOS (Críticos) ✅ COMPLETO
+
+- [x] **2.1** Primeira compra: 10% se sponsor tem cotas, 5% se não — `bonus-calculator.service.ts` ✅
+- [x] **2.2** Erro 500 generate-batch (pix_key_type null) — `admin.service.ts` + `payout-request.entity.ts` ✅
+- [x] **2.3** Detalhamento das faturas (breakdown por tipo de bônus) ✅
+  - Backend: networkAmount agora = ganhos do mês (query earnings por bonusType)
+  - Backend: 5 novas colunas na entity (firstPurchase, repurchase, team, leadership, lifetime)
+  - Frontend: Modal de detalhes com composição completa do valor
+  - Migration: `003-add-payout-breakdown-columns.sql`
+
+---
+
+## 🟠 BLOCO 3 — HISTÓRICO E DASHBOARD
+
+- [ ] **3.1** Histórico vazio — earnings não filtra por mês selecionado
+  - **Arquivo**: `EarningsView.vue` `loadEarnings()`
+  - **Problema**: Chama `earningsService.list(1, 100)` sem passar mês selecionado
+  - **Correção**: Passar `selectedMonth.value` como parâmetro na API
+
+- [ ] **3.2** NaN no histórico
+  - **Arquivo**: `EarningsView.vue`
+  - **Problema**: `formatCurrency(value)` sem proteção contra null/undefined
+  - **Correção**: Sanitizar com `Number(e.amount) || 0`
+
+- [ ] **3.3** Remover "Saldo Líquido" do histórico
+  - **Arquivo**: `EarningsView.vue` linhas 26-33
+  - **Mudança**: Remover o 4º card. Grid de 4 → 3 colunas
+
+- [ ] **3.4** Caixa de Dividendos — corrigir cálculo
+  - **Arquivo**: `admin.service.ts` `getDashboardKpis()`
+  - **Problema**: `dividendPool = monthRev * dividendPoolPercent / 100` usa receita de vendas
+  - **Correção**: Usar lucro informado no último pagamento, ou exibir como estimativa
+
+---
+
+## 🟠 BLOCO 4 — TÍTULOS E NÍVEIS
+
+- [ ] **4.1** Separar nível societário (Imperial) do título de rede (Bronze/Prata/Ouro/Diamante)
+  - **Arquivo**: `DashboardView.vue` linhas 577-600
+  - **Problema**: `career.currentLevel` usa `kpiRes.data.partnerLevel` (socio/platinum/vip/imperial), mas `LevelProgressBar` espera títulos de rede
+  - **Correção**: Usar `kpiRes.data.title` para LevelProgressBar, mostrar partnerLevel separadamente
+
+- [ ] **4.2** Progressão mostrando meta errada
+  - **Arquivo**: `DashboardView.vue` linhas 579-600
+  - **Problema**: Mapeamento `levelProgression` mistura partner levels com titles
+  - **Correção**: Recalcular baseado no `title` do usuário
+
+---
+
+## 🟡 BLOCO 5 — UX/UI
+
+- [ ] **5.1** Tooltips não somem no /quotas
+  - **Arquivo**: `CareerTimeline.vue` linha 32
+  - **Problema**: Falta `@mouseleave` no `.tier-node__bubble`
+  - **Correção**: Adicionar `@mouseleave="activeTierIndex = -1"`
+
+- [ ] **5.2** Scroll para erros no cadastro
+  - **Arquivo**: `RegisterView.vue`
+  - **Correção**: No `handleRegister`, após validação falhar, fazer `scrollIntoView()` no primeiro campo com erro
+
+- [ ] **5.3** Cards do Admin agrupados em telas menores
+  - **Arquivo**: `AdminDashboardView.vue`
+  - **Correção**: Ajustar grid para `repeat(auto-fit, minmax(250px, 1fr))` em telas menores
+
+- [ ] **5.4** Menu suspenso travado no Admin
+  - **Arquivo**: `ManagerUserTable.vue`
+  - **Status**: Já usa Teleport + fixed. Verificar viewport overflow e ajustar posição
+
+- [ ] **5.5** Editar perfil — adicionar tipo da chave PIX
+  - **Arquivo**: `ProfileView.vue`
+  - **Problema**: Falta dropdown para `pixKeyType` (CPF/Email/Phone/Aleatória)
+  - **Correção**: Adicionar `DsDropdown` antes do campo pixKey
+
+- [ ] **5.6** Admin retirar cotas de split e admin-granted
+  - **Arquivo**: `admin-manager.service.ts` `removeQuotas()`
+  - **Status**: Já permite remover admin-granted. Falta remover split quotas
+  - **Correção**: Aceitar `source: 'admin' | 'split'` e decrementar campo correto
+
+---
+
+## 🟡 BLOCO 6 — ERROS DE INFRAESTRUTURA
+
+- [x] **6.1** Constante de estimativa — REMOVIDA ✅ (feito no Bloco 1)
+
+- [ ] **6.2** Erros 401 Unauthorized
+  - **Problema**: Token JWT expirando, refresh token possivelmente não funciona
+  - **Investigação**: Verificar interceptor axios e refresh token
+
+- [ ] **6.3** Erros 400 na compra (checkout bloqueando)
+  - **Problema**: Pode ser maxQuotasPerUser atingido ou rate limit
+  - **Correção**: Mensagem de erro mais descritiva no backend + exibir no frontend
+
+- [ ] **6.4** Saúde da rede não aparecendo
+  - **Problema**: `kpi.activeDirects` e `kpi.totalDirects` possivelmente vindo 0 do backend
+  - **Investigação**: Verificar endpoint `dashboard/kpis`
+
+---
+
+## 📊 PROGRESSO GERAL
+
+| Bloco | Status | Concluído |
+|-------|--------|-----------|
+| 1 — Motor de Preço | ✅ COMPLETO | 9/9 |
+| 2 — Bônus/Pagamentos | ✅ COMPLETO | 3/3 |
+| 3 — Histórico/Dashboard | ⬜ PENDENTE | 0/4 |
+| 4 — Títulos/Níveis | ⬜ PENDENTE | 0/2 |
+| 5 — UX/UI | ⬜ PENDENTE | 0/6 |
+| 6 — Infraestrutura | ⏳ PARCIAL | 1/4 |
+| **TOTAL** | | **13/28** |
+
+---
+
+**Última Atualização:** 2026-04-16
 # TODO - BLOCO 1: Motor de Preço + Bônus + Erro Generate-Batch
 
 **Data/Hora:** 2026-04-16

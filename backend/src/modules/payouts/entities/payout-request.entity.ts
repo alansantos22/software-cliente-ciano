@@ -31,6 +31,21 @@ export class PayoutRequest {
   @Column({ type: 'decimal', precision: 15, scale: 2, default: 0, name: 'network_amount' })
   networkAmount: number;
 
+  @Column({ type: 'decimal', precision: 15, scale: 2, default: 0, name: 'first_purchase_amount' })
+  firstPurchaseAmount: number;
+
+  @Column({ type: 'decimal', precision: 15, scale: 2, default: 0, name: 'repurchase_amount' })
+  repurchaseAmount: number;
+
+  @Column({ type: 'decimal', precision: 15, scale: 2, default: 0, name: 'team_amount' })
+  teamAmount: number;
+
+  @Column({ type: 'decimal', precision: 15, scale: 2, default: 0, name: 'leadership_amount' })
+  leadershipAmount: number;
+
+  @Column({ type: 'decimal', precision: 15, scale: 2, default: 0, name: 'lifetime_earnings' })
+  lifetimeEarnings: number;
+
   @Column({ type: 'decimal', precision: 15, scale: 2 })
   amount: number;
 
