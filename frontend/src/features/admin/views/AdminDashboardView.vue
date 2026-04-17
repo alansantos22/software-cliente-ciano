@@ -79,6 +79,7 @@
         </div>
         <div class="kpi-dividend__value">{{ formatCurrency(kpis.dividendPool) }}</div>
         <p class="kpi-dividend__subtitle">Comprometido para pagar no dia {{ paymentDay }}</p>
+        <p v-if="kpis.dividendPoolNote" class="kpi-dividend__note">{{ kpis.dividendPoolNote }}</p>
         <div class="kpi-dividend__bar">
           <div
             class="kpi-dividend__bar-fill"
@@ -103,9 +104,8 @@
         :lot-progress="lotProgress"
         :lot-size="lotSize"
         :lot-number="lotNumber"
-        :current-constant="currentConstant"
+        :pending-event-type="pendingEventType"
         @force-split="handleForceSplit"
-        @adjust-constant="handleAdjustConstant"
       />
 
       <DsCard class="chart-card">
@@ -212,7 +212,7 @@ const currentQuotaPrice = ref(0);
 const lotProgress = ref(0);
 const lotSize = ref(0);
 const lotNumber = ref(0);
-const currentConstant = ref(0);
+const pendingEventType = ref<string | null>(null);
 const paymentDay = ref(15);
 const currentPeriod = new Date().toISOString().slice(0, 7);
 
@@ -235,6 +235,7 @@ interface KpiState {
   monthQuotasTrend: number;
   totalRevenue: number;
   dividendPool: number;
+  dividendPoolNote: string;
 }
 
 const kpis = ref<KpiState>({
@@ -246,6 +247,7 @@ const kpis = ref<KpiState>({
   monthQuotasTrend: 0,
   totalRevenue: 0,
   dividendPool: 0,
+  dividendPoolNote: '',
 });
 
 const dividendPoolPercent = computed(() => {
@@ -316,11 +318,6 @@ function handleForceSplit() {
   console.info('[Admin] Force split triggered');
 }
 
-function handleAdjustConstant(value: number) {
-  currentConstant.value = value;
-  console.info('[Admin] Constant adjusted to', value);
-}
-
 function handleCrmAction(type: 'extrato' | 'bloquear' | 'mensagem', user: any) {
   if (type === 'extrato') {
     router.push(`/admin/users/${user.id}`);
@@ -354,7 +351,7 @@ onMounted(async () => {
       lotProgress.value = Number(pe.lotSold) || 0;
       lotSize.value = Number(pe.lotSize) || 50;
       lotNumber.value = Number(pe.lotNumber) || 1;
-      currentConstant.value = Number(pe.currentConstant) || 0;
+      pendingEventType.value = pe.pendingEventType || null;
     }
 
     if (titleRes.data) {
@@ -488,21 +485,9 @@ onMounted(async () => {
 // ============================================================
 .admin-cmd__kpis {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: $spacing-4;
   margin-bottom: $spacing-6;
-
-  @media (max-width: 1280px) {
-    grid-template-columns: repeat(3, 1fr);
-  }
-
-  @media (max-width: 900px) {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
-  @media (max-width: 576px) {
-    grid-template-columns: 1fr;
-  }
 }
 
 // Dividend card
@@ -543,6 +528,13 @@ onMounted(async () => {
     font-size: 0.78rem;
     color: var(--accent-700);
     margin: 0;
+  }
+
+  &__note {
+    font-size: 0.72rem;
+    color: var(--warning-600, #b45309);
+    font-style: italic;
+    margin: 2px 0 0;
   }
 
   &__bar {

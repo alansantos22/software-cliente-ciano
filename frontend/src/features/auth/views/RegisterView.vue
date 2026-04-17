@@ -483,7 +483,11 @@ function validate(): boolean {
 
 async function handleRegister() {
   error.value = '';
-  if (!validate()) return;
+  if (!validate()) {
+    const firstError = document.querySelector('.ds-input--error, .register-form__select--error');
+    if (firstError) firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    return;
+  }
 
   isLoading.value = true;
 

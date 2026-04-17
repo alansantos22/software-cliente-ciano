@@ -115,6 +115,7 @@ export class AdminService {
       totalRevenue: totalRev,
       dividendPool: monthRev * dividendPoolPercent / 100,
       dividendPoolPercent,
+      dividendPoolNote: monthRev > 0 ? 'Estimativa baseada na receita do mês' : 'Aguardando receita do mês',
       pendingPayoutsCount,
       pendingPayoutsTotal: parseFloat(pendingPayoutsTotalRow?.total || '0'),
     };
@@ -182,14 +183,11 @@ export class AdminService {
   async getPriceEngine() {
     const state = await this.splitEngine.getState();
     
-    // Calculate lot progress: how many quotas sold in current lot
-    // Target for lot N is 50 * 2^splitCount
-    // Previous lot threshold = sum of all previous targets
-    // For simplicity: previousTarget = splitCount > 0 ? 50 * (2^splitCount - 1) : 0
-    // Actually: each split doubles, so cumulative before current = 50 * (2^splitCount - 1)
+    // lotSold = how many quotas sold in the current lot (distance from last event to now)
+    // lotSize = target quotas per lot for current split level
+    const lotSize = state.nextEventTarget ? state.nextEventTarget - (state.nextEventTarget - 50 * Math.pow(2, state.splitCount)) : 50;
     const currentTarget = state.nextEventTarget || 50;
-    const previousTarget = state.splitCount > 0 ? 50 * (Math.pow(2, state.splitCount) - 1) : 0;
-    const lotSold = Math.max(0, state.totalQuotasSold - previousTarget);
+    const lotSold = Math.max(0, lotSize - (currentTarget - state.totalQuotasSold));
     
     return {
       quotaPrice: Number(state.currentQuotaPrice),
@@ -198,25 +196,18 @@ export class AdminService {
       currentPhase: state.currentPhase,
       nextEventTarget: currentTarget,
       nextEventLabel: state.nextEventLabel,
-      lotSize: currentTarget,
+      lotSize: lotSize,
       lotSold: lotSold,
       lotNumber: state.splitCount + 1,
-      currentConstant: state.currentPhase,
+      pendingEventType: state.pendingEventType,
+      pendingEventDate: state.pendingEventDate,
     };
   }
 
-  async updatePriceEngine(forceSplit?: boolean, adjustConstant?: number) {
+  async updatePriceEngine(forceSplit?: boolean) {
     if (forceSplit) {
       await this.splitEngine.forceSplit();
       return { message: 'Split forçado executado com sucesso' };
-    }
-
-    if (adjustConstant !== undefined) {
-      const state = await this.splitEngine.getState();
-      state.currentPhase = adjustConstant;
-      state.currentQuotaPrice = 2000 + 500 * adjustConstant;
-      await this.stateRepo.save(state);
-      return { message: `Constante ajustada para ${adjustConstant}`, newPrice: state.currentQuotaPrice };
     }
 
     return { message: 'Nenhuma ação executada' };
@@ -239,6 +230,31 @@ export class AdminService {
       where: { deletedAt: IsNull() },
     });
 
+    // Earnings by user and bonusType for the reference month
+    const monthlyEarnings = await this.earningRepo
+      .createQueryBuilder('e')
+      .select('e.user_id', 'userId')
+      .addSelect('e.bonus_type', 'bonusType')
+      .addSelect('SUM(e.amount)', 'total')
+      .where('e.reference_month = :month', { month: profitMonth })
+      .groupBy('e.user_id')
+      .addGroupBy('e.bonus_type')
+      .getRawMany<{ userId: string; bonusType: string; total: string }>();
+
+    // Build lookup: userId -> { firstPurchase, repurchase, team, leadership }
+    const earningsMap = new Map<string, { firstPurchase: number; repurchase: number; team: number; leadership: number }>();
+    for (const row of monthlyEarnings) {
+      if (!earningsMap.has(row.userId)) {
+        earningsMap.set(row.userId, { firstPurchase: 0, repurchase: 0, team: 0, leadership: 0 });
+      }
+      const entry = earningsMap.get(row.userId)!;
+      const val = parseFloat(row.total) || 0;
+      if (row.bonusType === BonusType.FIRST_PURCHASE) entry.firstPurchase = val;
+      else if (row.bonusType === BonusType.REPURCHASE) entry.repurchase = val;
+      else if (row.bonusType === BonusType.TEAM) entry.team = val;
+      else if (row.bonusType === BonusType.LEADERSHIP) entry.leadership = val;
+    }
+
     const totalQuotas = users.reduce((s, u) => s + u.quotaBalance, 0);
 
     const distributions = users
@@ -246,6 +262,8 @@ export class AdminService {
       .map((u) => {
         const share = totalQuotas > 0 ? u.quotaBalance / totalQuotas : 0;
         const quotaAmount = dividendPool * share;
+        const breakdown = earningsMap.get(u.id) || { firstPurchase: 0, repurchase: 0, team: 0, leadership: 0 };
+        const networkAmount = breakdown.firstPurchase + breakdown.repurchase + breakdown.team + breakdown.leadership;
 
         return {
           userId: u.id,
@@ -253,8 +271,13 @@ export class AdminService {
           quotaBalance: u.quotaBalance,
           percentageShare: Math.round(share * 10000) / 100,
           quotaAmount: Math.round(quotaAmount * 100) / 100,
-          networkAmount: Number(u.totalEarnings), // simplified — ideally filtered by month
-          totalAmount: Math.round((quotaAmount + Number(u.totalEarnings)) * 100) / 100,
+          networkAmount: Math.round(networkAmount * 100) / 100,
+          firstPurchaseAmount: Math.round(breakdown.firstPurchase * 100) / 100,
+          repurchaseAmount: Math.round(breakdown.repurchase * 100) / 100,
+          teamAmount: Math.round(breakdown.team * 100) / 100,
+          leadershipAmount: Math.round(breakdown.leadership * 100) / 100,
+          lifetimeEarnings: Math.round(Number(u.totalEarnings) * 100) / 100,
+          totalAmount: Math.round((quotaAmount + networkAmount) * 100) / 100,
           pixKey: u.pixKey,
           pixKeyType: u.pixKeyType,
         };
@@ -281,7 +304,13 @@ export class AdminService {
     }
 
     const payouts: PayoutRequest[] = [];
+    const skippedNoPixKey: string[] = [];
     for (const dist of preview.distributions) {
+      // Skip users without pixKey configured — they can't receive payment
+      if (!dist.pixKey || !dist.pixKeyType) {
+        skippedNoPixKey.push(dist.userName);
+        continue;
+      }
       const payout = this.payoutRepo.create({
         userId: dist.userId,
         userName: dist.userName,
@@ -289,6 +318,11 @@ export class AdminService {
         paymentMonth: preview.paymentMonth,
         quotaAmount: dist.quotaAmount,
         networkAmount: dist.networkAmount,
+        firstPurchaseAmount: dist.firstPurchaseAmount,
+        repurchaseAmount: dist.repurchaseAmount,
+        teamAmount: dist.teamAmount,
+        leadershipAmount: dist.leadershipAmount,
+        lifetimeEarnings: dist.lifetimeEarnings,
         amount: dist.totalAmount,
         percentageShare: dist.percentageShare,
         netProfitRef: netProfit,
@@ -302,12 +336,17 @@ export class AdminService {
     }
 
     await this.payoutRepo.save(payouts);
+
+    if (skippedNoPixKey.length > 0) {
+      this.logger.warn(`⚠️ Skipped ${skippedNoPixKey.length} users without PIX key: ${skippedNoPixKey.join(', ')}`);
+    }
     this.logger.log(`📋 Batch generated for ${profitMonth}: ${payouts.length} payouts`);
 
     return {
       profitMonth,
       paymentMonth: preview.paymentMonth,
       totalPayouts: payouts.length,
+      skippedNoPixKey: skippedNoPixKey.length,
       totalAmount: payouts.reduce((s, p) => s + Number(p.amount), 0),
     };
   }

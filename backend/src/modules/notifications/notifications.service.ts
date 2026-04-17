@@ -4,7 +4,8 @@ import { Repository } from 'typeorm';
 import { Notification } from './entities/notification.entity';
 import { User } from '../users/entities/user.entity';
 import { PayoutRequest } from '../payouts/entities/payout-request.entity';
-import { PayoutStatus } from '../../shared/interfaces/enums';
+import { QuotaSystemState } from '../quotas/entities/quota-system-state.entity';
+import { PayoutStatus, SplitEventType } from '../../shared/interfaces/enums';
 
 interface GeneratedNotif {
   referenceKey: string;
@@ -23,6 +24,8 @@ export class NotificationsService {
     private readonly userRepo: Repository<User>,
     @InjectRepository(PayoutRequest)
     private readonly payoutRepo: Repository<PayoutRequest>,
+    @InjectRepository(QuotaSystemState)
+    private readonly stateRepo: Repository<QuotaSystemState>,
   ) {}
 
   async getAll(userId: string): Promise<Notification[]> {
@@ -161,6 +164,23 @@ export class NotificationsService {
         icon: 'users',
         title: 'Nova indicação na sua rede',
         description: `${member.name} acabou de entrar como seu indicado direto.`,
+      });
+    }
+
+    // 4. Pending price/split event
+    const state = await this.stateRepo.findOne({ where: { id: 1 } });
+    if (state?.pendingEventType) {
+      const isSplit = state.pendingEventType === SplitEventType.SPLIT;
+      notifications.push({
+        referenceKey: `pending_event_${state.pendingEventType}`,
+        type: 'warning',
+        icon: isSplit ? 'bolt' : 'chart-line',
+        title: isSplit
+          ? 'Split agendado para hoje à meia-noite'
+          : 'Aumento de preço agendado para hoje à meia-noite',
+        description: isSplit
+          ? 'Um split será executado na virada do dia. Suas cotas serão dobradas e o preço volta ao valor base.'
+          : 'O preço das cotas será reajustado na virada do dia. Aproveite o valor atual enquanto pode.',
       });
     }
 

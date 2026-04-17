@@ -92,21 +92,23 @@ export class AdminManagerService {
     return { message: `${quantity} cotas concedidas`, newBalance: user.quotaBalance };
   }
 
-  async removeQuotas(userId: string, quantity: number, managerPassword: string, reason?: string) {
+  async removeQuotas(userId: string, quantity: number, managerPassword: string, reason?: string, source?: 'admin' | 'split') {
     await this.verifyManagerPassword(managerPassword);
 
     const user = await this.userRepo.findOne({ where: { id: userId } });
     if (!user) throw new BadRequestException('Usuário não encontrado');
 
-    const available = user.adminGrantedQuotas ?? 0;
+    const field = source === 'split' ? 'splitQuotas' : 'adminGrantedQuotas';
+    const label = source === 'split' ? 'split' : 'admin';
+    const available = (user[field] as number) ?? 0;
     if (available < quantity) {
       throw new BadRequestException(
-        `Somente cotas concedidas pelo admin podem ser removidas. Disponível: ${available} cota(s).`,
+        `Somente cotas de ${label} podem ser removidas por esta operação. Disponível: ${available} cota(s).`,
       );
     }
 
-    user.adminGrantedQuotas = available - quantity;
-    user.quotaBalance = user.purchasedQuotas + user.adminGrantedQuotas + user.splitQuotas;
+    (user as any)[field] = available - quantity;
+    user.quotaBalance = user.purchasedQuotas + (user.adminGrantedQuotas ?? 0) + user.splitQuotas;
     await this.userRepo.save(user);
 
     const txn = this.txnRepo.create({
@@ -114,14 +116,14 @@ export class AdminManagerService {
       type: TransactionType.ADMIN_GRANT,
       amount: 0,
       quotasAffected: -quantity,
-      description: `Remoção admin: -${quantity} cota(s)${reason ? ` — ${reason}` : ''}`,
+      description: `Remoção ${label}: -${quantity} cota(s)${reason ? ` — ${reason}` : ''}`,
       status: TransactionStatus.COMPLETED,
       referenceMonth: getCurrentPeriod(),
       completedAt: new Date(),
     });
     await this.txnRepo.save(txn);
 
-    this.logger.warn(`⚙️ Admin removed ${quantity} granted quota(s) from user ${userId}`);
+    this.logger.warn(`⚙️ Admin removed ${quantity} ${label} quota(s) from user ${userId}`);
     return { message: `${quantity} cotas removidas`, newBalance: user.quotaBalance };
   }
 

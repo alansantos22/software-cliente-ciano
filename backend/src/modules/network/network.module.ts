@@ -4,9 +4,10 @@ import { NetworkService } from './network.service';
 import { NetworkController } from './network.controller';
 import { User } from '../users/entities/user.entity';
 import { Earning } from '../earnings/entities/earning.entity';
+import { TitleModule } from '../../core/title/title.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([User, Earning])],
+  imports: [TypeOrmModule.forFeature([User, Earning]), TitleModule],
   controllers: [NetworkController],
   providers: [NetworkService],
   exports: [NetworkService],

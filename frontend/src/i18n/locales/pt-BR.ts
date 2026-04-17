@@ -208,6 +208,7 @@ export default {
     state: 'Estado',
     statePlaceholder: 'UF',
     pixKey: 'Chave PIX',
+    pixKeyType: 'Tipo de Chave PIX',
     pixKeyPlaceholder: 'CPF, e-mail, telefone ou chave aleatória',
     pixKeyHint: 'Usada para receber pagamentos',
     accountType: 'Tipo de Conta',

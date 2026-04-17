@@ -170,9 +170,15 @@ function toggleMenu(id: string) {
   const btn = triggerRefs.get(id);
   if (btn) {
     const rect = (btn as HTMLElement).getBoundingClientRect();
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const menuHeight = 220; // approximate dropdown height
+    const openAbove = spaceBelow < menuHeight && rect.top > menuHeight;
+
     dropdownStyle.value = {
       position: 'fixed',
-      top: `${rect.bottom + 4}px`,
+      ...(openAbove
+        ? { bottom: `${window.innerHeight - rect.top + 4}px` }
+        : { top: `${rect.bottom + 4}px` }),
       right: `${window.innerWidth - rect.right}px`,
       zIndex: '9999',
     };

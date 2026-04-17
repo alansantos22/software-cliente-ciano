@@ -45,7 +45,7 @@ export class AdminManagerController {
 
   @Post('users/:userId/remove-quotas')
   removeQuotas(@Param('userId') userId: string, @Body() dto: RemoveQuotasDto) {
-    return this.managerService.removeQuotas(userId, dto.quantity, dto.managerPassword, dto.reason);
+    return this.managerService.removeQuotas(userId, dto.quantity, dto.managerPassword, dto.reason, dto.source);
   }
 
   @Patch('users/:userId/sponsor')

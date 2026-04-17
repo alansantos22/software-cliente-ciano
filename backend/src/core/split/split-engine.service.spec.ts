@@ -16,6 +16,9 @@ function makeState(overrides: Partial<QuotaSystemState> = {}): QuotaSystemState 
     nextEventTarget: 50,
     nextEventLabel: 'Aumento de Preço',
     totalSplitQuotas: 0,
+    pendingEventType: null,
+    pendingEventDate: null,
+    updatedAt: new Date(),
     ...overrides,
   } as QuotaSystemState;
 }
@@ -50,7 +53,7 @@ describe('SplitEngineService', () => {
   beforeEach(async () => {
     stateRepo = {
       findOne: jest.fn(),
-      create: jest.fn().mockReturnValue(makeState()),
+      create: jest.fn().mockImplementation((data) => ({ ...makeState(), ...data })),
       save: jest.fn().mockResolvedValue(makeState()),
     };
     eventRepo = {
@@ -87,39 +90,15 @@ describe('SplitEngineService', () => {
       expect(result.currentQuotaPrice).toBe(2500);
     });
 
-    it('should create default state when none exists', async () => {
+    it('should create state with phase 1 (R$2500) when none exists (first run)', async () => {
       stateRepo.findOne.mockResolvedValue(null);
-      stateRepo.create.mockReturnValue(makeState());
-      stateRepo.save.mockResolvedValue(makeState());
 
-      const result = await service.getState();
+      await service.getState();
 
-      expect(stateRepo.create).toHaveBeenCalledWith({ id: 1 });
+      expect(stateRepo.create).toHaveBeenCalledWith(
+        expect.objectContaining({ id: 1, currentPhase: 1, currentQuotaPrice: 2500 }),
+      );
       expect(stateRepo.save).toHaveBeenCalled();
-      expect(result).toBeDefined();
-    });
-  });
-
-  // ─── calculateTarget (indirectly via checkAndProcess) ────────────────────────
-
-  describe('calculateTarget', () => {
-    it('should return 50 for split count 0 (50 * 2^0)', async () => {
-      // Target = 50 * 2^0 = 50
-      // With 49 sold, nothing should happen
-      stateRepo.findOne.mockResolvedValue(makeState({ totalQuotasSold: 49, currentPhase: 0, splitCount: 0 }));
-
-      await service.checkAndProcess();
-
-      expect(stateRepo.save).not.toHaveBeenCalled();
-    });
-
-    it('should return 100 for split count 1 (50 * 2^1)', async () => {
-      // Target = 50 * 2^1 = 100
-      stateRepo.findOne.mockResolvedValue(makeState({ totalQuotasSold: 99, currentPhase: 0, splitCount: 1 }));
-
-      await service.checkAndProcess();
-
-      expect(stateRepo.save).not.toHaveBeenCalled();
     });
   });
 
@@ -131,42 +110,88 @@ describe('SplitEngineService', () => {
 
       await service.checkAndProcess();
 
+      // save is not called for scheduling
       expect(stateRepo.save).not.toHaveBeenCalled();
     });
 
-    it('should advance phase when target is reached and phase < 3', async () => {
+    it('should do nothing if there is already a pending event', async () => {
+      stateRepo.findOne.mockResolvedValue(
+        makeState({ totalQuotasSold: 50, currentPhase: 0, pendingEventType: SplitEventType.PRICE_INCREASE }),
+      );
+
+      await service.checkAndProcess();
+
+      expect(stateRepo.save).not.toHaveBeenCalled();
+    });
+
+    it('should schedule price increase when target reached and phase < 2', async () => {
       stateRepo.findOne.mockResolvedValue(makeState({ totalQuotasSold: 50, currentPhase: 0, splitCount: 0 }));
+      stateRepo.save.mockResolvedValue({});
+
+      await service.checkAndProcess();
+
+      expect(stateRepo.save).toHaveBeenCalledWith(
+        expect.objectContaining({ pendingEventType: SplitEventType.PRICE_INCREASE }),
+      );
+    });
+
+    it('should schedule split when target reached and phase is at max (2)', async () => {
+      stateRepo.findOne.mockResolvedValue(makeState({ totalQuotasSold: 50, currentPhase: 2, splitCount: 0 }));
+      stateRepo.save.mockResolvedValue({});
+
+      await service.checkAndProcess();
+
+      expect(stateRepo.save).toHaveBeenCalledWith(
+        expect.objectContaining({ pendingEventType: SplitEventType.SPLIT }),
+      );
+    });
+  });
+
+  // ─── applyPendingEvent ───────────────────────────────────────────────────────
+
+  describe('applyPendingEvent', () => {
+    it('should do nothing if no pending event', async () => {
+      stateRepo.findOne.mockResolvedValue(makeState({ pendingEventType: null }));
+
+      await service.applyPendingEvent();
+
+      expect(eventRepo.create).not.toHaveBeenCalled();
+    });
+
+    it('should advance phase when pending event is PRICE_INCREASE', async () => {
+      stateRepo.findOne.mockResolvedValue(
+        makeState({ totalQuotasSold: 50, currentPhase: 0, splitCount: 0, pendingEventType: SplitEventType.PRICE_INCREASE }),
+      );
       stateRepo.save.mockResolvedValue({});
       eventRepo.save.mockResolvedValue({});
 
-      await service.checkAndProcess();
+      await service.applyPendingEvent();
 
       expect(eventRepo.create).toHaveBeenCalledWith(
         expect.objectContaining({ eventType: SplitEventType.PRICE_INCREASE }),
       );
       expect(stateRepo.save).toHaveBeenCalledWith(
-        expect.objectContaining({ currentPhase: 1 }),
+        expect.objectContaining({ currentPhase: 1, pendingEventType: null }),
       );
     });
 
-    it('should set new price on phase advance (BASE_PRICE + PRICE_INCREMENT * phase)', async () => {
-      stateRepo.findOne.mockResolvedValue(makeState({ totalQuotasSold: 50, currentPhase: 0, splitCount: 0 }));
-
-      let savedState: Partial<QuotaSystemState> | null = null;
-      stateRepo.save.mockImplementation((s: Partial<QuotaSystemState>) => {
-        savedState = s;
-        return Promise.resolve(s);
-      });
+    it('should set price to R$2500 when advancing to phase 1', async () => {
+      const state = makeState({ totalQuotasSold: 50, currentPhase: 0, splitCount: 0, pendingEventType: SplitEventType.PRICE_INCREASE });
+      stateRepo.findOne.mockResolvedValue(state);
+      stateRepo.save.mockResolvedValue({});
       eventRepo.save.mockResolvedValue({});
 
-      await service.checkAndProcess();
+      await service.applyPendingEvent();
 
-      // Phase 1: 2000 + 500*1 = 2500
-      expect((savedState as Partial<QuotaSystemState>)?.currentQuotaPrice).toBe(2500);
+      expect(stateRepo.save).toHaveBeenCalledWith(
+        expect.objectContaining({ currentQuotaPrice: 2500 }),
+      );
     });
 
-    it('should execute split when phase >= 3 and target is reached', async () => {
-      stateRepo.findOne.mockResolvedValue(makeState({ totalQuotasSold: 50, currentPhase: 3, splitCount: 0 }));
+    it('should execute split when pending event is SPLIT', async () => {
+      stateRepo.findOne.mockResolvedValue(
+        makeState({ totalQuotasSold: 50, currentPhase: 2, splitCount: 0, pendingEventType: SplitEventType.SPLIT }),
+      );
       stateRepo.save.mockResolvedValue({});
       eventRepo.save.mockResolvedValue({});
 
@@ -177,21 +202,35 @@ describe('SplitEngineService', () => {
         .mockReturnValueOnce({ ...updateQb, update: () => updateQb })
         .mockReturnValueOnce(selectQb);
 
-      await service.checkAndProcess();
+      await service.applyPendingEvent();
 
       expect(eventRepo.create).toHaveBeenCalledWith(
         expect.objectContaining({ eventType: SplitEventType.SPLIT }),
       );
+      expect(stateRepo.save).toHaveBeenCalledWith(
+        expect.objectContaining({ currentQuotaPrice: 2000, currentPhase: 0, splitCount: 1, pendingEventType: null }),
+      );
     });
 
-    it('should reset price to BASE_PRICE (2000) after split', async () => {
-      stateRepo.findOne.mockResolvedValue(makeState({ totalQuotasSold: 50, currentPhase: 3, splitCount: 0, currentQuotaPrice: 3500 }));
+    it('should set nextEventLabel to Split when advancing to max phase (2)', async () => {
+      stateRepo.findOne.mockResolvedValue(
+        makeState({ totalQuotasSold: 50, currentPhase: 1, splitCount: 0, pendingEventType: SplitEventType.PRICE_INCREASE }),
+      );
+      stateRepo.save.mockResolvedValue({});
+      eventRepo.save.mockResolvedValue({});
 
-      let savedState: Partial<QuotaSystemState> | null = null;
-      stateRepo.save.mockImplementation((s: Partial<QuotaSystemState>) => {
-        savedState = s;
-        return Promise.resolve(s);
-      });
+      await service.applyPendingEvent();
+
+      expect(stateRepo.save).toHaveBeenCalledWith(
+        expect.objectContaining({ nextEventLabel: 'Split' }),
+      );
+    });
+
+    it('should set nextEventLabel to Aumento de Preço after split', async () => {
+      stateRepo.findOne.mockResolvedValue(
+        makeState({ totalQuotasSold: 50, currentPhase: 2, splitCount: 0, pendingEventType: SplitEventType.SPLIT }),
+      );
+      stateRepo.save.mockResolvedValue({});
       eventRepo.save.mockResolvedValue({});
 
       const updateQb = makeQueryBuilderUpdate();
@@ -201,32 +240,11 @@ describe('SplitEngineService', () => {
         .mockReturnValueOnce({ ...updateQb, update: () => updateQb })
         .mockReturnValueOnce(selectQb);
 
-      await service.checkAndProcess();
+      await service.applyPendingEvent();
 
-      expect((savedState as Partial<QuotaSystemState>)?.currentQuotaPrice).toBe(2000);
-    });
-
-    it('should increment split count after split', async () => {
-      // splitCount=0 → target = 50*2^0 = 50; totalQuotasSold=50 triggers split
-      stateRepo.findOne.mockResolvedValue(makeState({ totalQuotasSold: 50, currentPhase: 3, splitCount: 0 }));
-
-      let savedState: Partial<QuotaSystemState> | null = null;
-      stateRepo.save.mockImplementation((s: Partial<QuotaSystemState>) => {
-        savedState = s;
-        return Promise.resolve(s);
-      });
-      eventRepo.save.mockResolvedValue({});
-
-      const updateQb = makeQueryBuilderUpdate();
-      const selectQb = makeQueryBuilderSelect({ total: '0' });
-      userRepo.createQueryBuilder
-        .mockReturnValueOnce({ ...updateQb, update: () => updateQb })
-        .mockReturnValueOnce({ ...updateQb, update: () => updateQb })
-        .mockReturnValueOnce(selectQb);
-
-      await service.checkAndProcess();
-
-      expect((savedState as Partial<QuotaSystemState>)?.splitCount).toBe(1);
+      expect(stateRepo.save).toHaveBeenCalledWith(
+        expect.objectContaining({ nextEventLabel: 'Aumento de Preço' }),
+      );
     });
   });
 
@@ -234,58 +252,18 @@ describe('SplitEngineService', () => {
 
   describe('incrementQuotasSold', () => {
     it('should add quantity to totalQuotasSold', async () => {
-      stateRepo.findOne.mockResolvedValue(makeState({ totalQuotasSold: 10 }));
+      const state = makeState({ totalQuotasSold: 10 });
+      stateRepo.findOne.mockResolvedValue(state);
 
-      let savedState: Partial<QuotaSystemState> | null = null;
-      stateRepo.save.mockImplementation((s: Partial<QuotaSystemState>) => {
+      let savedState: any = null;
+      stateRepo.save.mockImplementation((s: QuotaSystemState) => {
         savedState = s;
         return Promise.resolve(s);
       });
 
       await service.incrementQuotasSold(5);
 
-      expect((savedState as Partial<QuotaSystemState>)?.totalQuotasSold).toBe(15);
-    });
-  });
-
-  // ─── nextEventLabel ──────────────────────────────────────────────────────────
-
-  describe('nextEventLabel', () => {
-    it('should set label to Split when advancing to phase 3', async () => {
-      stateRepo.findOne.mockResolvedValue(makeState({ totalQuotasSold: 50, currentPhase: 2, splitCount: 0 }));
-
-      let savedState: Partial<QuotaSystemState> | null = null;
-      stateRepo.save.mockImplementation((s: Partial<QuotaSystemState>) => {
-        savedState = s;
-        return Promise.resolve(s);
-      });
-      eventRepo.save.mockResolvedValue({});
-
-      await service.checkAndProcess();
-
-      expect((savedState as Partial<QuotaSystemState>)?.nextEventLabel).toBe('Split');
-    });
-
-    it('should set label to Aumento de Preço after a split', async () => {
-      stateRepo.findOne.mockResolvedValue(makeState({ totalQuotasSold: 50, currentPhase: 3, splitCount: 0 }));
-
-      let savedState: Partial<QuotaSystemState> | null = null;
-      stateRepo.save.mockImplementation((s: Partial<QuotaSystemState>) => {
-        savedState = s;
-        return Promise.resolve(s);
-      });
-      eventRepo.save.mockResolvedValue({});
-
-      const updateQb = makeQueryBuilderUpdate();
-      const selectQb = makeQueryBuilderSelect({ total: '0' });
-      userRepo.createQueryBuilder
-        .mockReturnValueOnce({ ...updateQb, update: () => updateQb })
-        .mockReturnValueOnce({ ...updateQb, update: () => updateQb })
-        .mockReturnValueOnce(selectQb);
-
-      await service.checkAndProcess();
-
-      expect((savedState as Partial<QuotaSystemState>)?.nextEventLabel).toBe('Aumento de Preço');
+      expect(savedState?.totalQuotasSold).toBe(15);
     });
   });
 });

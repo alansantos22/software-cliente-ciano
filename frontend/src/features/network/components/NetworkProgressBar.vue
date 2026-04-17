@@ -59,6 +59,8 @@ const TITLE_ORDER: TitleKey[] = ['none', 'bronze', 'silver', 'gold', 'diamond'];
 interface Props {
   currentTitle: TitleKey;
   activeMembers: number;
+  /** Direct active downlines (level 1 only) — used for Bronze qualification check */
+  activeDirects?: number;
   /** Number of Bronzes qualified in the user's network */
   qualifiedBronzes: number;
   /** Number of distinct lines with qualified Bronzes */
@@ -81,43 +83,51 @@ const currentConfig = computed(() => TITLE_CONFIG[currentTitle.value]);
 
 const percent = computed(() => {
   if (isDiamond.value) return 100;
-  const req = nextConfig.value;
+  // currentConfig defines what the user at currentTitle needs to do to advance
+  const req = currentConfig.value;
 
-  // Bronze requirement: active members
+  // Sem Título → Bronze: need direct active members only
   if (req.requiredActives > 0) {
-    return Math.min(Math.round((props.activeMembers / req.requiredActives) * 100), 99);
+    const directs = props.activeDirects ?? props.activeMembers;
+    const raw = Math.round((directs / req.requiredActives) * 100);
+    // Return 100 when already qualified so the bar is visually complete
+    return raw >= 100 ? 100 : raw;
   }
 
-  // Prata/Ouro/Diamante: qualified Bronzes in distinct lines
+  // Bronze → Prata / Prata → Ouro / Ouro → Diamante: qualified Bronzes in distinct lines
   if (req.requiredBronzes > 0) {
     const bronzeProgress = props.qualifiedBronzes / req.requiredBronzes;
     const lineProgress = req.requiredLines > 0 ? props.qualifiedLines / req.requiredLines : 1;
-    return Math.min(Math.round(((bronzeProgress + lineProgress) / 2) * 100), 99);
+    const raw = Math.round(((bronzeProgress + lineProgress) / 2) * 100);
+    return raw >= 100 ? 100 : raw;
   }
 
-  return 99;
+  return 100;
 });
 
 const message = computed(() => {
   if (isDiamond.value) return 'Parabéns! Você atingiu o título máximo — Diamante.';
-  const req = nextConfig.value;
+  // currentConfig defines the requirement; nextConfig.label is the target title name
+  const req = currentConfig.value;
+  const nextLabel = nextConfig.value.label;
 
-  // Bronze: need active members
+  // Sem Título → Bronze: need direct active members only
   if (req.requiredActives > 0) {
-    const missing = Math.max(0, req.requiredActives - props.activeMembers);
-    if (missing === 0) return `Quase lá! Mantenha o ritmo para virar ${req.label}.`;
-    return `Faltam ${missing} pessoa${missing > 1 ? 's' : ''} ativa${missing > 1 ? 's' : ''} para virar ${req.label}.`;
+    const directs = props.activeDirects ?? props.activeMembers;
+    const missing = Math.max(0, req.requiredActives - directs);
+    if (missing === 0) return `Você já qualificou para ${nextLabel}! O título será atribuído em breve.`;
+    return `Faltam ${missing} ativo${missing > 1 ? 's diretos' : ' direto'} para virar ${nextLabel}.`;
   }
 
-  // Prata/Ouro/Diamante: need Bronzes in different lines
+  // Bronze → Prata / Prata → Ouro / Ouro → Diamante: need Bronzes in different lines
   if (req.requiredBronzes > 0) {
     const missingBronzes = Math.max(0, req.requiredBronzes - props.qualifiedBronzes);
     const missingLines = Math.max(0, req.requiredLines - props.qualifiedLines);
-    if (missingBronzes === 0 && missingLines === 0) return `Quase lá! Mantenha o ritmo para virar ${req.label}.`;
+    if (missingBronzes === 0 && missingLines === 0) return `Você já qualificou para ${nextLabel}! O título será atribuído em breve.`;
     const parts: string[] = [];
     if (missingBronzes > 0) parts.push(`${missingBronzes} Bronze${missingBronzes > 1 ? 's' : ''}`);
     if (missingLines > 0) parts.push(`${missingLines} linha${missingLines > 1 ? 's' : ''} diferente${missingLines > 1 ? 's' : ''}`);
-    return `Faltam ${parts.join(' em ')} para virar ${req.label}.`;
+    return `Faltam ${parts.join(' e ')} para virar ${nextLabel}.`;
   }
 
   return `Continue crescendo sua rede para avançar!`;

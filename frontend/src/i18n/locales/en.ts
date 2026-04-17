@@ -208,6 +208,7 @@ export default {
     state: 'State',
     statePlaceholder: 'State code',
     pixKey: 'PIX Key',
+    pixKeyType: 'PIX Key Type',
     pixKeyPlaceholder: 'CPF, email, phone or random key',
     pixKeyHint: 'Used to receive payments',
     accountType: 'Account Type',

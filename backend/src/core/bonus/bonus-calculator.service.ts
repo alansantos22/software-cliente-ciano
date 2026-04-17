@@ -47,7 +47,7 @@ export class BonusCalculatorService {
     if (!sponsor) return;
 
     const month = getCurrentPeriod(purchaseDate);
-    const bonusPercent = 10; // Default 10%
+    const bonusPercent = sponsor.quotaBalance > 0 ? 10 : 5;
     const amount = purchaseValue * (bonusPercent / 100);
 
     const earning = this.earningRepo.create({

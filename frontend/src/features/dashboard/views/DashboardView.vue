@@ -374,8 +374,11 @@ interface DashboardKpiData {
   networkSalesCount: number;
   networkSalesValue: number;
   partnerLevel?: string;
+  title?: string;
+  directCount?: number;
   quotaBalance?: number;
   isActive?: boolean;
+  daysUntilExpiry?: number;
 }
 
 interface RecentActivityItem {
@@ -575,30 +578,41 @@ onMounted(async () => {
     if (kpiRes.data) {
       kpi.value = kpiRes.data;
 
-      // Map career progress from KPI data
-      const currentLevel = kpiRes.data.partnerLevel || 'socio';
-      const levelProgression: Record<string, string> = {
-        socio: 'bronze',
+      // Map career progress from title
+      // The KPI endpoint already recalculates the title server-side before returning,
+      // so kpiRes.data.title is always the fresh, persisted value.
+      const titleToLevel: Record<string, LevelKey> = {
+        bronze: 'bronze',
+        silver: 'prata',
+        gold: 'ouro',
+        diamond: 'diamante',
+      };
+      const currentLevel = titleToLevel[kpiRes.data.title || ''] || 'bronze';
+      const levelProgression: Record<LevelKey, LevelKey | ''> = {
         bronze: 'prata',
         prata: 'ouro',
         ouro: 'diamante',
         diamante: '',
       };
       const levelTargets: Record<string, number> = {
-        bronze: 2,    // 2 pessoas ativas
-        prata: 1,     // 1 indicado Bronze
-        ouro: 2,      // 2 Bronzes em linhas diferentes
-        diamante: 3,  // 3 Bronzes em linhas diferentes
+        prata: 1,       // 1 indicado Bronze
+        ouro: 2,        // 2 Bronzes em linhas diferentes
+        diamante: 3,    // 3 Bronzes em linhas diferentes
       };
       const nextLevel = levelProgression[currentLevel] || '';
 
       career.value = {
-        currentLevel: currentLevel as LevelKey,
+        currentLevel,
         nextLevel: nextLevel as LevelKey | '',
-        currentValue: kpiRes.data.qualifiedCount || kpiRes.data.quotaBalance || 0,
+        currentValue: kpiRes.data.directCount || 0,
         targetValue: levelTargets[nextLevel] || 0,
         bonusPercentUnlock: nextLevel ? 2 : 0,
       };
+
+      // Sync the auth store with the recalculated title so other pages
+      // (e.g. Network) immediately reflect the correct title without needing
+      // their own recalculation call.
+      authStore.fetchUser();
 
       // Map health from active status
       health.value = {

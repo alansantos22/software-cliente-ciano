@@ -3,7 +3,15 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from '../../modules/users/entities/user.entity';
 import { TitleRequirement } from '../../modules/admin/entities/title-requirement.entity';
-import { UserTitle, TitleReqType } from '../../shared/interfaces/enums';
+import { UserTitle, TitleReqType, TitleReqLevel } from '../../shared/interfaces/enums';
+
+/** Fallback requirements used when title_requirements table is empty */
+const DEFAULT_REQUIREMENTS: Partial<TitleRequirement>[] = [
+  { title: UserTitle.DIAMOND, reqType: TitleReqType.LINHAS,         reqQuantity: 3, reqLevel: TitleReqLevel.BRONZE },
+  { title: UserTitle.GOLD,    reqType: TitleReqType.LINHAS,         reqQuantity: 2, reqLevel: TitleReqLevel.BRONZE },
+  { title: UserTitle.SILVER,  reqType: TitleReqType.INDICADO,       reqQuantity: 1, reqLevel: TitleReqLevel.BRONZE },
+  { title: UserTitle.BRONZE,  reqType: TitleReqType.PESSOAS_ATIVAS, reqQuantity: 2, reqLevel: null },
+];
 
 @Injectable()
 export class TitleCalculatorService {
@@ -25,23 +33,21 @@ export class TitleCalculatorService {
     const user = await this.userRepo.findOne({ where: { id: userId } });
     if (!user) return UserTitle.NONE;
 
-    // Inactive users cannot hold any title
-    if (!this.isActive(user)) {
-      if (user.title !== UserTitle.NONE) {
-        await this.userRepo.update(userId, { title: UserTitle.NONE });
-        this.logger.log(`🔻 ${user.name}: ${user.title} → none (inativo)`);
-      }
-      return UserTitle.NONE;
-    }
+    // NOTE: User inactivity affects bonus payments but NOT title assignment.
+    // Title is determined purely by network qualifications (spec: §2.1, §8).
 
-    const requirements = await this.titleReqRepo.find({ order: { id: 'DESC' } });
+    const dbRequirements = await this.titleReqRepo.find({ order: { id: 'DESC' } });
+
+    // Fall back to hardcoded defaults if table is empty (prevents all users getting NONE)
+    const requirements = dbRequirements.length > 0 ? dbRequirements : DEFAULT_REQUIREMENTS;
+
     let newTitle = UserTitle.NONE;
 
     // Check from highest to lowest
     for (const req of requirements) {
       if (req.title === UserTitle.NONE) continue;
       if (await this.meetsRequirement(user, req)) {
-        newTitle = req.title;
+        newTitle = req.title ?? UserTitle.NONE;
         break;
       }
     }
@@ -49,6 +55,11 @@ export class TitleCalculatorService {
     if (user.title !== newTitle) {
       await this.userRepo.update(userId, { title: newTitle });
       this.logger.log(`🏆 ${user.name}: ${user.title} → ${newTitle}`);
+
+      // Cascade: title changed → recalculate sponsor so their qualifiedBronzes/Lines stay fresh
+      if (user.sponsorId) {
+        await this.recalculateTitle(user.sponsorId);
+      }
     }
 
     return newTitle;
@@ -64,7 +75,7 @@ export class TitleCalculatorService {
     this.logger.log(`✅ All titles recalculated (${users.length} users)`);
   }
 
-  private async meetsRequirement(user: User, req: TitleRequirement): Promise<boolean> {
+  private async meetsRequirement(user: User, req: Partial<TitleRequirement>): Promise<boolean> {
     if (!req.reqType || !req.reqQuantity) return false;
 
     switch (req.reqType) {

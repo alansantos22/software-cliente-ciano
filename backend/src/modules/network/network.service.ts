@@ -116,12 +116,14 @@ export class NetworkService {
       if (node.isActive && node.title !== 'none') qualifiedBronzes++;
     }
 
-    // Count qualified lines
+    // Count qualified lines and direct actives (level 1 only — used for Bronze requirement)
     const directChildren = allNodes;
     let qualifiedLines = 0;
+    let activeDirects = 0;
     for (const child of directChildren) {
       const hasQualified = this.nodeOrChildHasTitle(child, 'bronze');
       if (hasQualified) qualifiedLines++;
+      if (child.isActive) activeDirects++;
     }
 
     return {
@@ -129,6 +131,7 @@ export class NetworkService {
       totalTeam: flatList.length,
       totalVolume,
       activeMembers,
+      activeDirects,
       inactiveMembers,
       qualifiedBronzes,
       qualifiedLines,

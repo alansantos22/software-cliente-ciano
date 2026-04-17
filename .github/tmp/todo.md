@@ -1,8 +1,140 @@
-# TODO DETALHADO — Sistema de Cotas Ciano (Pousadas)
+# TODO — 21 CORREÇÕES SISTEMA CIANO
 
-**Data/Hora:** 2026-02-18  
-**Última Atualização:** 2026-02-26  
-**Status Geral:** ✅ REGRAS DE NEGÓCIO: PAGAMENTO, CORTE E GANHOS IMPLEMENTADOS
+**Data/Hora:** 2026-04-16
+**Sessão:** finalizacao-sistema-blocos
+**Status Geral:** ⏳ EM PROGRESSO
+
+---
+
+## 🔴 BLOCO 1 — MOTOR DE PREÇO (Críticos) ✅ COMPLETO
+
+- [x] **1.1** Corrigir fases: max=2 (R$3.000), depois split — `split-engine.service.ts` ✅
+- [x] **1.2** Segurar preço até meia-noite (pendingEvent) — `split-engine.service.ts` + `quota-system-state.entity.ts` ✅
+- [x] **1.3** Notificação in-app ao bater meta — `notifications.service.ts` ✅
+- [x] **1.4** Só cotas compradas contam no lote — Verificado OK ✅
+- [x] **1.5** Corrigir contagem lotSold no admin — `admin.service.ts` ✅
+- [x] **1.6** Remover "Ajustar Constante" (front+back) — `AdminPriceEngine.vue` + `admin.service.ts` + DTO ✅
+- [x] **1.7** Migration: pending_event + pix nullable — `002-add-pending-event-and-fix-pix-nullable.sql` ✅
+- [x] **1.8** Testes reescritos — `split-engine.service.spec.ts` ✅
+- [x] **1.9** Compilação backend + frontend OK ✅
+
+---
+
+## 🔴 BLOCO 2 — BÔNUS E PAGAMENTOS (Críticos) ✅ COMPLETO
+
+- [x] **2.1** Primeira compra: 10% se sponsor tem cotas, 5% se não — `bonus-calculator.service.ts` ✅
+- [x] **2.2** Erro 500 generate-batch (pix_key_type null) — `admin.service.ts` + `payout-request.entity.ts` ✅
+- [x] **2.3** Detalhamento das faturas (breakdown por tipo de bônus) ✅
+  - Backend: networkAmount agora = ganhos do mês (query earnings por bonusType)
+  - Backend: 5 novas colunas na entity (firstPurchase, repurchase, team, leadership, lifetime)
+  - Frontend: Modal de detalhes com composição completa do valor
+  - Migration: `003-add-payout-breakdown-columns.sql`
+
+---
+
+## 🟠 BLOCO 3 — HISTÓRICO E DASHBOARD ✅ COMPLETO
+
+- [x] **3.1** Histórico vazio — earnings não filtra por mês selecionado ✅
+  - Backend: `getEarnings()` agora aceita param `month` e filtra por `referenceMonth`
+  - Frontend: `earningsService.list()` passa `month`, `loadEarnings()` envia `selectedMonth.value`
+
+- [x] **3.2** NaN no histórico ✅
+  - `amount: Number(e.amount) || 0` no mapeamento
+  - `formatCurrency()` protegida com `Number(value) || 0`
+
+- [x] **3.3** Remover "Saldo Líquido" do histórico ✅
+  - Card removido do template, grid ajustado para `repeat(3, 1fr)`
+
+- [x] **3.4** Caixa de Dividendos — nota de estimativa ✅
+  - Backend: retorna `dividendPoolNote` indicando que é estimativa
+  - Frontend: exibe nota em itálico abaixo do subtítulo
+
+---
+
+## 🟠 BLOCO 4 — TÍTULOS E NÍVEIS ✅ COMPLETO
+
+- [x] **4.1** Separar nível societário do título de rede ✅
+  - Agora usa `kpiRes.data.title` (none/bronze/silver/gold/diamond)
+  - Mapeamento EN→PT: silver→prata, gold→ouro, diamond→diamante
+  - Interface `DashboardKpiData` atualizada com `title`, `directCount`, `daysUntilExpiry`
+
+- [x] **4.2** Progressão mostrando meta errada ✅
+  - `levelProgression` agora é bronze→prata→ouro→diamante (sem partner levels)
+  - `levelTargets` corrigido: prata=1, ouro=2, diamante=3 (bronzes qualificados)
+  - `currentValue` usa `directCount` ao invés de `qualifiedCount || quotaBalance`
+
+---
+
+## 🟡 BLOCO 5 — UX/UI ✅ COMPLETO
+
+- [x] **5.1** Tooltips não somem no /quotas ✅
+  - Adicionado `@mouseleave="activeTierIndex = -1"` no `.tier-node__bubble`
+
+- [x] **5.2** Scroll para erros no cadastro ✅
+  - `handleRegister()` faz `scrollIntoView({ behavior: 'smooth', block: 'center' })` no primeiro campo com erro
+
+- [x] **5.3** Cards do Admin agrupados em telas menores ✅
+  - Grid alterado para `repeat(auto-fit, minmax(220px, 1fr))` — responsivo fluido
+
+- [x] **5.4** Menu suspenso travado no Admin ✅
+  - `toggleMenu()` agora detecta espaço abaixo e abre para cima quando necessário
+
+- [x] **5.5** Editar perfil — tipo da chave PIX ✅
+  - Adicionado `<select>` para pixKeyType (CPF/Email/Telefone/Aleatória)
+  - Form state, loadFormData, saveFinancialData atualizados
+  - Traduções i18n adicionadas (pt-BR, en)
+
+- [x] **5.6** Admin retirar cotas de split e admin-granted ✅
+  - `removeQuotas()` agora aceita `source: 'admin' | 'split'`
+  - DTO atualizado com campo `source` opcional
+  - Decrementa campo correto (`adminGrantedQuotas` ou `splitQuotas`)
+
+---
+
+## 🟡 BLOCO 6 — ERROS DE INFRAESTRUTURA ✅ COMPLETO
+
+- [x] **6.1** Constante de estimativa — REMOVIDA ✅ (feito no Bloco 1)
+
+- [x] **6.2** Erros 401 Unauthorized ✅
+  - Interceptor axios reescrito com mutex (race condition fix)
+  - Requests concorrentes agora enfileirados enquanto refresh executa
+  - `window.location.href` substituído por `router.push('/login')` (SPA-friendly)
+  - Refresh token rotation preservada
+
+- [x] **6.3** Erros 400 na compra (checkout bloqueando) ✅
+  - `processOrder()` catch agora extrai `e.response.data.message` do backend
+  - Exibe mensagem de erro via `DsAlert` (type=error, dismissible)
+  - Suporta mensagens string e array (join com bullet)
+  - Mensagens backend descritivas já existiam (min cotas, max cotas por usuário)
+
+- [x] **6.4** Saúde da rede não aparecendo ✅
+  - Backend `getKpis()` agora retorna `activeDirects`, `totalDirects`, `inactiveDirects`, `networkTotal`
+  - Conta diretos ativos/inativos usando `lastPurchaseDate` + `checkActive()` (6 meses)
+  - `networkTotal` mapeado para `user.teamCount`
+  - Frontend já esperava esses campos na interface — agora recebe dados reais
+
+---
+
+## 📊 PROGRESSO GERAL
+
+| Bloco | Status | Concluído |
+|-------|--------|-----------|
+| 1 — Motor de Preço | ✅ COMPLETO | 9/9 |
+| 2 — Bônus/Pagamentos | ✅ COMPLETO | 3/3 |
+| 3 — Histórico/Dashboard | ✅ COMPLETO | 4/4 |
+| 4 — Títulos/Níveis | ✅ COMPLETO | 2/2 |
+| 5 — UX/UI | ✅ COMPLETO | 6/6 |
+| 6 — Infraestrutura | ✅ COMPLETO | 4/4 |
+| **TOTAL** | **✅ COMPLETO** | **28/28** |
+
+---
+
+**Última Atualização:** 2026-04-16
+# TODO - BLOCO 1: Motor de Preço + Bônus + Erro Generate-Batch
+
+**Data/Hora:** 2026-04-16
+**Sessão:** bloco-1-motor-preco
+**Status Geral:** ⏳ EM PROGRESSO
 
 ---
 
