@@ -12,4 +12,8 @@ export const networkService = {
   getMember(userId: string) {
     return api.get(`/network/member/${userId}`);
   },
+
+  recalculateTitle() {
+    return api.post<{ title: string }>('/network/recalculate-title');
+  },
 };

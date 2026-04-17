@@ -53,6 +53,7 @@
       <NetworkProgressBar
         :current-title="userTitle"
         :active-members="networkStats.activeMembers"
+        :active-directs="networkStats.activeDirects"
         :qualified-bronzes="networkStats.qualifiedBronzes ?? 0"
         :qualified-lines="networkStats.qualifiedLines ?? 0"
       />
@@ -153,6 +154,10 @@ const stats = ref<any>({});
 
 onMounted(async () => {
   try {
+    // 1. Fetch fresh user so title badge and progress bar are in sync with DB
+    await authStore.fetchUser();
+
+    // 2. Load tree + stats AFTER recalculation so qualifiedBronzes reflects fresh titles
     const [treeRes, statsRes] = await Promise.all([
       networkService.getTree(),
       networkService.getStats(),
@@ -205,6 +210,7 @@ const networkStats = computed(() => {
     directTrend: s.directTrend ?? '',
     teamTrend: s.teamTrend ?? '',
     activeMembers: s.activeMembers ?? flatNodes.value.filter((n: NetworkNode) => n.isActive).length,
+    activeDirects: s.activeDirects ?? flatNodes.value.filter((n: NetworkNode) => n.level === 1 && n.isActive).length,
     inactiveMembers: s.inactiveMembers ?? flatNodes.value.filter((n: NetworkNode) => !n.isActive).length,
     qualifiedBronzes: s.qualifiedBronzes ?? 0,
     qualifiedLines: s.qualifiedLines ?? 0,
@@ -258,6 +264,9 @@ const filteredNodes = computed<NetworkNode[]>(() => {
 });
 
 // ── Current user title for progress bar ──────────────────────────────────────
+// The Dashboard's KPI endpoint recalculates the title server-side and then calls
+// fetchUser(), which syncs the store. By the time the user navigates here,
+// authStore.user.title already holds the correct persisted value.
 const userTitle = computed(() => (authStore.user?.title ?? 'none') as 'none' | 'bronze' | 'silver' | 'gold' | 'diamond');
 </script>
 

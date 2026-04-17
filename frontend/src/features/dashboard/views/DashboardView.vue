@@ -578,16 +578,16 @@ onMounted(async () => {
     if (kpiRes.data) {
       kpi.value = kpiRes.data;
 
-      // Map career progress from title (NOT partnerLevel)
-      // Backend returns English enums, frontend uses Portuguese
+      // Map career progress from title
+      // The KPI endpoint already recalculates the title server-side before returning,
+      // so kpiRes.data.title is always the fresh, persisted value.
       const titleToLevel: Record<string, LevelKey> = {
-        none: 'bronze',
         bronze: 'bronze',
         silver: 'prata',
         gold: 'ouro',
         diamond: 'diamante',
       };
-      const currentLevel = titleToLevel[kpiRes.data.title || 'none'] || 'bronze';
+      const currentLevel = titleToLevel[kpiRes.data.title || ''] || 'bronze';
       const levelProgression: Record<LevelKey, LevelKey | ''> = {
         bronze: 'prata',
         prata: 'ouro',
@@ -608,6 +608,11 @@ onMounted(async () => {
         targetValue: levelTargets[nextLevel] || 0,
         bonusPercentUnlock: nextLevel ? 2 : 0,
       };
+
+      // Sync the auth store with the recalculated title so other pages
+      // (e.g. Network) immediately reflect the correct title without needing
+      // their own recalculation call.
+      authStore.fetchUser();
 
       // Map health from active status
       health.value = {

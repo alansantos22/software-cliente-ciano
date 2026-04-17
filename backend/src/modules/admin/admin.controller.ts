@@ -3,6 +3,7 @@ import { AdminService } from './admin.service';
 import { Roles, Role } from '../../common/decorators/roles.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { User } from '../users/entities/user.entity';
+import { TitleCalculatorService } from '../../core/title/title-calculator.service';
 import {
   UpdateGlobalConfigDto,
   UpdateMonthlyConfigDto,
@@ -18,7 +19,10 @@ import {
 @Roles(Role.ADMIN)
 @Controller('admin')
 export class AdminController {
-  constructor(private readonly adminService: AdminService) {}
+  constructor(
+    private readonly adminService: AdminService,
+    private readonly titleCalc: TitleCalculatorService,
+  ) {}
 
   // ─── Dashboard ─────────────────────────────────────────
 
@@ -140,6 +144,14 @@ export class AdminController {
   @Put('career-plan/:titleId')
   updateCareerPlan(@Param('titleId') titleId: number, @Body() dto: UpdateCareerPlanDto) {
     return this.adminService.updateCareerPlan(titleId, dto as any);
+  }
+
+  // ─── Titles ────────────────────────────────────────────
+
+  @Post('recalculate-titles')
+  async recalculateTitles() {
+    await this.titleCalc.recalculateAllTitles();
+    return { message: 'Títulos recalculados com sucesso.' };
   }
 
   // ─── Audit Log ─────────────────────────────────────────

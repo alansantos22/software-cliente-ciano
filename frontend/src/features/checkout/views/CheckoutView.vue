@@ -41,6 +41,10 @@
 
     <!-- Step content with slide transitions -->
     <div class="checkout-view__body">
+      <DsAlert v-if="purchaseError" type="error" dismissible @dismiss="purchaseError = ''">
+        {{ purchaseError }}
+      </DsAlert>
+
       <Transition :name="transitionName" mode="out-in">
         <!-- Step 0: Calculadora de cotas -->
         <section v-if="currentStep === 0" key="step-0" class="checkout-view__step">
@@ -111,6 +115,7 @@ import PaymentSelector from '../components/PaymentSelector.vue';
 import OrderConfirmation from '../components/OrderConfirmation.vue';
 import PixPayment from '../components/PixPayment.vue';
 import CardRedirect from '../components/CardRedirect.vue';
+import DsAlert from '@/design-system/DsAlert.vue';
 
 // ─── Router & Stores ──────────────────────────────────────────────────────────
 const router = useRouter();
@@ -134,6 +139,7 @@ const stepDirection = ref<'forward' | 'back'>('forward');
 const selectedQuotas = ref(1);
 const selectedPaymentMethod = ref('');
 const isProcessing = ref(false);
+const purchaseError = ref('');
 
 const orderData = ref({
   orderNumber: '',
@@ -173,6 +179,7 @@ function onPaymentSelected(method: string) {
 // ─── Order processing ─────────────────────────────────────────────────────────
 async function processOrder() {
   isProcessing.value = true;
+  purchaseError.value = '';
 
   try {
     const { data } = await quotasService.purchase(selectedQuotas.value, selectedPaymentMethod.value);
@@ -184,8 +191,15 @@ async function processOrder() {
       paymentUrl: '',
     };
     goToStep(3);
-  } catch {
-    // TODO: show error feedback
+  } catch (e: any) {
+    const msg = e?.response?.data?.message;
+    if (Array.isArray(msg)) {
+      purchaseError.value = msg.join(' • ');
+    } else if (typeof msg === 'string') {
+      purchaseError.value = msg;
+    } else {
+      purchaseError.value = 'Erro ao processar compra. Tente novamente.';
+    }
   } finally {
     isProcessing.value = false;
   }

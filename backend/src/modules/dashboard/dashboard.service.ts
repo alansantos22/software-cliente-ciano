@@ -8,6 +8,7 @@ import { QuotaTransaction } from '../quotas/entities/quota-transaction.entity';
 import { GlobalFinancialSettings } from '../admin/entities/global-financial-settings.entity';
 import { TransactionType, TransactionStatus } from '../../shared/interfaces/enums';
 import { getCurrentPeriod } from '../../shared/utils/helpers';
+import { TitleCalculatorService } from '../../core/title/title-calculator.service';
 
 @Injectable()
 export class DashboardService {
@@ -17,11 +18,16 @@ export class DashboardService {
     @InjectRepository(Earning) private readonly earningRepo: Repository<Earning>,
     @InjectRepository(QuotaTransaction) private readonly txnRepo: Repository<QuotaTransaction>,
     @InjectRepository(GlobalFinancialSettings) private readonly settingsRepo: Repository<GlobalFinancialSettings>,
+    private readonly titleCalc: TitleCalculatorService,
   ) {}
 
   async getKpis(userId: string) {
     const user = await this.userRepo.findOne({ where: { id: userId } });
     if (!user) return null;
+
+    // 🔄 RECALCULATE TITLE IN REAL-TIME before returning KPIs
+    // This ensures the user immediately sees their new title when they qualify
+    const currentTitle = await this.titleCalc.recalculateTitle(userId);
 
     const state = await this.stateRepo.findOne({ where: { id: 1 } });
     const month = getCurrentPeriod();
@@ -46,7 +52,7 @@ export class DashboardService {
     // Cotas compradas pelos diretos da rede neste mês
     const directSponsees = await this.userRepo.find({
       where: { sponsorId: userId, deletedAt: IsNull() },
-      select: ['id'],
+      select: ['id', 'lastPurchaseDate'],
     });
     let networkSalesCount = 0;
     let networkSalesValue = 0;
@@ -64,6 +70,13 @@ export class DashboardService {
       networkSalesValue = parseFloat(networkRow?.value || '0');
     }
 
+    // Network health: active/inactive directs
+    const totalDirects = directSponsees.length;
+    const activeDirects = directSponsees.filter(
+      s => !!s.lastPurchaseDate && this.checkActive(s.lastPurchaseDate),
+    ).length;
+    const inactiveDirects = totalDirects - activeDirects;
+
     return {
       quotaBalance: user.quotaBalance,
       purchasedQuotas: user.purchasedQuotas,
@@ -75,7 +88,11 @@ export class DashboardService {
       monthEarnings: parseFloat(monthEarnings?.total || '0'),
       directCount: user.directCount,
       teamCount: user.teamCount,
-      title: user.title,
+      activeDirects,
+      totalDirects,
+      inactiveDirects,
+      networkTotal: user.teamCount,
+      title: currentTitle,
       partnerLevel: user.partnerLevel,
       isActive: !!user.lastPurchaseDate && this.checkActive(user.lastPurchaseDate),
       ownSalesCount: parseInt(ownPurchaseRow?.count || '0', 10),

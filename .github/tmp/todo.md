@@ -91,21 +91,27 @@
 
 ---
 
-## 🟡 BLOCO 6 — ERROS DE INFRAESTRUTURA
+## 🟡 BLOCO 6 — ERROS DE INFRAESTRUTURA ✅ COMPLETO
 
 - [x] **6.1** Constante de estimativa — REMOVIDA ✅ (feito no Bloco 1)
 
-- [ ] **6.2** Erros 401 Unauthorized
-  - **Problema**: Token JWT expirando, refresh token possivelmente não funciona
-  - **Investigação**: Verificar interceptor axios e refresh token
+- [x] **6.2** Erros 401 Unauthorized ✅
+  - Interceptor axios reescrito com mutex (race condition fix)
+  - Requests concorrentes agora enfileirados enquanto refresh executa
+  - `window.location.href` substituído por `router.push('/login')` (SPA-friendly)
+  - Refresh token rotation preservada
 
-- [ ] **6.3** Erros 400 na compra (checkout bloqueando)
-  - **Problema**: Pode ser maxQuotasPerUser atingido ou rate limit
-  - **Correção**: Mensagem de erro mais descritiva no backend + exibir no frontend
+- [x] **6.3** Erros 400 na compra (checkout bloqueando) ✅
+  - `processOrder()` catch agora extrai `e.response.data.message` do backend
+  - Exibe mensagem de erro via `DsAlert` (type=error, dismissible)
+  - Suporta mensagens string e array (join com bullet)
+  - Mensagens backend descritivas já existiam (min cotas, max cotas por usuário)
 
-- [ ] **6.4** Saúde da rede não aparecendo
-  - **Problema**: `kpi.activeDirects` e `kpi.totalDirects` possivelmente vindo 0 do backend
-  - **Investigação**: Verificar endpoint `dashboard/kpis`
+- [x] **6.4** Saúde da rede não aparecendo ✅
+  - Backend `getKpis()` agora retorna `activeDirects`, `totalDirects`, `inactiveDirects`, `networkTotal`
+  - Conta diretos ativos/inativos usando `lastPurchaseDate` + `checkActive()` (6 meses)
+  - `networkTotal` mapeado para `user.teamCount`
+  - Frontend já esperava esses campos na interface — agora recebe dados reais
 
 ---
 
@@ -118,8 +124,8 @@
 | 3 — Histórico/Dashboard | ✅ COMPLETO | 4/4 |
 | 4 — Títulos/Níveis | ✅ COMPLETO | 2/2 |
 | 5 — UX/UI | ✅ COMPLETO | 6/6 |
-| 6 — Infraestrutura | ⏳ PARCIAL | 1/4 |
-| **TOTAL** | | **13/28** |
+| 6 — Infraestrutura | ✅ COMPLETO | 4/4 |
+| **TOTAL** | **✅ COMPLETO** | **28/28** |
 
 ---
 
