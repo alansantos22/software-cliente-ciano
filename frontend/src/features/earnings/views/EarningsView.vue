@@ -224,15 +224,9 @@ const quotaEarnings = computed(() =>
     .reduce((s, r) => s + r.amount, 0)
 );
 
-const totalIn = computed(() =>
-  filteredRows.value.filter(r => r.amount > 0).reduce((s, r) => s + r.amount, 0)
-);
-
 const totalOut = computed(() =>
   filteredRows.value.filter(r => r.amount < 0).reduce((s, r) => s + Math.abs(r.amount), 0)
 );
-
-const balance = computed(() => totalIn.value - totalOut.value);
 
 // ─── Helpers ──────────────────────────────────────────
 function formatCurrency(value: number): string {

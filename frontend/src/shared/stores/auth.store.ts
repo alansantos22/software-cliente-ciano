@@ -11,6 +11,7 @@ export interface User {
   city: string;
   state: string;
   pixKey: string;
+  pixKeyType?: string;
   role: 'user' | 'admin';
   referralCode: string;
   isActive: boolean;
