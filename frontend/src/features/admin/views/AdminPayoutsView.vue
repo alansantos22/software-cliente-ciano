@@ -475,7 +475,7 @@ const batchApproved = ref(false);
 const filters = ref({
   search: '',
   status: '',
-  month: new Date().toISOString().slice(0, 7),
+  month: '',
 });
 
 const stats = ref({
@@ -537,6 +537,10 @@ const filteredPayouts = computed(() => {
 
   if (filters.value.status) {
     result = result.filter(p => p.status === filters.value.status);
+  }
+
+  if (filters.value.month) {
+    result = result.filter(p => p.referenceMonth === filters.value.month);
   }
 
   return result;
@@ -607,7 +611,7 @@ function onSelectionChange(rows: Record<string, unknown>[]) {
 }
 
 function clearFilters() {
-  filters.value = { search: '', status: '', month: new Date().toISOString().slice(0, 7) };
+  filters.value = { search: '', status: '', month: '' };
 }
 
 function exportPayouts() {
@@ -698,6 +702,8 @@ async function generatePayoutsFromProfit() {
       // generateBatch returns batch metadata; reload full payout list
       await loadPayouts();
     }
+    // Filtra automaticamente para o mês gerado, mostrando os novos pagamentos na etapa 3
+    filters.value.month = profitMonth.value;
     batchApproved.value = true;
     generationSuccess.value = true;
     setTimeout(() => { generationSuccess.value = false; }, 4000);
@@ -727,7 +733,8 @@ function downloadReceiptRow(row: Record<string, unknown>) { downloadReceipt(row 
 // ─── Load Payouts (reutilizável) ──────────────────────────────
 async function loadPayouts() {
   try {
-    const res = await adminService.getPayouts({ month: filters.value.month });
+    // Sem filtro de mês: carrega todos os pagamentos (histórico completo)
+    const res = await adminService.getPayouts();
     if (res.data && Array.isArray(res.data)) {
       payouts.value = res.data;
       recalcStats();
@@ -740,7 +747,7 @@ onMounted(async () => {
   isLoading.value = true;
   try {
     const [payoutsRes, configRes] = await Promise.all([
-      adminService.getPayouts({ month: filters.value.month }),
+      adminService.getPayouts(),
       adminService.getFinancialConfig().catch(() => ({ data: null })),
     ]);
     if (payoutsRes.data && Array.isArray(payoutsRes.data)) {
