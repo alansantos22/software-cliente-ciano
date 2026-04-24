@@ -233,7 +233,10 @@
                   <div class="user-cell__avatar">{{ getInitials(String(row.userName ?? '')) }}</div>
                   <div class="user-cell__info">
                     <strong>{{ row.userName }}</strong>
-                    <span>{{ row.pixKey }}</span>
+                    <span v-if="row.pixKey" class="user-cell__pix">{{ row.pixKey }}</span>
+                    <span v-else class="user-cell__pix user-cell__pix--missing">
+                      <font-awesome-icon icon="triangle-exclamation" /> Sem chave PIX
+                    </span>
                   </div>
                 </div>
               </template>
@@ -1027,6 +1030,19 @@ onMounted(async () => {
     gap: 2px;
     strong { font-size: 0.875rem; }
     span { font-size: 0.75rem; color: var(--text-tertiary); }
+  }
+
+  &__pix {
+    font-size: 0.75rem;
+    color: var(--text-tertiary);
+
+    &--missing {
+      color: #d97706;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
   }
 
   &__name {

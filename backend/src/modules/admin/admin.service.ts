@@ -304,12 +304,10 @@ export class AdminService {
     }
 
     const payouts: PayoutRequest[] = [];
-    const skippedNoPixKey: string[] = [];
+    const missingPixKey: string[] = [];
     for (const dist of preview.distributions) {
-      // Skip users without pixKey configured — they can't receive payment
-      if (!dist.pixKey || !dist.pixKeyType) {
-        skippedNoPixKey.push(dist.userName);
-        continue;
+      if (!dist.pixKey) {
+        missingPixKey.push(dist.userName);
       }
       const payout = this.payoutRepo.create({
         userId: dist.userId,
@@ -327,8 +325,8 @@ export class AdminService {
         percentageShare: dist.percentageShare,
         netProfitRef: netProfit,
         dividendPoolRef: preview.dividendPool,
-        pixKey: dist.pixKey,
-        pixKeyType: dist.pixKeyType as any,
+        pixKey: dist.pixKey || null,
+        pixKeyType: (dist.pixKeyType as any) || null,
         generatedBy: adminId,
         status: PayoutStatus.PENDING,
       });
@@ -337,8 +335,8 @@ export class AdminService {
 
     await this.payoutRepo.save(payouts);
 
-    if (skippedNoPixKey.length > 0) {
-      this.logger.warn(`⚠️ Skipped ${skippedNoPixKey.length} users without PIX key: ${skippedNoPixKey.join(', ')}`);
+    if (missingPixKey.length > 0) {
+      this.logger.warn(`⚠️ ${missingPixKey.length} users without PIX key included in batch (will need PIX before payment): ${missingPixKey.join(', ')}`);
     }
     this.logger.log(`📋 Batch generated for ${profitMonth}: ${payouts.length} payouts`);
 
@@ -346,7 +344,7 @@ export class AdminService {
       profitMonth,
       paymentMonth: preview.paymentMonth,
       totalPayouts: payouts.length,
-      skippedNoPixKey: skippedNoPixKey.length,
+      missingPixKey: missingPixKey.length,
       totalAmount: payouts.reduce((s, p) => s + Number(p.amount), 0),
     };
   }
