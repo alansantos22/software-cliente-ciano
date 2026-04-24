@@ -720,10 +720,10 @@ async function generatePayoutsFromProfit() {
 
 function recalcStats() {
   stats.value = {
-    pending:      payouts.value.filter(p => p.status === 'pending').reduce((s, p) => s + p.amount, 0),
-    processing:   payouts.value.filter(p => p.status === 'processing').reduce((s, p) => s + p.amount, 0),
-    paidThisMonth: payouts.value.filter(p => p.status === 'completed').reduce((s, p) => s + p.amount, 0),
-    totalPaid:    payouts.value.filter(p => p.status === 'completed').reduce((s, p) => s + p.amount, 0),
+    pending:      payouts.value.filter(p => p.status === 'pending').reduce((s, p) => s + Number(p.amount), 0),
+    processing:   payouts.value.filter(p => p.status === 'processing').reduce((s, p) => s + Number(p.amount), 0),
+    paidThisMonth: payouts.value.filter(p => p.status === 'completed').reduce((s, p) => s + Number(p.amount), 0),
+    totalPaid:    payouts.value.filter(p => p.status === 'completed').reduce((s, p) => s + Number(p.amount), 0),
   };
 }
 
