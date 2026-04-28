@@ -43,7 +43,13 @@ interface Props {
   total: number;
   count: number;
   paymentDay: number;
-  referenceMonth: string; // YYYY-MM
+  referenceMonth: string; // YYYY-MM (mês de competência)
+  /**
+   * Mês YYYY-MM em que os pagamentos pendentes mais antigos devem ser pagos.
+   * Quando informado é a base do cálculo de "dias até o pagamento" (regra
+   * referência+2). Se ausente, usa o mês corrente como fallback.
+   */
+  pendingPaymentMonth?: string | null;
 }
 
 const props = defineProps<Props>();
@@ -60,10 +66,20 @@ const referenceMonthLabel = computed(() => {
 
 const daysUntilPayment = computed(() => {
   const today    = new Date();
-  // Use date-only (midnight) for both sides so the full payment day counts — until 23:59 it is still "today"
   const todayMid = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-  const payMid   = new Date(today.getFullYear(), today.getMonth(), props.paymentDay);
-  // Exact whole-day difference: 0 = today, positive = future, negative = overdue
+
+  // Se houver paymentMonth do batch pendente mais antigo, usa ele.
+  // Caso contrário cai no mês corrente (comportamento legado).
+  let payYear  = today.getFullYear();
+  let payMonth = today.getMonth();
+  if (props.pendingPaymentMonth) {
+    const [py, pm] = props.pendingPaymentMonth.split('-').map(Number);
+    if (py !== undefined && pm !== undefined && !Number.isNaN(py) && !Number.isNaN(pm)) {
+      payYear  = py;
+      payMonth = pm - 1;
+    }
+  }
+  const payMid = new Date(payYear, payMonth, props.paymentDay);
   return Math.round((payMid.getTime() - todayMid.getTime()) / 86_400_000);
 });
 

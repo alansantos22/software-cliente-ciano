@@ -9,6 +9,7 @@
       :count="pendingPayouts.count"
       :payment-day="paymentDay"
       :reference-month="currentPeriod"
+      :pending-payment-month="pendingPaymentMonth"
       @go-to-payouts="goToPayouts"
     />
 
@@ -191,6 +192,19 @@
       </DsCard>
     </section>
 
+    <!-- Modal de confirmação (Bloquear conta) -->
+    <ManagerActionConfirmModal
+      v-model="showBlockModal"
+      title="Bloquear conta"
+      :description="blockUser ? `Confirma o bloqueio da conta de ${blockUser.name}? O usuário não conseguirá acessar o sistema até ser reativado.` : ''"
+      confirm-label="Bloquear conta"
+      variant="danger"
+      :loading="blockLoading"
+      :error="blockError"
+      @confirm="confirmBlock"
+      @cancel="cancelBlock"
+    />
+
   </div>
 </template>
 
@@ -201,6 +215,7 @@ import { DsStatCard, DsCard } from '@/design-system';
 import AdminAlertBar from '../components/AdminAlertBar.vue';
 import AdminPriceEngine from '../components/AdminPriceEngine.vue';
 import AdminCrmTable from '../components/AdminCrmTable.vue';
+import ManagerActionConfirmModal from '../components/ManagerActionConfirmModal.vue';
 import { adminService } from '@/shared/services/admin.service';
 
 const router = useRouter();
@@ -236,6 +251,7 @@ interface KpiState {
   totalRevenue: number;
   dividendPool: number;
   dividendPoolNote: string;
+  pendingPaymentMonth?: string | null;
 }
 
 const kpis = ref<KpiState>({
@@ -269,6 +285,7 @@ const titleDistribution = ref([
 // Pending Payouts
 // =====================================================
 const pendingPayouts = ref({ total: 0, count: 0 });
+const pendingPaymentMonth = ref<string | null>(null);
 
 // =====================================================
 // CRM Users (sorted by LTV desc)
@@ -318,11 +335,54 @@ function handleForceSplit() {
   console.info('[Admin] Force split triggered');
 }
 
-function handleCrmAction(type: 'extrato' | 'bloquear' | 'mensagem', user: any) {
+function handleCrmAction(type: 'extrato' | 'bloquear', user: any) {
   if (type === 'extrato') {
     router.push(`/admin/users/${user.id}`);
-  } else {
-    console.info(`[Admin] Action "${type}" on user`, user.id);
+  } else if (type === 'bloquear') {
+    openBlockModal(user);
+  }
+}
+
+// =====================================================
+// Bloquear conta
+// =====================================================
+const showBlockModal = ref(false);
+const blockUser = ref<any | null>(null);
+const blockLoading = ref(false);
+const blockError = ref('');
+
+function openBlockModal(user: any) {
+  blockUser.value = user;
+  blockError.value = '';
+  showBlockModal.value = true;
+}
+
+function cancelBlock() {
+  showBlockModal.value = false;
+  blockUser.value = null;
+  blockError.value = '';
+}
+
+async function confirmBlock(password: string) {
+  if (!blockUser.value) return;
+  blockLoading.value = true;
+  blockError.value = '';
+  try {
+    await adminService.setUserActive(blockUser.value.id, {
+      isActive: false,
+      managerPassword: password,
+    });
+    showBlockModal.value = false;
+    blockUser.value = null;
+    // Recarrega lista do CRM
+    const crmRes = await adminService.getCrmUsers();
+    if (crmRes.data && Array.isArray(crmRes.data)) {
+      sortedUsers.value = crmRes.data.slice(0, 10);
+    }
+  } catch (err: any) {
+    blockError.value = err?.response?.data?.message || 'Falha ao bloquear conta. Verifique a senha gerente.';
+  } finally {
+    blockLoading.value = false;
   }
 }
 
@@ -342,6 +402,7 @@ onMounted(async () => {
 
     if (kpiRes.data) {
       kpis.value = kpiRes.data;
+      pendingPaymentMonth.value = kpiRes.data.pendingPaymentMonth ?? null;
     }
 
     // Load price engine data from API
@@ -723,6 +784,35 @@ onMounted(async () => {
   font-size: 1rem;
   font-weight: 600;
   margin: 0;
+}
+
+// Pontinhos da legenda do CRM (Baleia / Ativo / Em risco / Inativo)
+.crm-header-meta {
+  display: flex;
+  align-items: center;
+  gap: $spacing-3;
+  flex-wrap: wrap;
+
+  &__hint {
+    display: inline-flex;
+    align-items: center;
+    gap: $spacing-2;
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+    flex-wrap: wrap;
+  }
+}
+
+.crm-dot {
+  font-size: 0.55rem;
+  margin-left: $spacing-2;
+  margin-right: 2px;
+  vertical-align: middle;
+
+  &--whale    { color: #7c3aed; } // violeta — investidor baleia
+  &--active   { color: var(--color-success, #16a34a); }
+  &--risk     { color: var(--color-warning, #d97706); }
+  &--inactive { color: var(--color-error,   #dc2626); }
 }
 
 .title-distribution {

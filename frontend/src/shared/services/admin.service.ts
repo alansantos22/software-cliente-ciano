@@ -119,6 +119,10 @@ export const adminService = {
     return api.get('/admin/audit/transactions', { params });
   },
 
+  getUserExtract(userId: string) {
+    return api.get(`/admin/users/${userId}/extract`);
+  },
+
   // ── Presentation Metrics ──
   getPresentationMetrics() {
     return api.get('/admin/presentation-metrics');

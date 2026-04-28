@@ -1,36 +1,188 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, In } from 'typeorm';
 import { Earning } from './entities/earning.entity';
 import { MonthlyEarningSummary } from './entities/monthly-earning-summary.entity';
-import { BonusType } from '../../shared/interfaces/enums';
+import { QuotaTransaction } from '../quotas/entities/quota-transaction.entity';
+import { User } from '../users/entities/user.entity';
+import { BonusType, TransactionType, TransactionStatus } from '../../shared/interfaces/enums';
 import { getCurrentPeriod } from '../../shared/utils/helpers';
+
+/**
+ * Linha unificada do histórico exibida ao usuário.
+ *
+ * `level`:
+ *   0     → movimentação do próprio usuário (compra/ganho).
+ *   1..6  → compra realizada por um membro da rede no nível indicado.
+ */
+export interface EarningHistoryRow {
+  id: string;
+  source: 'earning' | 'purchase';
+  bonusType: BonusType | 'purchase';
+  amount: number;
+  description: string;
+  level: number;
+  referenceMonth: string;
+  status: string;
+  cutoffEligible: boolean;
+  createdAt: Date;
+  sourceUserName: string | null;
+}
 
 @Injectable()
 export class EarningsService {
   constructor(
     @InjectRepository(Earning) private readonly earningRepo: Repository<Earning>,
     @InjectRepository(MonthlyEarningSummary) private readonly summaryRepo: Repository<MonthlyEarningSummary>,
+    @InjectRepository(QuotaTransaction) private readonly txnRepo: Repository<QuotaTransaction>,
+    @InjectRepository(User) private readonly userRepo: Repository<User>,
   ) {}
 
-  async getEarnings(userId: string, page = 1, pageSize = 20, month?: string) {
-    const where: any = { userId };
-    if (month) where.referenceMonth = month;
-
-    const [items, total] = await this.earningRepo.findAndCount({
-      where,
+  /**
+   * Devolve o histórico unificado do usuário:
+   *   • próprios ganhos (earnings) — sempre level 0, exceto FIRST_PURCHASE/REPURCHASE
+   *     que já vêm com `level` corresp.
+   *   • próprias compras (quota_transactions PURCHASE) — level 0
+   *   • compras dos downlines até 6 níveis — level 1..6
+   *
+   * Filtros opcionais:
+   *   • month  → restringe ao mês YYYY-MM (referenceMonth)
+   *   • level  → 0 (somente próprio), 1..6 (somente aquele nível da rede)
+   */
+  async getEarnings(
+    userId: string,
+    page = 1,
+    pageSize = 20,
+    month?: string,
+    level?: number,
+  ) {
+    // ── 1) Earnings do próprio usuário ──
+    const ownEarningsRows = await this.earningRepo.find({
+      where: { userId, ...(month ? { referenceMonth: month } : {}) },
       order: { createdAt: 'DESC' },
-      skip: (page - 1) * pageSize,
-      take: pageSize,
     });
+
+    const earningRows: EarningHistoryRow[] = ownEarningsRows.map((e) => ({
+      id: `e-${e.id}`,
+      source: 'earning',
+      bonusType: e.bonusType,
+      amount: Number(e.amount),
+      description: e.description,
+      // Bônus de FIRST_PURCHASE/REPURCHASE já guardam o nível original (1..6).
+      // Os demais ganhos (DIVIDEND, TEAM, LEADERSHIP) consideramos nível 0 (próprio).
+      level: e.level || 0,
+      referenceMonth: e.referenceMonth,
+      status: String(e.status),
+      cutoffEligible: e.cutoffEligible,
+      createdAt: e.createdAt,
+      sourceUserName: e.sourceUserName,
+    }));
+
+    // ── 2) Compras do próprio usuário (level 0) ──
+    const ownPurchases = await this.txnRepo.find({
+      where: {
+        userId,
+        type: TransactionType.PURCHASE,
+        status: TransactionStatus.COMPLETED,
+        ...(month ? { referenceMonth: month } : {}),
+      },
+      order: { createdAt: 'DESC' },
+    });
+
+    const purchaseRows: EarningHistoryRow[] = ownPurchases.map((t) => ({
+      id: `t-${t.id}`,
+      source: 'purchase',
+      bonusType: 'purchase',
+      // Compra é uma saída → exibimos como valor negativo na UI.
+      amount: -Math.abs(Number(t.amount)),
+      description: t.description || `Compra de ${t.quotasAffected} cota(s)`,
+      level: 0,
+      referenceMonth: t.referenceMonth,
+      status: String(t.status),
+      cutoffEligible: true,
+      createdAt: t.createdAt,
+      sourceUserName: null,
+    }));
+
+    // ── 3) Compras dos downlines (até 6 níveis) ──
+    let downlineRows: EarningHistoryRow[] = [];
+    const downlineByLevel = await this.getDownlineIdsByLevel(userId, 6);
+    for (let lvl = 1; lvl <= 6; lvl++) {
+      const ids = downlineByLevel[lvl];
+      if (!ids || ids.length === 0) continue;
+
+      const purchases = await this.txnRepo.find({
+        where: {
+          userId: In(ids),
+          type: TransactionType.PURCHASE,
+          status: TransactionStatus.COMPLETED,
+          ...(month ? { referenceMonth: month } : {}),
+        },
+        relations: ['user'],
+        order: { createdAt: 'DESC' },
+      });
+
+      for (const t of purchases) {
+        downlineRows.push({
+          id: `n-${t.id}`,
+          source: 'purchase',
+          bonusType: 'purchase',
+          amount: Number(t.amount),
+          description: `Compra na rede (nível ${lvl}): ${(t.user as any)?.name ?? '—'} — ${t.quotasAffected} cota(s)`,
+          level: lvl,
+          referenceMonth: t.referenceMonth,
+          status: String(t.status),
+          cutoffEligible: true,
+          createdAt: t.createdAt,
+          sourceUserName: (t.user as any)?.name ?? null,
+        });
+      }
+    }
+
+    // ── 4) Filtro por nível ──
+    const all = [...earningRows, ...purchaseRows, ...downlineRows];
+    const filtered = (level === undefined || level === null || (level as any) === '')
+      ? all
+      : all.filter((r) => r.level === Number(level));
+
+    filtered.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+
+    const total = filtered.length;
+    const start = (page - 1) * pageSize;
+    const items = filtered.slice(start, start + pageSize);
 
     return {
       items,
       total,
       page,
       pageSize,
-      totalPages: Math.ceil(total / pageSize),
+      totalPages: Math.max(1, Math.ceil(total / pageSize)),
     };
+  }
+
+  /**
+   * Devolve um mapa { 1: [...userIds], 2: [...], ... } com os ids dos
+   * descendentes do usuário em cada nível até `maxLevels`.
+   */
+  private async getDownlineIdsByLevel(rootUserId: string, maxLevels: number): Promise<Record<number, string[]>> {
+    const result: Record<number, string[]> = {};
+    let currentLevelIds = [rootUserId];
+
+    for (let lvl = 1; lvl <= maxLevels; lvl++) {
+      if (currentLevelIds.length === 0) break;
+
+      const downline = await this.userRepo.find({
+        where: currentLevelIds.map((id) => ({ sponsorId: id })),
+        select: ['id'],
+      });
+
+      if (downline.length === 0) break;
+      const ids = downline.map((u) => u.id);
+      result[lvl] = ids;
+      currentLevelIds = ids;
+    }
+
+    return result;
   }
 
   async getOverview(userId: string) {

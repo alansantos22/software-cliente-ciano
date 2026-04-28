@@ -1,8 +1,8 @@
 import api from './api';
 
 export const earningsService = {
-  list(page = 1, pageSize = 20, month?: string) {
-    return api.get('/earnings', { params: { page, pageSize, month } });
+  list(page = 1, pageSize = 20, month?: string, level?: string | number) {
+    return api.get('/earnings', { params: { page, pageSize, month, level } });
   },
 
   overview() {

@@ -105,6 +105,30 @@ export class AdminService {
       .where('p.status = :status', { status: PayoutStatus.PENDING })
       .getRawOne();
 
+    // ── Caixa de Dividendos (Tarefa G) ──
+    // O cliente pediu que a Caixa de Dividendos passe a refletir APENAS o
+    // que está lançado em payout_requests para o mês corrente. Não usar mais
+    // a estimativa baseada na receita das compras.
+    const dividendPoolRow = await this.payoutRepo
+      .createQueryBuilder('p')
+      .select('SUM(p.amount)', 'total')
+      .where('p.payment_month = :month', { month })
+      .getRawOne();
+    const dividendPool = parseFloat(dividendPoolRow?.total || '0');
+    const dividendPoolNote = dividendPool > 0
+      ? `Total comprometido para pagamento em ${month}`
+      : 'Aguardando lançamento do lucro do mês';
+
+    // Mês de pagamento do batch pendente mais antigo (para o alerta de atraso)
+    const oldestPendingRow = await this.payoutRepo
+      .createQueryBuilder('p')
+      .select('MIN(p.payment_month)', 'pm')
+      .where('p.status IN (:...statuses)', {
+        statuses: [PayoutStatus.PENDING, PayoutStatus.PROCESSING],
+      })
+      .getRawOne();
+    const pendingPaymentMonth: string | null = oldestPendingRow?.pm || null;
+
     return {
       monthRevenue: monthRev,
       monthRevenueTrend: calcTrend(monthRev, prevMonthRev),
@@ -113,9 +137,10 @@ export class AdminService {
       monthQuotas: monthQ,
       monthQuotasTrend: calcTrend(monthQ, prevMonthQ),
       totalRevenue: totalRev,
-      dividendPool: monthRev * dividendPoolPercent / 100,
+      dividendPool,
       dividendPoolPercent,
-      dividendPoolNote: monthRev > 0 ? 'Estimativa baseada na receita do mês' : 'Aguardando receita do mês',
+      dividendPoolNote,
+      pendingPaymentMonth,
       pendingPayoutsCount,
       pendingPayoutsTotal: parseFloat(pendingPayoutsTotalRow?.total || '0'),
     };
@@ -523,6 +548,114 @@ export class AdminService {
         userId: t.userId,
         userName: (t.user as any)?.name || '—',
         userEmail: (t.user as any)?.email || '—',
+      })),
+    };
+  }
+
+  // ─── Extrato do Usuário (auditoria por id) ───────────
+
+  /**
+   * Devolve uma visão completa de TODAS as movimentações de um usuário,
+   * usado pela página de auditoria do administrador
+   * (`/admin/users/:id`). Inclui dados básicos, compras (quota_transactions),
+   * ganhos (earnings) e pagamentos (payout_requests).
+   */
+  async getUserExtract(userId: string) {
+    const user = await this.userRepo.findOne({
+      where: { id: userId },
+      relations: ['sponsor'],
+    });
+    if (!user) return null;
+
+    const [transactions, earnings, payouts] = await Promise.all([
+      this.txnRepo.find({
+        where: { userId },
+        order: { createdAt: 'DESC' },
+        take: 500,
+      }),
+      this.earningRepo.find({
+        where: { userId },
+        order: { createdAt: 'DESC' },
+        take: 500,
+      }),
+      this.payoutRepo.find({
+        where: { userId },
+        order: { generatedAt: 'DESC' },
+        take: 500,
+      }),
+    ]);
+
+    const totalSpent = transactions
+      .filter((t) => t.type === TransactionType.PURCHASE && t.status === TransactionStatus.COMPLETED)
+      .reduce((s, t) => s + Number(t.amount), 0);
+
+    const totalReceived = payouts
+      .filter((p) => p.status === PayoutStatus.COMPLETED)
+      .reduce((s, p) => s + Number(p.amount), 0);
+
+    return {
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        cpf: (user as any).cpf ?? null,
+        title: user.title,
+        partnerLevel: user.partnerLevel,
+        isActive: user.isActive,
+        sponsorName: (user as any).sponsor?.name ?? null,
+        sponsorId: user.sponsorId,
+        quotaBalance: user.quotaBalance,
+        purchasedQuotas: user.purchasedQuotas,
+        adminGrantedQuotas: (user as any).adminGrantedQuotas ?? 0,
+        splitQuotas: user.splitQuotas,
+        totalEarnings: Number(user.totalEarnings),
+        lastPurchaseDate: user.lastPurchaseDate,
+        createdAt: (user as any).createdAt,
+        pixKey: (user as any).pixKey,
+        pixKeyType: (user as any).pixKeyType,
+      },
+      summary: {
+        totalSpent,
+        totalReceived,
+        totalEarnings: Number(user.totalEarnings),
+        transactionsCount: transactions.length,
+        earningsCount: earnings.length,
+        payoutsCount: payouts.length,
+      },
+      transactions: transactions.map((t) => ({
+        id: t.id,
+        type: t.type,
+        status: t.status,
+        amount: Number(t.amount),
+        quotasAffected: t.quotasAffected,
+        description: t.description,
+        referenceMonth: t.referenceMonth,
+        createdAt: t.createdAt,
+        completedAt: t.completedAt,
+      })),
+      earnings: earnings.map((e) => ({
+        id: e.id,
+        bonusType: e.bonusType,
+        amount: Number(e.amount),
+        sourceUserName: e.sourceUserName,
+        description: e.description,
+        level: e.level,
+        referenceMonth: e.referenceMonth,
+        status: e.status,
+        cutoffEligible: e.cutoffEligible,
+        createdAt: e.createdAt,
+        paidAt: e.paidAt,
+      })),
+      payouts: payouts.map((p) => ({
+        id: p.id,
+        amount: Number(p.amount),
+        quotaAmount: Number(p.quotaAmount),
+        networkAmount: Number(p.networkAmount),
+        status: p.status,
+        referenceMonth: p.referenceMonth,
+        paymentMonth: p.paymentMonth,
+        generatedAt: p.generatedAt,
+        completedAt: p.completedAt,
       })),
     };
   }

@@ -96,9 +96,6 @@
                     >
                       <font-awesome-icon icon="ban" /> Bloquear Conta
                     </button>
-                    <button class="crm-action-menu__item" @click="handleAction('mensagem', user)">
-                      <font-awesome-icon icon="comment" /> Enviar Mensagem
-                    </button>
                   </div>
                 </transition>
               </div>
@@ -130,7 +127,7 @@ const props = withDefaults(defineProps<Props>(), {
 });
 
 const emit = defineEmits<{
-  action: [type: 'extrato' | 'bloquear' | 'mensagem', user: any];
+  action: [type: 'extrato' | 'bloquear', user: any];
 }>();
 
 // Menu state
@@ -145,7 +142,7 @@ function toggleMenu(id: string) {
   openMenuId.value = openMenuId.value === id ? null : id;
 }
 
-function handleAction(type: 'extrato' | 'bloquear' | 'mensagem', user: any) {
+function handleAction(type: 'extrato' | 'bloquear', user: any) {
   openMenuId.value = null;
   emit('action', type, user);
 }

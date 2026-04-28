@@ -6,6 +6,17 @@
         <h1 class="admin-users__title">CRM de Usuários</h1>
         <p class="admin-users__subtitle">Todos os usuários cadastrados na plataforma</p>
       </div>
+      <div class="admin-users__header-actions">
+        <button
+          type="button"
+          class="admin-users__export"
+          :disabled="filteredUsers.length === 0"
+          @click="exportToExcel"
+        >
+          <font-awesome-icon icon="file-excel" />
+          Exportar Excel
+        </button>
+      </div>
     </header>
 
     <!-- Filters -->
@@ -40,13 +51,28 @@
         @action="handleAction"
       />
     </div>
+
+    <!-- Modal de confirmação (Bloquear conta) -->
+    <ManagerActionConfirmModal
+      v-model="showBlockModal"
+      title="Bloquear conta"
+      :description="blockUser ? `Confirma o bloqueio da conta de ${blockUser.name}? O usuário não conseguirá acessar o sistema até ser reativado.` : ''"
+      confirm-label="Bloquear conta"
+      variant="danger"
+      :loading="blockLoading"
+      :error="blockError"
+      @confirm="confirmBlock"
+      @cancel="cancelBlock"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
+import * as XLSX from 'xlsx';
 import AdminCrmTable from '../components/AdminCrmTable.vue';
+import ManagerActionConfirmModal from '../components/ManagerActionConfirmModal.vue';
 import { adminService } from '@/shared/services/admin.service';
 
 const router = useRouter();
@@ -94,10 +120,90 @@ const filteredUsers = computed(() => {
   return list;
 });
 
-function handleAction(type: 'extrato' | 'bloquear' | 'mensagem', user: any) {
+const statusLabels: Record<'active' | 'risk' | 'inactive', string> = {
+  active: 'Ativo',
+  risk: 'Em risco',
+  inactive: 'Inativo',
+};
+
+function handleAction(type: 'extrato' | 'bloquear', user: any) {
   if (type === 'extrato') {
     router.push(`/admin/users/${user.id}`);
+  } else if (type === 'bloquear') {
+    openBlockModal(user);
   }
+}
+
+// =====================================================
+// Bloquear conta
+// =====================================================
+const showBlockModal = ref(false);
+const blockUser = ref<any | null>(null);
+const blockLoading = ref(false);
+const blockError = ref('');
+
+function openBlockModal(user: any) {
+  blockUser.value = user;
+  blockError.value = '';
+  showBlockModal.value = true;
+}
+
+function cancelBlock() {
+  showBlockModal.value = false;
+  blockUser.value = null;
+  blockError.value = '';
+}
+
+async function confirmBlock(password: string) {
+  if (!blockUser.value) return;
+  blockLoading.value = true;
+  blockError.value = '';
+  try {
+    await adminService.setUserActive(blockUser.value.id, {
+      isActive: false,
+      managerPassword: password,
+    });
+    showBlockModal.value = false;
+    blockUser.value = null;
+    await reloadUsers();
+  } catch (err: any) {
+    blockError.value = err?.response?.data?.message || 'Falha ao bloquear conta. Verifique a senha gerente.';
+  } finally {
+    blockLoading.value = false;
+  }
+}
+
+async function reloadUsers() {
+  try {
+    const res = await adminService.getCrmUsers();
+    if (res.data && Array.isArray(res.data)) allUsers.value = res.data;
+  } catch { /* fail silently */ }
+}
+
+// =====================================================
+// Exportar Excel
+// =====================================================
+function exportToExcel() {
+  if (filteredUsers.value.length === 0) return;
+
+  const rows = filteredUsers.value.map((u) => ({
+    'Nome':            u.name ?? '',
+    'E-mail':          u.email ?? '',
+    'Status':          statusLabels[getStatus(u)],
+    'Cotas':           u.quotaBalance ?? 0,
+    'Cotas compradas': u.purchasedQuotas ?? 0,
+    'LTV (R$)':        Number(u.purchasedQuotas ?? 0) * Number(quotaPrice.value || 0),
+    'Título':          u.title ?? '',
+    'Nível':           u.partnerLevel ?? '',
+    'Última compra':   u.lastPurchaseDate ? new Date(u.lastPurchaseDate).toLocaleDateString('pt-BR') : '',
+    'Total ganhos (R$)': Number(u.totalEarnings ?? 0),
+  }));
+
+  const sheet = XLSX.utils.json_to_sheet(rows);
+  const book = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(book, sheet, 'CRM');
+  const stamp = new Date().toISOString().slice(0, 10);
+  XLSX.writeFile(book, `crm-usuarios-${stamp}.xlsx`);
 }
 
 onMounted(async () => {
@@ -137,6 +243,35 @@ onMounted(async () => {
 
 .admin-users__header {
   margin-bottom: $spacing-6;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: $spacing-3;
+  flex-wrap: wrap;
+}
+
+.admin-users__header-actions {
+  display: flex;
+  align-items: center;
+  gap: $spacing-2;
+}
+
+.admin-users__export {
+  display: inline-flex;
+  align-items: center;
+  gap: $spacing-2;
+  padding: $spacing-2 $spacing-4;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #fff;
+  background: #16a34a;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.15s;
+
+  &:hover:not(:disabled) { background: #15803d; }
+  &:disabled { opacity: 0.55; cursor: not-allowed; }
 }
 
 .admin-users__back {
