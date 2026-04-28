@@ -14,8 +14,10 @@ export class EarningsController {
     @Query('page') page = 1,
     @Query('pageSize') pageSize = 20,
     @Query('month') month?: string,
+    @Query('level') level?: string,
   ) {
-    return this.earningsService.getEarnings(user.id, page, pageSize, month);
+    const lvl = level !== undefined && level !== '' ? Number(level) : undefined;
+    return this.earningsService.getEarnings(user.id, Number(page), Number(pageSize), month, lvl);
   }
 
   @Get('overview')

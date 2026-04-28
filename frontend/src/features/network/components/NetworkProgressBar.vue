@@ -127,7 +127,7 @@ const message = computed(() => {
     const parts: string[] = [];
     if (missingBronzes > 0) parts.push(`${missingBronzes} Bronze${missingBronzes > 1 ? 's' : ''}`);
     if (missingLines > 0) parts.push(`${missingLines} linha${missingLines > 1 ? 's' : ''} diferente${missingLines > 1 ? 's' : ''}`);
-    return `Faltam ${parts.join(' e ')} para virar ${nextLabel}.`;
+    return `Faltam ${parts.join(' em ')} para virar ${nextLabel}.`;
   }
 
   return `Continue crescendo sua rede para avançar!`;

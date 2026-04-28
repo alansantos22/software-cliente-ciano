@@ -138,6 +138,12 @@ const routes: RouteRecordRaw[] = [
         meta: { requiresAuth: true, requiresAdmin: true, title: 'CRM de Usuários' },
       },
       {
+        path: 'admin/users/:id',
+        name: 'admin-user-extract',
+        component: () => import('@/features/admin/views/AdminUserExtractView.vue'),
+        meta: { requiresAuth: true, requiresAdmin: true, title: 'Extrato do Usuário' },
+      },
+      {
         path: 'admin/audit',
         name: 'admin-audit',
         component: () => import('@/features/admin/views/AdminAuditView.vue'),

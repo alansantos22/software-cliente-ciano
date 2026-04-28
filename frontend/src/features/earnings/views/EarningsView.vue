@@ -27,6 +27,17 @@
       <div class="filters-row">
         <DsMonthPicker v-model="selectedMonth" />
 
+        <select v-model="selectedLevel" class="earnings-view__level-select" aria-label="Filtrar por nível">
+          <option value="">Todos os níveis</option>
+          <option value="0">Próprias</option>
+          <option value="1">Nível 1</option>
+          <option value="2">Nível 2</option>
+          <option value="3">Nível 3</option>
+          <option value="4">Nível 4</option>
+          <option value="5">Nível 5</option>
+          <option value="6">Nível 6</option>
+        </select>
+
         <div class="filter-group">
             <!-- Group filters -->
             <button
@@ -92,6 +103,13 @@
           </span>
         </template>
 
+        <!-- Nível -->
+        <template #cell-level="{ row }">
+          <span class="level-cell">
+            {{ (row as unknown as ActivityRow).level === 0 ? 'Própria' : `N${(row as unknown as ActivityRow).level}` }}
+          </span>
+        </template>
+
         <!-- Data -->
         <template #cell-date="{ row }">
           <div class="date-cell-wrap">
@@ -127,6 +145,7 @@ interface ActivityRow {
   description: string;
   amount: number;
   date: string;
+  level: number;
   /**
    * false when the underlying purchase happened AFTER the cutoff (last day
    * of the previous month). The earning will be paid in the next cycle.
@@ -134,8 +153,9 @@ interface ActivityRow {
   cutoffEligible?: boolean;
 }
 
-// ─── State ───────────────────────────────────────────
+// ─── State ────────────────────────────────────────
 const selectedMonth = ref(new Date().toISOString().slice(0, 7));
+const selectedLevel = ref<string>('');
 const activeFilter = ref('all');
 
 // ─── Data loaded from API ─────────────────────────────
@@ -143,15 +163,22 @@ const allRows = ref<ActivityRow[]>([]);
 
 const bonusTypeLabel: Record<string, string> = {
   firstPurchase: 'Comissão',
+  first_purchase: 'Comissão',
   repurchase: 'Bônus',
   team: 'Bônus',
   leadership: 'Bônus',
   dividend: 'Dividendo',
+  purchase: 'Compra',
 };
 
 async function loadEarnings() {
   try {
-    const { data } = await earningsService.list(1, 100, selectedMonth.value);
+    const { data } = await earningsService.list(
+      1,
+      200,
+      selectedMonth.value,
+      selectedLevel.value || undefined,
+    );
     if (data?.items) {
       allRows.value = data.items.map((e: any, i: number) => ({
         id: i + 1,
@@ -160,6 +187,7 @@ async function loadEarnings() {
         description: e.description || '',
         amount: Number(e.amount) || 0,
         date: (e.createdAt || '').slice(0, 10),
+        level: Number(e.level) || 0,
         cutoffEligible: e.cutoffEligible ?? true,
       }));
     }
@@ -168,7 +196,7 @@ async function loadEarnings() {
   }
 }
 
-watch(selectedMonth, loadEarnings);
+watch([selectedMonth, selectedLevel], loadEarnings);
 onMounted(loadEarnings);
 
 // ─── Filters config ───────────────────────────────────
@@ -183,8 +211,7 @@ const typeFilters = [
 // ─── Table columns ────────────────────────────────────
 const columns = [
   { key: 'type',        label: 'Tipo',       width: '130px' },
-  { key: 'description', label: 'Descrição' },
-  { key: 'amount',      label: 'Valor',      align: 'right' as const, width: '140px' },
+  { key: 'description', label: 'Descrição' },  { key: 'level',       label: 'Nível',      width: '90px',  align: 'center' as const },  { key: 'amount',      label: 'Valor',      align: 'right' as const, width: '140px' },
   { key: 'date',        label: 'Data',       width: '120px' },
 ];
 
@@ -310,6 +337,22 @@ function getTypeIcon(rawType: string): string {
     background: var(--neutral-100);
     padding: 0.2rem 0.6rem;
     border-radius: 20px;
+  }
+
+  &__level-select {
+    height: 36px;
+    padding: 0 0.75rem;
+    border-radius: 8px;
+    border: 1.5px solid var(--neutral-300);
+    background: var(--bg-primary);
+    color: var(--neutral-700);
+    font-size: 0.85rem;
+    cursor: pointer;
+
+    &:focus {
+      outline: none;
+      border-color: var(--primary-500);
+    }
   }
 }
 
@@ -454,6 +497,18 @@ function getTypeIcon(rawType: string): string {
 
   &--positive { color: var(--color-success); }
   &--negative { color: var(--color-error); }
+}
+
+.level-cell {
+  display: inline-block;
+  min-width: 38px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--neutral-100);
+  color: var(--neutral-700);
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-align: center;
 }
 
 .date-cell {

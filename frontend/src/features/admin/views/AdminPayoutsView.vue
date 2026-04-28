@@ -406,6 +406,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
+import * as XLSX from 'xlsx';
 import {
   DsCard,
   DsStatCard,
@@ -618,7 +619,35 @@ function clearFilters() {
 }
 
 function exportPayouts() {
-  alert('Exportação em desenvolvimento');
+  if (filteredPayouts.value.length === 0) {
+    return;
+  }
+
+  const pixTypeLabel: Record<string, string> = {
+    cpf:    'CPF',
+    cnpj:   'CNPJ',
+    email:  'E-mail',
+    phone:  'Telefone',
+    random: 'Chave aleatória',
+  };
+
+  const rows = filteredPayouts.value.map((p) => ({
+    'Cotista':         p.userName ?? '',
+    'Chave PIX':       p.pixKey ?? '',
+    'Tipo PIX':        pixTypeLabel[String(p.pixKeyType ?? '').toLowerCase()] ?? (p.pixKeyType ?? ''),
+    'Competência':     formatMonthLabel(p.referenceMonth),
+    'Pagamento em':    formatMonthLabel(p.paymentMonth),
+    'Dividendos (R$)': Number(p.quotaAmount ?? 0),
+    'Rede (R$)':       Number(p.networkAmount ?? 0),
+    'Total (R$)':      Number(p.amount ?? 0),
+    'Status':          getStatusLabel(p.status),
+  }));
+
+  const sheet = XLSX.utils.json_to_sheet(rows);
+  const book = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(book, sheet, 'Pagamentos');
+  const stamp = new Date().toISOString().slice(0, 10);
+  XLSX.writeFile(book, `pagamentos-${stamp}.xlsx`);
 }
 
 async function processSelected() {

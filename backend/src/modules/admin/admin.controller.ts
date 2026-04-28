@@ -172,4 +172,11 @@ export class AdminController {
       limit: limit ? parseInt(limit, 10) : undefined,
     });
   }
+
+  // ─── User Extract (auditoria por usuário) ─────────────
+
+  @Get('users/:userId/extract')
+  getUserExtract(@Param('userId') userId: string) {
+    return this.adminService.getUserExtract(userId);
+  }
 }

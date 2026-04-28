@@ -1,12 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, IsNull } from 'typeorm';
+import { Repository, IsNull, In } from 'typeorm';
 import { User } from '../users/entities/user.entity';
 import { QuotaSystemState } from '../quotas/entities/quota-system-state.entity';
 import { Earning } from '../earnings/entities/earning.entity';
 import { QuotaTransaction } from '../quotas/entities/quota-transaction.entity';
+import { PayoutRequest } from '../payouts/entities/payout-request.entity';
 import { GlobalFinancialSettings } from '../admin/entities/global-financial-settings.entity';
-import { TransactionType, TransactionStatus } from '../../shared/interfaces/enums';
+import { TransactionType, TransactionStatus, PayoutStatus } from '../../shared/interfaces/enums';
 import { getCurrentPeriod } from '../../shared/utils/helpers';
 import { TitleCalculatorService } from '../../core/title/title-calculator.service';
 
@@ -17,6 +18,7 @@ export class DashboardService {
     @InjectRepository(QuotaSystemState) private readonly stateRepo: Repository<QuotaSystemState>,
     @InjectRepository(Earning) private readonly earningRepo: Repository<Earning>,
     @InjectRepository(QuotaTransaction) private readonly txnRepo: Repository<QuotaTransaction>,
+    @InjectRepository(PayoutRequest) private readonly payoutRepo: Repository<PayoutRequest>,
     @InjectRepository(GlobalFinancialSettings) private readonly settingsRepo: Repository<GlobalFinancialSettings>,
     private readonly titleCalc: TitleCalculatorService,
   ) {}
@@ -77,6 +79,54 @@ export class DashboardService {
     ).length;
     const inactiveDirects = totalDirects - activeDirects;
 
+    // ── Previsão a Receber (payouts pendentes/processando) ──
+    // Conforme regra do cliente: tudo que está como pendente OU em
+    // processamento conta para o usuário receber, independentemente do
+    // mês de referência ou pagamento.
+    const pendingPayouts = await this.payoutRepo.find({
+      where: {
+        userId,
+        status: In([PayoutStatus.PENDING, PayoutStatus.PROCESSING]),
+      },
+      select: ['quotaAmount', 'networkAmount', 'amount', 'paymentMonth'],
+      order: { paymentMonth: 'ASC' },
+    });
+
+    const quotaEarnings   = pendingPayouts.reduce((s, p) => s + Number(p.quotaAmount   || 0), 0);
+    const networkEarnings = pendingPayouts.reduce((s, p) => s + Number(p.networkAmount || 0), 0);
+    const totalReceivable = pendingPayouts.reduce((s, p) => s + Number(p.amount        || 0), 0);
+
+    // ── Janela de pagamento ──
+    const settings = await this.settingsRepo.findOne({ where: { id: 1 } });
+    const paymentDay = settings?.paymentDay || 15;
+    const today = new Date();
+    const paymentWindowOpen = today.getDate() <= paymentDay;
+
+    // Próximo pagamento: usa o mês do batch pendente mais antigo
+    // (regra ref+2). Caso não haja batch, usa o mês corrente.
+    let nextPayYear  = today.getFullYear();
+    let nextPayMonth = today.getMonth();
+    if (pendingPayouts.length > 0 && pendingPayouts[0].paymentMonth) {
+      const [py, pm] = pendingPayouts[0].paymentMonth.split('-').map(Number);
+      if (!Number.isNaN(py) && !Number.isNaN(pm)) {
+        nextPayYear  = py;
+        nextPayMonth = pm - 1;
+      }
+    }
+    const nextPaymentDateObj = new Date(nextPayYear, nextPayMonth, paymentDay);
+    const todayMid = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    const daysUntilPayment = Math.round(
+      (nextPaymentDateObj.getTime() - todayMid.getTime()) / 86_400_000,
+    );
+
+    // ── Expiração da ativação (lastPurchaseDate + 6 meses) ──
+    let daysUntilExpiry: number | null = null;
+    if (user.lastPurchaseDate) {
+      const expiry = new Date(user.lastPurchaseDate);
+      expiry.setMonth(expiry.getMonth() + 6);
+      daysUntilExpiry = Math.ceil((expiry.getTime() - Date.now()) / 86_400_000);
+    }
+
     return {
       quotaBalance: user.quotaBalance,
       purchasedQuotas: user.purchasedQuotas,
@@ -85,7 +135,20 @@ export class DashboardService {
       estimatedPatrimony: user.quotaBalance * Number(state?.currentQuotaPrice || 2000),
       currentPrice: Number(state?.currentQuotaPrice || 2000),
       totalEarnings: Number(user.totalEarnings),
+      lifetimeEarnings: Number(user.totalEarnings),
       monthEarnings: parseFloat(monthEarnings?.total || '0'),
+      // Previsão a receber
+      networkEarnings,
+      quotaEarnings,
+      totalReceivable,
+      // Janela de pagamento
+      paymentDay,
+      paymentWindowOpen,
+      nextPaymentDate: nextPaymentDateObj.toISOString(),
+      daysUntilPayment,
+      // Expiração / inatividade
+      daysUntilExpiry,
+      inactivityLoss: 0,
       directCount: user.directCount,
       teamCount: user.teamCount,
       activeDirects,

@@ -6,12 +6,13 @@ import { User } from '../users/entities/user.entity';
 import { QuotaSystemState } from '../quotas/entities/quota-system-state.entity';
 import { Earning } from '../earnings/entities/earning.entity';
 import { QuotaTransaction } from '../quotas/entities/quota-transaction.entity';
+import { PayoutRequest } from '../payouts/entities/payout-request.entity';
 import { GlobalFinancialSettings } from '../admin/entities/global-financial-settings.entity';
 import { TitleModule } from '../../core/title/title.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([User, QuotaSystemState, Earning, QuotaTransaction, GlobalFinancialSettings]),
+    TypeOrmModule.forFeature([User, QuotaSystemState, Earning, QuotaTransaction, PayoutRequest, GlobalFinancialSettings]),
     TitleModule,
   ],
   controllers: [DashboardController],
