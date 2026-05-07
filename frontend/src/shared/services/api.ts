@@ -38,6 +38,14 @@ function processQueue(error: any, token: string | null = null) {
   failedQueue = [];
 }
 
+/** Redirect para /login evitando loop quando j\u00e1 estamos l\u00e1. */
+function redirectToLogin() {
+  const currentPath = router.currentRoute.value?.path || (typeof window !== 'undefined' ? window.location.pathname : '');
+  if (currentPath !== '/login') {
+    router.push('/login');
+  }
+}
+
 // Response interceptor — unwrap backend envelope { success, data, error }
 api.interceptors.response.use(
   (response: AxiosResponse) => {
@@ -66,6 +74,9 @@ api.interceptors.response.use(
               if (originalRequest.headers) {
                 originalRequest.headers.Authorization = `Bearer ${token}`;
               }
+              // Marca como retry para evitar uma nova rodada de refresh
+              // caso a request enfileirada volte a 401 imediatamente.
+              originalRequest._retry = true;
               resolve(api(originalRequest));
             },
             reject,
@@ -104,17 +115,18 @@ api.interceptors.response.use(
           // Refresh failed - logout user
           const authStore = useAuthStore();
           authStore.clearAuth();
-          router.push('/login');
+          redirectToLogin();
           return Promise.reject(refreshError);
         } finally {
           isRefreshing = false;
         }
       } else {
         isRefreshing = false;
-        // No refresh token - logout user
+        // No refresh token — se a request veio de uma rota pública
+        // (ex.: /login fazendo um pre-warm), apenas rejeita sem redirecionar.
         const authStore = useAuthStore();
         authStore.clearAuth();
-        router.push('/login');
+        redirectToLogin();
       }
     }
 

@@ -139,9 +139,11 @@ export class AdminManagerService {
     // Prevent circular references
     if (newSponsorId === userId) throw new BadRequestException('Usuário não pode ser seu próprio patrocinador');
 
+    const oldSponsorId = user.sponsorId;
+
     // Decrement old sponsor's direct count
-    if (user.sponsorId) {
-      await this.userRepo.decrement({ id: user.sponsorId }, 'directCount', 1);
+    if (oldSponsorId) {
+      await this.userRepo.decrement({ id: oldSponsorId }, 'directCount', 1);
     }
 
     user.sponsorId = newSponsorId;
@@ -149,6 +151,14 @@ export class AdminManagerService {
 
     // Increment new sponsor's direct count
     await this.userRepo.increment({ id: newSponsorId }, 'directCount', 1);
+
+    // Recalcular títulos: o próprio user, a antiga upline (perdeu downline)
+    // e a nova upline (ganhou downline) — propagando até a raiz.
+    await this.titleCalc.recalculateTitleToRoot(userId);
+    if (oldSponsorId) {
+      await this.titleCalc.recalculateTitleToRoot(oldSponsorId);
+    }
+    await this.titleCalc.recalculateTitleToRoot(newSponsorId);
 
     this.logger.warn(`⚙️ Admin changed sponsor of ${userId} to ${newSponsorId}`);
     return { message: 'Patrocinador alterado com sucesso' };

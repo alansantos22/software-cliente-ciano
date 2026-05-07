@@ -6,9 +6,10 @@ import { Earning } from './entities/earning.entity';
 import { MonthlyEarningSummary } from './entities/monthly-earning-summary.entity';
 import { QuotaTransaction } from '../quotas/entities/quota-transaction.entity';
 import { User } from '../users/entities/user.entity';
+import { PayoutRequest } from '../payouts/entities/payout-request.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Earning, MonthlyEarningSummary, QuotaTransaction, User])],
+  imports: [TypeOrmModule.forFeature([Earning, MonthlyEarningSummary, QuotaTransaction, User, PayoutRequest])],
   controllers: [EarningsController],
   providers: [EarningsService],
   exports: [EarningsService],

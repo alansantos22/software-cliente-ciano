@@ -91,10 +91,18 @@
                       <font-awesome-icon icon="file-lines" /> Ver Extrato
                     </button>
                     <button
+                      v-if="user.isActive"
                       class="crm-action-menu__item crm-action-menu__item--danger"
                       @click="handleAction('bloquear', user)"
                     >
                       <font-awesome-icon icon="ban" /> Bloquear Conta
+                    </button>
+                    <button
+                      v-else
+                      class="crm-action-menu__item"
+                      @click="handleAction('desbloquear', user)"
+                    >
+                      <font-awesome-icon icon="unlock" /> Desbloquear Conta
                     </button>
                   </div>
                 </transition>
@@ -127,7 +135,7 @@ const props = withDefaults(defineProps<Props>(), {
 });
 
 const emit = defineEmits<{
-  action: [type: 'extrato' | 'bloquear', user: any];
+  action: [type: 'extrato' | 'bloquear' | 'desbloquear', user: any];
 }>();
 
 // Menu state
@@ -142,7 +150,7 @@ function toggleMenu(id: string) {
   openMenuId.value = openMenuId.value === id ? null : id;
 }
 
-function handleAction(type: 'extrato' | 'bloquear', user: any) {
+function handleAction(type: 'extrato' | 'bloquear' | 'desbloquear', user: any) {
   openMenuId.value = null;
   emit('action', type, user);
 }
@@ -186,14 +194,17 @@ function getExpiryDate(user: any): string {
 type ActivityStatus = 'green' | 'yellow' | 'red';
 
 function getActivityStatus(user: any): ActivityStatus {
+  // Critérios:
+  //   🔴 vermelho → conta bloqueada (isActive=false) OU expirada (>6 meses sem comprar)
+  //   🟡 amarelo  → ativa, mas faltam <=30 dias para expirar (entre 5 e 6 meses sem comprar)
+  //   🟢 verde    → ativa e ainda longe de expirar
   if (!user.isActive || isAccountExpired(user)) return 'red';
-  const expiryDate = new Date(user.lastPurchaseDate!);
+  if (!user.lastPurchaseDate) return 'green';
+  const expiryDate = new Date(user.lastPurchaseDate);
   expiryDate.setMonth(expiryDate.getMonth() + 6);
   const daysUntilExpiry = Math.ceil((expiryDate.getTime() - Date.now()) / 86_400_000);
   if (daysUntilExpiry <= 30) return 'yellow';
-  if (user.partnerLevel === 'imperial' || user.partnerLevel === 'vip') return 'green';
-  if (user.partnerLevel === 'platinum') return 'yellow';
-  return 'yellow';
+  return 'green';
 }
 
 function getActivityLabel(user: any): string {

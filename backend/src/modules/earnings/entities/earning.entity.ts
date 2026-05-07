@@ -63,4 +63,17 @@ export class Earning {
 
   @Column({ type: 'datetime', nullable: true, name: 'paid_at' })
   paidAt: Date | null;
+
+  /**
+   * Marca o momento em que o ganho foi processado pelo admin
+   * (geração de lote de pagamentos / Etapa 2).
+   *
+   * Para os tipos calculados durante o batch (DIVIDEND, TEAM, LEADERSHIP)
+   * este campo passa a ser a referência temporal exibida ao usuário em vez
+   * do `referenceMonth`. Para os tipos imediatos (FIRST_PURCHASE, REPURCHASE)
+   * permanece NULL.
+   */
+  @Index('idx_earnings_processed_at')
+  @Column({ type: 'datetime', nullable: true, name: 'processed_at' })
+  processedAt: Date | null;
 }

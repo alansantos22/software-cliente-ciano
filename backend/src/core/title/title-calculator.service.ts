@@ -65,6 +65,26 @@ export class TitleCalculatorService {
     return newTitle;
   }
 
+  /**
+   * Recalcula o título de `userId` e propaga até a raiz da árvore,
+   * mesmo que o título do nó atual não mude (necessário em mudança
+   * de patrocinador, onde a contagem de qualificados de cada
+   * ancestral pode ter sido afetada).
+   */
+  async recalculateTitleToRoot(userId: string): Promise<void> {
+    const visited = new Set<string>();
+    let currentId: string | null | undefined = userId;
+    while (currentId && !visited.has(currentId)) {
+      visited.add(currentId);
+      await this.recalculateTitle(currentId);
+      const node = await this.userRepo.findOne({
+        where: { id: currentId },
+        select: ['id', 'sponsorId'],
+      });
+      currentId = node?.sponsorId ?? null;
+    }
+  }
+
   async recalculateAllTitles(): Promise<void> {
     const users = await this.userRepo.find({ where: { deletedAt: null as unknown as Date } });
 

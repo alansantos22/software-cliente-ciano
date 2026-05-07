@@ -30,6 +30,7 @@ import {
   faBuilding, faWandMagicSparkles, faLock, faHourglass, faChartPie,
   faPlane, faMoneyBillTransfer, faChampagneGlasses, faSquareArrowUpRight,
   faCircle, faBullseye, faBuildingColumns, faShareNodes,
+  faPenToSquare, faUnlock,
 } from '@fortawesome/free-solid-svg-icons'
 
 library.add(
@@ -55,6 +56,7 @@ library.add(
   faBuilding, faWandMagicSparkles, faLock, faHourglass, faChartPie,
   faPlane, faMoneyBillTransfer, faChampagneGlasses, faSquareArrowUpRight,
   faCircle, faBullseye, faBuildingColumns, faShareNodes,
+  faPenToSquare, faUnlock,
 )
 
 // Styles

@@ -52,13 +52,15 @@
       />
     </div>
 
-    <!-- Modal de confirmação (Bloquear conta) -->
+    <!-- Modal de confirmação (Bloquear / Desbloquear conta) -->
     <ManagerActionConfirmModal
       v-model="showBlockModal"
-      title="Bloquear conta"
-      :description="blockUser ? `Confirma o bloqueio da conta de ${blockUser.name}? O usuário não conseguirá acessar o sistema até ser reativado.` : ''"
-      confirm-label="Bloquear conta"
-      variant="danger"
+      :title="blockMode === 'unblock' ? 'Desbloquear conta' : 'Bloquear conta'"
+      :description="blockUser ? (blockMode === 'unblock'
+        ? `Confirma o desbloqueio da conta de ${blockUser.name}? O usuário voltará a ter acesso ao sistema.`
+        : `Confirma o bloqueio da conta de ${blockUser.name}? O usuário não conseguirá acessar o sistema até ser reativado.`) : ''"
+      :confirm-label="blockMode === 'unblock' ? 'Desbloquear conta' : 'Bloquear conta'"
+      :variant="blockMode === 'unblock' ? 'default' : 'danger'"
       :loading="blockLoading"
       :error="blockError"
       @confirm="confirmBlock"
@@ -126,24 +128,28 @@ const statusLabels: Record<'active' | 'risk' | 'inactive', string> = {
   inactive: 'Inativo',
 };
 
-function handleAction(type: 'extrato' | 'bloquear', user: any) {
+function handleAction(type: 'extrato' | 'bloquear' | 'desbloquear', user: any) {
   if (type === 'extrato') {
     router.push(`/admin/users/${user.id}`);
   } else if (type === 'bloquear') {
-    openBlockModal(user);
+    openBlockModal(user, 'block');
+  } else if (type === 'desbloquear') {
+    openBlockModal(user, 'unblock');
   }
 }
 
 // =====================================================
-// Bloquear conta
+// Bloquear / Desbloquear conta
 // =====================================================
 const showBlockModal = ref(false);
 const blockUser = ref<any | null>(null);
+const blockMode = ref<'block' | 'unblock'>('block');
 const blockLoading = ref(false);
 const blockError = ref('');
 
-function openBlockModal(user: any) {
+function openBlockModal(user: any, mode: 'block' | 'unblock' = 'block') {
   blockUser.value = user;
+  blockMode.value = mode;
   blockError.value = '';
   showBlockModal.value = true;
 }
@@ -158,16 +164,20 @@ async function confirmBlock(password: string) {
   if (!blockUser.value) return;
   blockLoading.value = true;
   blockError.value = '';
+  const targetActive = blockMode.value === 'unblock';
   try {
     await adminService.setUserActive(blockUser.value.id, {
-      isActive: false,
+      isActive: targetActive,
       managerPassword: password,
     });
     showBlockModal.value = false;
     blockUser.value = null;
     await reloadUsers();
   } catch (err: any) {
-    blockError.value = err?.response?.data?.message || 'Falha ao bloquear conta. Verifique a senha gerente.';
+    blockError.value = err?.response?.data?.message
+      || (targetActive
+        ? 'Falha ao desbloquear conta. Verifique a senha gerente.'
+        : 'Falha ao bloquear conta. Verifique a senha gerente.');
   } finally {
     blockLoading.value = false;
   }
@@ -183,12 +193,21 @@ async function reloadUsers() {
 // =====================================================
 // Exportar Excel
 // =====================================================
+function formatPhone(raw: string | null | undefined): string {
+  if (!raw) return '';
+  const d = String(raw).replace(/\D/g, '');
+  if (d.length === 11) return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`;
+  if (d.length === 10) return `(${d.slice(0, 2)}) ${d.slice(2, 6)}-${d.slice(6)}`;
+  return String(raw);
+}
+
 function exportToExcel() {
   if (filteredUsers.value.length === 0) return;
 
   const rows = filteredUsers.value.map((u) => ({
     'Nome':            u.name ?? '',
     'E-mail':          u.email ?? '',
+    'Telefone':        formatPhone(u.phone),
     'Status':          statusLabels[getStatus(u)],
     'Cotas':           u.quotaBalance ?? 0,
     'Cotas compradas': u.purchasedQuotas ?? 0,

@@ -31,7 +31,7 @@
         </article>
         <article class="extract__card">
           <span class="extract__card-label">Título</span>
-          <strong class="extract__card-value">{{ data.user.title || '—' }}</strong>
+          <strong class="extract__card-value">{{ formatTitle(data.user.title) }}</strong>
         </article>
         <article class="extract__card">
           <span class="extract__card-label">Cotas (saldo)</span>
@@ -304,6 +304,21 @@ const formatStatus = (status: string) => {
   return map[status?.toLowerCase()] || status;
 };
 
+const formatTitle = (title: string | null | undefined): string => {
+  const map: Record<string, string> = {
+    none: 'Sem Título',
+    bronze: 'Bronze',
+    silver: 'Prata',
+    prata: 'Prata',
+    gold: 'Ouro',
+    ouro: 'Ouro',
+    diamond: 'Diamante',
+    diamante: 'Diamante',
+  };
+  if (!title) return 'Sem Título';
+  return map[String(title).toLowerCase()] || title;
+};
+
 async function loadData() {
   loading.value = true;
   error.value = '';
@@ -331,7 +346,7 @@ function exportToExcel() {
     { Campo: 'Nome', Valor: d.user.name },
     { Campo: 'E-mail', Valor: d.user.email },
     { Campo: 'Status', Valor: d.user.isActive ? 'Ativo' : 'Inativo' },
-    { Campo: 'Título', Valor: d.user.title || '—' },
+    { Campo: 'Título', Valor: formatTitle(d.user.title) },
     { Campo: 'Patrocinador', Valor: d.user.sponsorName || '—' },
     { Campo: 'Cotas (saldo)', Valor: d.user.quotaBalance },
     { Campo: 'Cotas compradas', Valor: d.user.purchasedQuotas },

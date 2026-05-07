@@ -111,10 +111,12 @@ function handleClick() {
   }
 
   &__value {
-    font-size: 2rem;
+    font-size: clamp(1.25rem, 1.1rem + 1.4vw, 2rem);
     font-weight: 700;
     color: var(--text-primary);
     line-height: 1.2;
+    word-break: break-word;
+    min-width: 0;
 
     &--currency {
       color: var(--primary-600);
