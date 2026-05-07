@@ -202,7 +202,7 @@
           : `Confirma o bloqueio da conta de ${blockUser.name}? O usuário não conseguirá acessar o sistema até ser reativado.`
         : ''"
       :confirm-label="blockMode === 'unblock' ? 'Desbloquear conta' : 'Bloquear conta'"
-      :variant="blockMode === 'unblock' ? 'success' : 'danger'"
+      :variant="blockMode === 'unblock' ? 'default' : 'danger'"
       :loading="blockLoading"
       :error="blockError"
       @confirm="confirmBlock"
