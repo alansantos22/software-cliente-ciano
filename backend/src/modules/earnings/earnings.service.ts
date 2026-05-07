@@ -5,7 +5,8 @@ import { Earning } from './entities/earning.entity';
 import { MonthlyEarningSummary } from './entities/monthly-earning-summary.entity';
 import { QuotaTransaction } from '../quotas/entities/quota-transaction.entity';
 import { User } from '../users/entities/user.entity';
-import { BonusType, TransactionType, TransactionStatus } from '../../shared/interfaces/enums';
+import { PayoutRequest } from '../payouts/entities/payout-request.entity';
+import { BonusType, TransactionType, TransactionStatus, PayoutStatus } from '../../shared/interfaces/enums';
 import { getCurrentPeriod } from '../../shared/utils/helpers';
 
 /**
@@ -36,6 +37,7 @@ export class EarningsService {
     @InjectRepository(MonthlyEarningSummary) private readonly summaryRepo: Repository<MonthlyEarningSummary>,
     @InjectRepository(QuotaTransaction) private readonly txnRepo: Repository<QuotaTransaction>,
     @InjectRepository(User) private readonly userRepo: Repository<User>,
+    @InjectRepository(PayoutRequest) private readonly payoutRepo: Repository<PayoutRequest>,
   ) {}
 
   /**
@@ -56,27 +58,54 @@ export class EarningsService {
     month?: string,
     level?: number,
   ) {
-    // ── 1) Earnings do próprio usuário ──
+    // Tipos calculados durante o batch (Etapa 2 do admin). Para estes
+    // a refer\u00eancia temporal exibida ao usu\u00e1rio passa a ser `processed_at`
+    // (quando o admin gerou o lote), n\u00e3o `reference_month`.
+    const POST_BATCH_TYPES = new Set<BonusType>([
+      BonusType.DIVIDEND,
+      BonusType.TEAM,
+      BonusType.LEADERSHIP,
+    ]);
+
+    // \u2500\u2500 1) Earnings do pr\u00f3prio usu\u00e1rio (sem filtro de m\u00eas no banco \u2014\n    // a filtragem ser\u00e1 feita em c\u00f3digo, pois cada tipo usa um campo\n    // diferente como refer\u00eancia temporal).
     const ownEarningsRows = await this.earningRepo.find({
-      where: { userId, ...(month ? { referenceMonth: month } : {}) },
+      where: { userId },
       order: { createdAt: 'DESC' },
     });
 
-    const earningRows: EarningHistoryRow[] = ownEarningsRows.map((e) => ({
-      id: `e-${e.id}`,
-      source: 'earning',
-      bonusType: e.bonusType,
-      amount: Number(e.amount),
-      description: e.description,
-      // Bônus de FIRST_PURCHASE/REPURCHASE já guardam o nível original (1..6).
-      // Os demais ganhos (DIVIDEND, TEAM, LEADERSHIP) consideramos nível 0 (próprio).
-      level: e.level || 0,
-      referenceMonth: e.referenceMonth,
-      status: String(e.status),
-      cutoffEligible: e.cutoffEligible,
-      createdAt: e.createdAt,
-      sourceUserName: e.sourceUserName,
-    }));
+    const earningRows: EarningHistoryRow[] = ownEarningsRows
+      // P\u00f3s-batch: s\u00f3 aparecem ap\u00f3s o admin processar.
+      .filter((e) => !POST_BATCH_TYPES.has(e.bonusType) || e.processedAt !== null)
+      // Filtro por m\u00eas \u2014 cada tipo na sua refer\u00eancia.
+      .filter((e) => {
+        if (!month) return true;
+        if (POST_BATCH_TYPES.has(e.bonusType)) {
+          if (!e.processedAt) return false;
+          const d = new Date(e.processedAt);
+          const ym = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+          return ym === month;
+        }
+        return e.referenceMonth === month;
+      })
+      .map((e) => {
+        // Para tipos p\u00f3s-batch a "data" exibida \u00e9 a do processamento.
+        const displayDate = POST_BATCH_TYPES.has(e.bonusType) && e.processedAt
+          ? new Date(e.processedAt)
+          : e.createdAt;
+        return {
+          id: `e-${e.id}`,
+          source: 'earning' as const,
+          bonusType: e.bonusType,
+          amount: Number(e.amount),
+          description: e.description,
+          level: e.level || 0,
+          referenceMonth: e.referenceMonth,
+          status: String(e.status),
+          cutoffEligible: e.cutoffEligible,
+          createdAt: displayDate,
+          sourceUserName: e.sourceUserName,
+        };
+      });
 
     // ── 2) Compras do próprio usuário (level 0) ──
     const ownPurchases = await this.txnRepo.find({
@@ -189,10 +218,14 @@ export class EarningsService {
     const currentMonth = getCurrentPeriod();
     const lastMonth = this.getPreviousMonth(currentMonth);
 
-    const totalEarned = await this.earningRepo
-      .createQueryBuilder('e')
-      .select('SUM(e.amount)', 'total')
-      .where('e.user_id = :userId', { userId })
+    // Lifetime ("Ganhos da vida") = soma dos pagamentos COMPLETADOS.
+    // J\u00e1 inclui dividendos + ganhos de rede + breakdown completo,
+    // pois cada payout cont\u00e9m amount = quotaAmount + networkAmount.
+    const totalEarnedRow = await this.payoutRepo
+      .createQueryBuilder('p')
+      .select('SUM(p.amount)', 'total')
+      .where('p.user_id = :userId', { userId })
+      .andWhere('p.status = :status', { status: PayoutStatus.COMPLETED })
       .getRawOne();
 
     const pendingEarnings = await this.earningRepo
@@ -218,7 +251,7 @@ export class EarningsService {
 
     // Calculate average monthly
     const summaryCount = await this.summaryRepo.count({ where: { userId } });
-    const allTotal = parseFloat(totalEarned?.total || '0');
+    const allTotal = parseFloat(totalEarnedRow?.total || '0');
 
     return {
       userId,

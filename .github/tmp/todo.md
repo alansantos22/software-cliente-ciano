@@ -1,144 +1,144 @@
-# TODO — 21 CORREÇÕES SISTEMA CIANO
+# TODO â€” 21 CORREÃ‡Ã•ES SISTEMA CIANO
 
 **Data/Hora:** 2026-04-16
-**Sessão:** finalizacao-sistema-blocos
-**Status Geral:** ⏳ EM PROGRESSO
+**SessÃ£o:** finalizacao-sistema-blocos
+**Status Geral:** â³ EM PROGRESSO
 
 ---
 
-## 🔴 BLOCO 1 — MOTOR DE PREÇO (Críticos) ✅ COMPLETO
+## ðŸ”´ BLOCO 1 â€” MOTOR DE PREÃ‡O (CrÃ­ticos) âœ… COMPLETO
 
-- [x] **1.1** Corrigir fases: max=2 (R$3.000), depois split — `split-engine.service.ts` ✅
-- [x] **1.2** Segurar preço até meia-noite (pendingEvent) — `split-engine.service.ts` + `quota-system-state.entity.ts` ✅
-- [x] **1.3** Notificação in-app ao bater meta — `notifications.service.ts` ✅
-- [x] **1.4** Só cotas compradas contam no lote — Verificado OK ✅
-- [x] **1.5** Corrigir contagem lotSold no admin — `admin.service.ts` ✅
-- [x] **1.6** Remover "Ajustar Constante" (front+back) — `AdminPriceEngine.vue` + `admin.service.ts` + DTO ✅
-- [x] **1.7** Migration: pending_event + pix nullable — `002-add-pending-event-and-fix-pix-nullable.sql` ✅
-- [x] **1.8** Testes reescritos — `split-engine.service.spec.ts` ✅
-- [x] **1.9** Compilação backend + frontend OK ✅
+- [x] **1.1** Corrigir fases: max=2 (R$3.000), depois split â€” `split-engine.service.ts` âœ…
+- [x] **1.2** Segurar preÃ§o atÃ© meia-noite (pendingEvent) â€” `split-engine.service.ts` + `quota-system-state.entity.ts` âœ…
+- [x] **1.3** NotificaÃ§Ã£o in-app ao bater meta â€” `notifications.service.ts` âœ…
+- [x] **1.4** SÃ³ cotas compradas contam no lote â€” Verificado OK âœ…
+- [x] **1.5** Corrigir contagem lotSold no admin â€” `admin.service.ts` âœ…
+- [x] **1.6** Remover "Ajustar Constante" (front+back) â€” `AdminPriceEngine.vue` + `admin.service.ts` + DTO âœ…
+- [x] **1.7** Migration: pending_event + pix nullable â€” `002-add-pending-event-and-fix-pix-nullable.sql` âœ…
+- [x] **1.8** Testes reescritos â€” `split-engine.service.spec.ts` âœ…
+- [x] **1.9** CompilaÃ§Ã£o backend + frontend OK âœ…
 
 ---
 
-## 🔴 BLOCO 2 — BÔNUS E PAGAMENTOS (Críticos) ✅ COMPLETO
+## ðŸ”´ BLOCO 2 â€” BÃ”NUS E PAGAMENTOS (CrÃ­ticos) âœ… COMPLETO
 
-- [x] **2.1** Primeira compra: 10% se sponsor tem cotas, 5% se não — `bonus-calculator.service.ts` ✅
-- [x] **2.2** Erro 500 generate-batch (pix_key_type null) — `admin.service.ts` + `payout-request.entity.ts` ✅
-- [x] **2.3** Detalhamento das faturas (breakdown por tipo de bônus) ✅
-  - Backend: networkAmount agora = ganhos do mês (query earnings por bonusType)
+- [x] **2.1** Primeira compra: 10% se sponsor tem cotas, 5% se nÃ£o â€” `bonus-calculator.service.ts` âœ…
+- [x] **2.2** Erro 500 generate-batch (pix_key_type null) â€” `admin.service.ts` + `payout-request.entity.ts` âœ…
+- [x] **2.3** Detalhamento das faturas (breakdown por tipo de bÃ´nus) âœ…
+  - Backend: networkAmount agora = ganhos do mÃªs (query earnings por bonusType)
   - Backend: 5 novas colunas na entity (firstPurchase, repurchase, team, leadership, lifetime)
-  - Frontend: Modal de detalhes com composição completa do valor
+  - Frontend: Modal de detalhes com composiÃ§Ã£o completa do valor
   - Migration: `003-add-payout-breakdown-columns.sql`
 
 ---
 
-## 🟠 BLOCO 3 — HISTÓRICO E DASHBOARD ✅ COMPLETO
+## ðŸŸ  BLOCO 3 â€” HISTÃ“RICO E DASHBOARD âœ… COMPLETO
 
-- [x] **3.1** Histórico vazio — earnings não filtra por mês selecionado ✅
+- [x] **3.1** HistÃ³rico vazio â€” earnings nÃ£o filtra por mÃªs selecionado âœ…
   - Backend: `getEarnings()` agora aceita param `month` e filtra por `referenceMonth`
   - Frontend: `earningsService.list()` passa `month`, `loadEarnings()` envia `selectedMonth.value`
 
-- [x] **3.2** NaN no histórico ✅
+- [x] **3.2** NaN no histÃ³rico âœ…
   - `amount: Number(e.amount) || 0` no mapeamento
   - `formatCurrency()` protegida com `Number(value) || 0`
 
-- [x] **3.3** Remover "Saldo Líquido" do histórico ✅
+- [x] **3.3** Remover "Saldo LÃ­quido" do histÃ³rico âœ…
   - Card removido do template, grid ajustado para `repeat(3, 1fr)`
 
-- [x] **3.4** Caixa de Dividendos — nota de estimativa ✅
-  - Backend: retorna `dividendPoolNote` indicando que é estimativa
-  - Frontend: exibe nota em itálico abaixo do subtítulo
+- [x] **3.4** Caixa de Dividendos â€” nota de estimativa âœ…
+  - Backend: retorna `dividendPoolNote` indicando que Ã© estimativa
+  - Frontend: exibe nota em itÃ¡lico abaixo do subtÃ­tulo
 
 ---
 
-## 🟠 BLOCO 4 — TÍTULOS E NÍVEIS ✅ COMPLETO
+## ðŸŸ  BLOCO 4 â€” TÃTULOS E NÃVEIS âœ… COMPLETO
 
-- [x] **4.1** Separar nível societário do título de rede ✅
+- [x] **4.1** Separar nÃ­vel societÃ¡rio do tÃ­tulo de rede âœ…
   - Agora usa `kpiRes.data.title` (none/bronze/silver/gold/diamond)
-  - Mapeamento EN→PT: silver→prata, gold→ouro, diamond→diamante
+  - Mapeamento ENâ†’PT: silverâ†’prata, goldâ†’ouro, diamondâ†’diamante
   - Interface `DashboardKpiData` atualizada com `title`, `directCount`, `daysUntilExpiry`
 
-- [x] **4.2** Progressão mostrando meta errada ✅
-  - `levelProgression` agora é bronze→prata→ouro→diamante (sem partner levels)
+- [x] **4.2** ProgressÃ£o mostrando meta errada âœ…
+  - `levelProgression` agora Ã© bronzeâ†’prataâ†’ouroâ†’diamante (sem partner levels)
   - `levelTargets` corrigido: prata=1, ouro=2, diamante=3 (bronzes qualificados)
-  - `currentValue` usa `directCount` ao invés de `qualifiedCount || quotaBalance`
+  - `currentValue` usa `directCount` ao invÃ©s de `qualifiedCount || quotaBalance`
 
 ---
 
-## 🟡 BLOCO 5 — UX/UI ✅ COMPLETO
+## ðŸŸ¡ BLOCO 5 â€” UX/UI âœ… COMPLETO
 
-- [x] **5.1** Tooltips não somem no /quotas ✅
+- [x] **5.1** Tooltips nÃ£o somem no /quotas âœ…
   - Adicionado `@mouseleave="activeTierIndex = -1"` no `.tier-node__bubble`
 
-- [x] **5.2** Scroll para erros no cadastro ✅
+- [x] **5.2** Scroll para erros no cadastro âœ…
   - `handleRegister()` faz `scrollIntoView({ behavior: 'smooth', block: 'center' })` no primeiro campo com erro
 
-- [x] **5.3** Cards do Admin agrupados em telas menores ✅
-  - Grid alterado para `repeat(auto-fit, minmax(220px, 1fr))` — responsivo fluido
+- [x] **5.3** Cards do Admin agrupados em telas menores âœ…
+  - Grid alterado para `repeat(auto-fit, minmax(220px, 1fr))` â€” responsivo fluido
 
-- [x] **5.4** Menu suspenso travado no Admin ✅
-  - `toggleMenu()` agora detecta espaço abaixo e abre para cima quando necessário
+- [x] **5.4** Menu suspenso travado no Admin âœ…
+  - `toggleMenu()` agora detecta espaÃ§o abaixo e abre para cima quando necessÃ¡rio
 
-- [x] **5.5** Editar perfil — tipo da chave PIX ✅
-  - Adicionado `<select>` para pixKeyType (CPF/Email/Telefone/Aleatória)
+- [x] **5.5** Editar perfil â€” tipo da chave PIX âœ…
+  - Adicionado `<select>` para pixKeyType (CPF/Email/Telefone/AleatÃ³ria)
   - Form state, loadFormData, saveFinancialData atualizados
-  - Traduções i18n adicionadas (pt-BR, en)
+  - TraduÃ§Ãµes i18n adicionadas (pt-BR, en)
 
-- [x] **5.6** Admin retirar cotas de split e admin-granted ✅
+- [x] **5.6** Admin retirar cotas de split e admin-granted âœ…
   - `removeQuotas()` agora aceita `source: 'admin' | 'split'`
   - DTO atualizado com campo `source` opcional
   - Decrementa campo correto (`adminGrantedQuotas` ou `splitQuotas`)
 
 ---
 
-## 🟡 BLOCO 6 — ERROS DE INFRAESTRUTURA ✅ COMPLETO
+## ðŸŸ¡ BLOCO 6 â€” ERROS DE INFRAESTRUTURA âœ… COMPLETO
 
-- [x] **6.1** Constante de estimativa — REMOVIDA ✅ (feito no Bloco 1)
+- [x] **6.1** Constante de estimativa â€” REMOVIDA âœ… (feito no Bloco 1)
 
-- [x] **6.2** Erros 401 Unauthorized ✅
+- [x] **6.2** Erros 401 Unauthorized âœ…
   - Interceptor axios reescrito com mutex (race condition fix)
   - Requests concorrentes agora enfileirados enquanto refresh executa
-  - `window.location.href` substituído por `router.push('/login')` (SPA-friendly)
+  - `window.location.href` substituÃ­do por `router.push('/login')` (SPA-friendly)
   - Refresh token rotation preservada
 
-- [x] **6.3** Erros 400 na compra (checkout bloqueando) ✅
+- [x] **6.3** Erros 400 na compra (checkout bloqueando) âœ…
   - `processOrder()` catch agora extrai `e.response.data.message` do backend
   - Exibe mensagem de erro via `DsAlert` (type=error, dismissible)
   - Suporta mensagens string e array (join com bullet)
-  - Mensagens backend descritivas já existiam (min cotas, max cotas por usuário)
+  - Mensagens backend descritivas jÃ¡ existiam (min cotas, max cotas por usuÃ¡rio)
 
-- [x] **6.4** Saúde da rede não aparecendo ✅
+- [x] **6.4** SaÃºde da rede nÃ£o aparecendo âœ…
   - Backend `getKpis()` agora retorna `activeDirects`, `totalDirects`, `inactiveDirects`, `networkTotal`
   - Conta diretos ativos/inativos usando `lastPurchaseDate` + `checkActive()` (6 meses)
   - `networkTotal` mapeado para `user.teamCount`
-  - Frontend já esperava esses campos na interface — agora recebe dados reais
+  - Frontend jÃ¡ esperava esses campos na interface â€” agora recebe dados reais
 
 ---
 
-## 📊 PROGRESSO GERAL
+## ðŸ“Š PROGRESSO GERAL
 
-| Bloco | Status | Concluído |
+| Bloco | Status | ConcluÃ­do |
 |-------|--------|-----------|
-| 1 — Motor de Preço | ✅ COMPLETO | 9/9 |
-| 2 — Bônus/Pagamentos | ✅ COMPLETO | 3/3 |
-| 3 — Histórico/Dashboard | ✅ COMPLETO | 4/4 |
-| 4 — Títulos/Níveis | ✅ COMPLETO | 2/2 |
-| 5 — UX/UI | ✅ COMPLETO | 6/6 |
-| 6 — Infraestrutura | ✅ COMPLETO | 4/4 |
-| **TOTAL** | **✅ COMPLETO** | **28/28** |
+| 1 â€” Motor de PreÃ§o | âœ… COMPLETO | 9/9 |
+| 2 â€” BÃ´nus/Pagamentos | âœ… COMPLETO | 3/3 |
+| 3 â€” HistÃ³rico/Dashboard | âœ… COMPLETO | 4/4 |
+| 4 â€” TÃ­tulos/NÃ­veis | âœ… COMPLETO | 2/2 |
+| 5 â€” UX/UI | âœ… COMPLETO | 6/6 |
+| 6 â€” Infraestrutura | âœ… COMPLETO | 4/4 |
+| **TOTAL** | **âœ… COMPLETO** | **28/28** |
 
 ---
 
-**Última Atualização:** 2026-04-16
-# TODO - BLOCO 1: Motor de Preço + Bônus + Erro Generate-Batch
+**Ãšltima AtualizaÃ§Ã£o:** 2026-04-16
+# TODO - BLOCO 1: Motor de PreÃ§o + BÃ´nus + Erro Generate-Batch
 
 **Data/Hora:** 2026-04-16
-**Sessão:** bloco-1-motor-preco
-**Status Geral:** ⏳ EM PROGRESSO
+**SessÃ£o:** bloco-1-motor-preco
+**Status Geral:** â³ EM PROGRESSO
 
 ---
 
-## ✅ [2026-02-26] — Regras de Negócio: Pagamento / Corte / Ganhos de Rede
+## âœ… [2026-02-26] â€” Regras de NegÃ³cio: Pagamento / Corte / Ganhos de Rede
 
 ### Arquivos modificados:
 - `frontend/src/mocks/dashboard.mock.ts`
@@ -146,21 +146,21 @@
 - `frontend/src/mocks/earnings.mock.ts`
 - `frontend/src/features/earnings/views/EarningsView.vue`
 
-### Regra 1 — Valor a receber (exibido só 5 dias antes do pagamento)
-- Dia de pagamento corrigido: **dia 5 → dia 15**
-- `getPaymentWindowStatus(paymentDay)` exportada de `dashboard.mock.ts` — retorna `{ windowOpen, daysUntilPayment, nextPaymentDate }`
+### Regra 1 â€” Valor a receber (exibido sÃ³ 5 dias antes do pagamento)
+- Dia de pagamento corrigido: **dia 5 â†’ dia 15**
+- `getPaymentWindowStatus(paymentDay)` exportada de `dashboard.mock.ts` â€” retorna `{ windowOpen, daysUntilPayment, nextPaymentDate }`
 - `DashboardKpiData` recebe: `paymentDay`, `paymentWindowOpen`, `daysUntilPayment`, `nextPaymentDate`
-- Card "Saldo a Receber" no dashboard: fora da janela → estado bloqueado (ícone 🔒, valor `•••••`, mensagem "aguardando lucro das pousadas"); dentro da janela → valor exibido normalmente
+- Card "Saldo a Receber" no dashboard: fora da janela â†’ estado bloqueado (Ã­cone ðŸ”’, valor `â€¢â€¢â€¢â€¢â€¢`, mensagem "aguardando lucro das pousadas"); dentro da janela â†’ valor exibido normalmente
 
-### Regra 2 — Corte de recebimento (último dia do mês anterior)
+### Regra 2 â€” Corte de recebimento (Ãºltimo dia do mÃªs anterior)
 - `getCutoffDate(referenceMonth)` e `isAfterCutoff(purchaseDate, referenceMonth)` exportadas de `earnings.mock.ts`
 - `EarningEntry` recebe `cutoffEligible: boolean`
 - `MonthlyEarningSummary` recebe `cutoffDate: string` (YYYY-MM-DD)
-- `EarningsView`: badge **"Próx. Mês"** na coluna Data quando `cutoffEligible === false`
-- 5 novos entries de Fev 2026 adicionados para demonstrar a regra em produção
+- `EarningsView`: badge **"PrÃ³x. MÃªs"** na coluna Data quando `cutoffEligible === false`
+- 5 novos entries de Fev 2026 adicionados para demonstrar a regra em produÃ§Ã£o
 
-### Regra 3 — Ganhos de Rede = ganhos totais − ganhos de cotas
-- `networkEarnings` = Comissão + Bônus (primeira compra, recompra, equipe, liderança)
+### Regra 3 â€” Ganhos de Rede = ganhos totais âˆ’ ganhos de cotas
+- `networkEarnings` = ComissÃ£o + BÃ´nus (primeira compra, recompra, equipe, lideranÃ§a)
 - `quotaEarnings` = Dividendos apenas
 - `MonthlyEarningSummary` e `DashboardKpiData` recebem ambos os campos
 - `EarningsView` summary cards atualizados: "Ganhos de Rede" (teal) + "Ganhos de Cotas" (purple)
@@ -170,626 +170,626 @@
 
 ---
 
-## 🎯 OBJETIVO PRINCIPAL
+## ðŸŽ¯ OBJETIVO PRINCIPAL
 
-Sistema completo de gestão de cotas para o Grupo de Pousadas Ciano.
+Sistema completo de gestÃ£o de cotas para o Grupo de Pousadas Ciano.
 
-## 📋 DECISÕES TÉCNICAS
+## ðŸ“‹ DECISÃ•ES TÃ‰CNICAS
 
-| Decisão | Escolha |
+| DecisÃ£o | Escolha |
 |---------|---------|
 | Backend | NestJS + Fastify + TypeORM |
 | Frontend | Vue 3 + TypeScript + Pinia + SCSS |
 | Banco de Dados | MySQL 8.0+ (InnoDB) |
 | Auth | JWT (access + refresh) + Argon2 |
-| Gateway Pgto | Interface genérica (decidir depois) |
+| Gateway Pgto | Interface genÃ©rica (decidir depois) |
 | i18n | PT-BR + EN |
 | Deploy | Local por agora |
 
 ---
 
-## 🧠 ESTRATÉGIA DE DESENVOLVIMENTO
+## ðŸ§  ESTRATÃ‰GIA DE DESENVOLVIMENTO
 
 ```
-ETAPA 1 → Scaffolding (base + deps)
-ETAPA 2 → Frontend completo com MOCKS (cliente valida visualmente)
-ETAPA 3 → Migrations (schema completo do banco)
-ETAPA 4 → Backend (interfaces já definidas + migrations = services fáceis)
-ETAPA 5 → Plug incremental (terminou login back? pluga login back<>front)
+ETAPA 1 â†’ Scaffolding (base + deps)
+ETAPA 2 â†’ Frontend completo com MOCKS (cliente valida visualmente)
+ETAPA 3 â†’ Migrations (schema completo do banco)
+ETAPA 4 â†’ Backend (interfaces jÃ¡ definidas + migrations = services fÃ¡ceis)
+ETAPA 5 â†’ Plug incremental (terminou login back? pluga login back<>front)
 ```
 
-**Por quê:**
-- Cliente vê resultado visual RÁPIDO e valida se é isso que quer
-- Backend demora mais → ter visual pronto mitiga risco de retrabalho
-- Migrations primeiro → backend já sabe o que receber/enviar
-- Plug incremental → testa cada feature isoladamente
+**Por quÃª:**
+- Cliente vÃª resultado visual RÃPIDO e valida se Ã© isso que quer
+- Backend demora mais â†’ ter visual pronto mitiga risco de retrabalho
+- Migrations primeiro â†’ backend jÃ¡ sabe o que receber/enviar
+- Plug incremental â†’ testa cada feature isoladamente
 
 ---
 
-# ═══════════════════════════════════════════════
-# ETAPA 1 — SCAFFOLDING (Base + Dependências) ✅ COMPLETO
-# ═══════════════════════════════════════════════
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+# ETAPA 1 â€” SCAFFOLDING (Base + DependÃªncias) âœ… COMPLETO
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
-> ✅ CONCLUÍDO - Instalar tudo, configurar projetos, deixar pronto para codar.
+> âœ… CONCLUÃDO - Instalar tudo, configurar projetos, deixar pronto para codar.
 
-## 1.1 — Backend: Scaffold NestJS ✅
+## 1.1 â€” Backend: Scaffold NestJS âœ…
 
-- [x] **1.1.1** — Inicializar NestJS + Fastify adapter ✅
-- [x] **1.1.2** — Instalar deps: TypeORM, mysql2, argon2, passport, jwt, throttler, schedule, config, class-validator, class-transformer ✅
-- [x] **1.1.3** — Estrutura de pastas (config/, common/, core/, modules/, jobs/, shared/) ✅
-- [x] **1.1.4** — Configs base: `.env.development`, `.env.example`, `database.config.ts`, `jwt.config.ts`, `app.config.ts` ✅
-- [x] **1.1.5** — ValidationPipe global, CORS, logger (Winston) ✅
-- [x] **1.1.6** — Rate limiting base (@nestjs/throttler) ✅
+- [x] **1.1.1** â€” Inicializar NestJS + Fastify adapter âœ…
+- [x] **1.1.2** â€” Instalar deps: TypeORM, mysql2, argon2, passport, jwt, throttler, schedule, config, class-validator, class-transformer âœ…
+- [x] **1.1.3** â€” Estrutura de pastas (config/, common/, core/, modules/, jobs/, shared/) âœ…
+- [x] **1.1.4** â€” Configs base: `.env.development`, `.env.example`, `database.config.ts`, `jwt.config.ts`, `app.config.ts` âœ…
+- [x] **1.1.5** â€” ValidationPipe global, CORS, logger (Winston) âœ…
+- [x] **1.1.6** â€” Rate limiting base (@nestjs/throttler) âœ…
 
-## 1.2 — Frontend: Scaffold Vue 3 ✅
+## 1.2 â€” Frontend: Scaffold Vue 3 âœ…
 
-- [x] **1.2.1** — Inicializar Vue 3 + Vite + TypeScript ✅
-- [x] **1.2.2** — Instalar deps: pinia, vue-router, axios, sass, vee-validate, yup, @vueuse/core, vue-i18n ✅
-- [x] **1.2.3** — Estrutura de pastas ✅
-- [x] **1.2.4** — SCSS base: paleta de cores Ciano (azul/verde/natureza), tipografia, espaçamento ✅
-- [x] **1.2.5** — i18n setup (PT-BR + EN) com lazy loading ✅
-- [x] **1.2.6** — Axios instance com interceptors (preparado para token) ✅
-- [x] **1.2.7** — Vue Router com guards placeholder (auth, admin, guest) ✅
-- [x] **1.2.8** — Pinia stores base (auth.store, app.store) ✅
+- [x] **1.2.1** â€” Inicializar Vue 3 + Vite + TypeScript âœ…
+- [x] **1.2.2** â€” Instalar deps: pinia, vue-router, axios, sass, vee-validate, yup, @vueuse/core, vue-i18n âœ…
+- [x] **1.2.3** â€” Estrutura de pastas âœ…
+- [x] **1.2.4** â€” SCSS base: paleta de cores Ciano (azul/verde/natureza), tipografia, espaÃ§amento âœ…
+- [x] **1.2.5** â€” i18n setup (PT-BR + EN) com lazy loading âœ…
+- [x] **1.2.6** â€” Axios instance com interceptors (preparado para token) âœ…
+- [x] **1.2.7** â€” Vue Router com guards placeholder (auth, admin, guest) âœ…
+- [x] **1.2.8** â€” Pinia stores base (auth.store, app.store) âœ…
 
-## 1.3 — Frontend: Design System Base ✅
+## 1.3 â€” Frontend: Design System Base âœ…
 
-- [x] **1.3.1** — `DsButton` ✅
-- [x] **1.3.2** — `DsInput` ✅
-- [x] **1.3.3** — `DsCard` ✅
-- [x] **1.3.4** — `DsModal` ✅
-- [x] **1.3.5** — `DsTable` ✅
-- [x] **1.3.6** — `DsBadge` ✅
-- [x] **1.3.7** — `DsTooltip` ✅
-- [x] **1.3.8** — `DsDropdown` ✅
-- [x] **1.3.9** — `DsAlert` ✅
-- [x] **1.3.10** — `DsAccordion` ✅
-- [x] **1.3.11** — `DsTreeList` ✅
-- [x] **1.3.12** — `DsStatCard` ✅
-- [x] **1.3.13** — `DsCopyButton` ✅
-- [x] **1.3.14** — `DsMonthPicker` ✅
-- [x] **1.3.15** — `DsEmptyState` ✅
+- [x] **1.3.1** â€” `DsButton` âœ…
+- [x] **1.3.2** â€” `DsInput` âœ…
+- [x] **1.3.3** â€” `DsCard` âœ…
+- [x] **1.3.4** â€” `DsModal` âœ…
+- [x] **1.3.5** â€” `DsTable` âœ…
+- [x] **1.3.6** â€” `DsBadge` âœ…
+- [x] **1.3.7** â€” `DsTooltip` âœ…
+- [x] **1.3.8** â€” `DsDropdown` âœ…
+- [x] **1.3.9** â€” `DsAlert` âœ…
+- [x] **1.3.10** â€” `DsAccordion` âœ…
+- [x] **1.3.11** â€” `DsTreeList` âœ…
+- [x] **1.3.12** â€” `DsStatCard` âœ…
+- [x] **1.3.13** â€” `DsCopyButton` âœ…
+- [x] **1.3.14** â€” `DsMonthPicker` âœ…
+- [x] **1.3.15** â€” `DsEmptyState` âœ…
 
-## 1.4 — Mocks: Dados Fake ✅
+## 1.4 â€” Mocks: Dados Fake âœ…
 
-- [x] **1.4.1** — `mocks/users.mock.ts` ✅
-- [x] **1.4.2** — `mocks/quotas.mock.ts` ✅
-- [x] **1.4.3** — `mocks/earnings.mock.ts` ✅
-- [x] **1.4.4** — `mocks/network.mock.ts` ✅
-- [x] **1.4.5** — `mocks/payouts.mock.ts` ✅
-- [x] **1.4.6** — `mocks/financial.mock.ts` ✅
-- [x] **1.4.7** — `mocks/index.ts` ✅
+- [x] **1.4.1** â€” `mocks/users.mock.ts` âœ…
+- [x] **1.4.2** â€” `mocks/quotas.mock.ts` âœ…
+- [x] **1.4.3** â€” `mocks/earnings.mock.ts` âœ…
+- [x] **1.4.4** â€” `mocks/network.mock.ts` âœ…
+- [x] **1.4.5** â€” `mocks/payouts.mock.ts` âœ…
+- [x] **1.4.6** â€” `mocks/financial.mock.ts` âœ…
+- [x] **1.4.7** â€” `mocks/index.ts` âœ…
 
 ---
 
-# ═══════════════════════════════════════════════
-# ETAPA 2 — FRONTEND COMPLETO COM MOCKS ✅ COMPLETO
-# ═══════════════════════════════════════════════
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+# ETAPA 2 â€” FRONTEND COMPLETO COM MOCKS âœ… COMPLETO
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
-> ✅ CONCLUÍDO - Todas as telas funcionais com dados mock. Cliente valida visual e fluxos.
+> âœ… CONCLUÃDO - Todas as telas funcionais com dados mock. Cliente valida visual e fluxos.
 > Build passando, dev server rodando em http://localhost:5173/
 
-## 2.1 — Auth: Login + Recuperação (FE-01) ✅
+## 2.1 â€” Auth: Login + RecuperaÃ§Ã£o (FE-01) âœ…
 
-- [x] **2.1.1** — `LoginView.vue` — Layout da tela de login ✅
-- [x] **2.1.2** — `LoginForm/` — Email, senha, checkbox "Lembrar-me", link "Esqueci a senha" ✅
-- [x] **2.1.3** — Validação: email formato, senha min 8 chars, mensagens de erro inline ✅
-- [x] **2.1.4** — `ForgotPasswordView.vue` — Form com campo de email + feedback "enviado" ✅
-- [x] **2.1.5** — `ResetPasswordView.vue` — Form com nova senha + confirmação ✅
-- [x] **2.1.6** — `auth.service.ts` — aponta para mock: login retorna token fake ✅
-- [x] **2.1.7** — `auth.store.ts` — user, token, isAuthenticated, rememberMe ✅
-- [x] **2.1.8** — Router guards: redireciona `/login` se não autenticado ✅
-- [x] **2.1.9** — Responsivo: mobile-first ✅
-- [x] **2.1.10** — Rotas: `/login`, `/forgot-password`, `/reset-password/:token` ✅
+- [x] **2.1.1** â€” `LoginView.vue` â€” Layout da tela de login âœ…
+- [x] **2.1.2** â€” `LoginForm/` â€” Email, senha, checkbox "Lembrar-me", link "Esqueci a senha" âœ…
+- [x] **2.1.3** â€” ValidaÃ§Ã£o: email formato, senha min 8 chars, mensagens de erro inline âœ…
+- [x] **2.1.4** â€” `ForgotPasswordView.vue` â€” Form com campo de email + feedback "enviado" âœ…
+- [x] **2.1.5** â€” `ResetPasswordView.vue` â€” Form com nova senha + confirmaÃ§Ã£o âœ…
+- [x] **2.1.6** â€” `auth.service.ts` â€” aponta para mock: login retorna token fake âœ…
+- [x] **2.1.7** â€” `auth.store.ts` â€” user, token, isAuthenticated, rememberMe âœ…
+- [x] **2.1.8** â€” Router guards: redireciona `/login` se nÃ£o autenticado âœ…
+- [x] **2.1.9** â€” Responsivo: mobile-first âœ…
+- [x] **2.1.10** â€” Rotas: `/login`, `/forgot-password`, `/reset-password/:token` âœ…
 
-## 2.2 — Landing Page do Afiliado (FE-08) ✅
+## 2.2 â€” Landing Page do Afiliado (FE-08) âœ…
 
-- [x] **2.2.1** — `LandingView.vue` — Página pública completa ✅
-- [x] **2.2.2** — Seção Hero ✅
-- [x] **2.2.3** — Seção Títulos/Níveis ✅
-- [x] **2.2.4** — Seção Bonificações ✅
-- [x] **2.2.5** — Seção FAQ ✅
-- [x] **2.2.6** — CTA ✅
-- [x] **2.2.7** — Tracking ✅
-- [x] **2.2.8** — Responsivo ✅
-- [x] **2.2.9** — SEO ✅
+- [x] **2.2.1** â€” `LandingView.vue` â€” PÃ¡gina pÃºblica completa âœ…
+- [x] **2.2.2** â€” SeÃ§Ã£o Hero âœ…
+- [x] **2.2.3** â€” SeÃ§Ã£o TÃ­tulos/NÃ­veis âœ…
+- [x] **2.2.4** â€” SeÃ§Ã£o BonificaÃ§Ãµes âœ…
+- [x] **2.2.5** â€” SeÃ§Ã£o FAQ âœ…
+- [x] **2.2.6** â€” CTA âœ…
+- [x] **2.2.7** â€” Tracking âœ…
+- [x] **2.2.8** â€” Responsivo âœ…
+- [x] **2.2.9** â€” SEO âœ…
 
-## 2.3 — Cadastro por Patrocinador (FE-07) ✅
+## 2.3 â€” Cadastro por Patrocinador (FE-07) âœ…
 
-- [x] **2.3.1** — `RegisterNewUserView.vue` — Tela de cadastro ✅
-- [x] **2.3.2** — `RegisterForm/` ✅
-- [x] **2.3.3** — `QuotaPurchaseSelector/` ✅
-- [x] **2.3.4** — `RegistrationSuccess/` ✅
-- [x] **2.3.5** — Validações ✅
-- [x] **2.3.6** — `onboarding.service.ts` ✅
-- [x] **2.3.7** — Fluxo completo ✅
-- [x] **2.3.8** — Rota: `/register-user` ✅
+- [x] **2.3.1** â€” `RegisterNewUserView.vue` â€” Tela de cadastro âœ…
+- [x] **2.3.2** â€” `RegisterForm/` âœ…
+- [x] **2.3.3** â€” `QuotaPurchaseSelector/` âœ…
+- [x] **2.3.4** â€” `RegistrationSuccess/` âœ…
+- [x] **2.3.5** â€” ValidaÃ§Ãµes âœ…
+- [x] **2.3.6** â€” `onboarding.service.ts` âœ…
+- [x] **2.3.7** â€” Fluxo completo âœ…
+- [x] **2.3.8** â€” Rota: `/register-user` âœ…
 
-## 2.4 — Dashboard do Usuário (FE-03) ✅
+## 2.4 â€” Dashboard do UsuÃ¡rio (FE-03) âœ…
 
-- [x] **2.4.1** — `DashboardView.vue` — Layout principal pós-login ✅
-- [x] **2.4.2** — `CopyReferralLink/` ✅
-- [x] **2.4.3** — `SalesCards/` ✅
-- [x] **2.4.4** — `EarningsCards/` ✅
-- [x] **2.4.5** — `TitleBadge/` ✅
-- [x] **2.4.6** — `ActivityStatus/` ✅
-- [x] **2.4.7** — `LostEarningsAlert/` ✅
-- [x] **2.4.8** — `EarningsHistory/` ✅
-- [x] **2.4.9** — `dashboard.service.ts` ✅
-- [x] **2.4.10** — `dashboard.store.ts` ✅
-- [x] **2.4.11** — Cenários de exibição condicional ✅
-- [x] **2.4.12** — Rota: `/dashboard` ✅
+- [x] **2.4.1** â€” `DashboardView.vue` â€” Layout principal pÃ³s-login âœ…
+- [x] **2.4.2** â€” `CopyReferralLink/` âœ…
+- [x] **2.4.3** â€” `SalesCards/` âœ…
+- [x] **2.4.4** â€” `EarningsCards/` âœ…
+- [x] **2.4.5** â€” `TitleBadge/` âœ…
+- [x] **2.4.6** â€” `ActivityStatus/` âœ…
+- [x] **2.4.7** â€” `LostEarningsAlert/` âœ…
+- [x] **2.4.8** â€” `EarningsHistory/` âœ…
+- [x] **2.4.9** â€” `dashboard.service.ts` âœ…
+- [x] **2.4.10** â€” `dashboard.store.ts` âœ…
+- [x] **2.4.11** â€” CenÃ¡rios de exibiÃ§Ã£o condicional âœ…
+- [x] **2.4.12** â€” Rota: `/dashboard` âœ…
 
-## 2.5 — Rede do Usuário (FE-04) ✅
+## 2.5 â€” Rede do UsuÃ¡rio (FE-04) âœ…
 
-- [x] **2.5.1** — `NetworkView.vue` — Página da rede ✅
-- [x] **2.5.2** — `NetworkTree/` — Tree list usando DsTreeList ✅
-- [x] **2.5.3** — `NetworkNode/` ✅
-- [x] **2.5.4** — `NetworkFilter/` ✅
-- [x] **2.5.5** — `UserDetailPanel/` ✅
-- [x] **2.5.6** — Expandir nó ✅
-- [x] **2.5.7** — Filtro ✅
-- [x] **2.5.8** — `network.service.ts` ✅
-- [x] **2.5.9** — `network.store.ts` ✅
-- [x] **2.5.10** — Placeholder ✅
-- [x] **2.5.11** — Rota: `/network` ✅
+- [x] **2.5.1** â€” `NetworkView.vue` â€” PÃ¡gina da rede âœ…
+- [x] **2.5.2** â€” `NetworkTree/` â€” Tree list usando DsTreeList âœ…
+- [x] **2.5.3** â€” `NetworkNode/` âœ…
+- [x] **2.5.4** â€” `NetworkFilter/` âœ…
+- [x] **2.5.5** â€” `UserDetailPanel/` âœ…
+- [x] **2.5.6** â€” Expandir nÃ³ âœ…
+- [x] **2.5.7** â€” Filtro âœ…
+- [x] **2.5.8** â€” `network.service.ts` âœ…
+- [x] **2.5.9** â€” `network.store.ts` âœ…
+- [x] **2.5.10** â€” Placeholder âœ…
+- [x] **2.5.11** â€” Rota: `/network` âœ…
 
-## 2.6 — Checkout de Cotas (FE-05) ✅
+## 2.6 â€” Checkout de Cotas (FE-05) âœ…
 
-- [x] **2.6.1** — `CheckoutView.vue` — Tela de compra ✅
-- [x] **2.6.2** — `QuotaSelector/` ✅
-- [x] **2.6.3** — `OrderSummary/` ✅
-- [x] **2.6.4** — `PaymentInstructions/` ✅
-- [x] **2.6.5** — `CheckoutConfirmationView.vue` ✅
-- [x] **2.6.6** — `PurchaseConfirmation/` ✅
-- [x] **2.6.7** — `checkout.service.ts` ✅
-- [x] **2.6.8** — Fluxo completo ✅
-- [x] **2.6.9** — Rotas: `/checkout`, `/checkout/confirmation/:transactionId` ✅
+- [x] **2.6.1** â€” `CheckoutView.vue` â€” Tela de compra âœ…
+- [x] **2.6.2** â€” `QuotaSelector/` âœ…
+- [x] **2.6.3** â€” `OrderSummary/` âœ…
+- [x] **2.6.4** â€” `PaymentInstructions/` âœ…
+- [x] **2.6.5** â€” `CheckoutConfirmationView.vue` âœ…
+- [x] **2.6.6** â€” `PurchaseConfirmation/` âœ…
+- [x] **2.6.7** â€” `checkout.service.ts` âœ…
+- [x] **2.6.8** â€” Fluxo completo âœ…
+- [x] **2.6.9** â€” Rotas: `/checkout`, `/checkout/confirmation/:transactionId` âœ…
 
-## 2.7 — Página Promo de Cotas + FAQ (FE-06) ✅
+## 2.7 â€” PÃ¡gina Promo de Cotas + FAQ (FE-06) âœ…
 
-- [x] **2.7.1** — `QuotaInfoView.vue` — Página informativa ✅
-- [x] **2.7.2** — Seção Pacotes ✅
-- [x] **2.7.3** — Seção Avisos ✅
-- [x] **2.7.4** — Seção Níveis Sócio ✅
-- [x] **2.7.5** — Seção FAQ ✅
-- [x] **2.7.6** — Nota visual ✅
-- [x] **2.7.7** — Contadores ✅
-- [x] **2.7.8** — CTA ✅
-- [x] **2.7.9** — Rota: `/quotas` ✅
+- [x] **2.7.1** â€” `QuotaInfoView.vue` â€” PÃ¡gina informativa âœ…
+- [x] **2.7.2** â€” SeÃ§Ã£o Pacotes âœ…
+- [x] **2.7.3** â€” SeÃ§Ã£o Avisos âœ…
+- [x] **2.7.4** â€” SeÃ§Ã£o NÃ­veis SÃ³cio âœ…
+- [x] **2.7.5** â€” SeÃ§Ã£o FAQ âœ…
+- [x] **2.7.6** â€” Nota visual âœ…
+- [x] **2.7.7** â€” Contadores âœ…
+- [x] **2.7.8** â€” CTA âœ…
+- [x] **2.7.9** â€” Rota: `/quotas` âœ…
 
-## 2.8 — Dashboard Admin (FE-02) ✅
+## 2.8 â€” Dashboard Admin (FE-02) âœ…
 
-- [x] **2.8.1** — `AdminDashboardView.vue` — Visão geral admin ✅
-- [x] **2.8.2** — `AdminOverviewCards/` ✅
-- [x] **2.8.3** — `AdminPayoutsView.vue` — Listas de pagamento mensal ✅
-- [x] **2.8.4** — `MonthSelector/` ✅
-- [x] **2.8.5** — `PayoutStatus/` ✅
-- [x] **2.8.6** — `PayoutTable/` ✅
-- [x] **2.8.7** — `PayoutTotals/` ✅
-- [x] **2.8.8** — `ExportButton/` ✅
-- [x] **2.8.9** — Filtro ✅
-- [x] **2.8.10** — Consultar mês anterior ✅
-- [x] **2.8.11** — `AdminFinancialConfigView.vue` ✅
-- [x] **2.8.12** — `FinancialConfigForm/` ✅
-- [x] **2.8.13** — `admin.service.ts` ✅
-- [x] **2.8.14** — `admin.store.ts` ✅
-- [x] **2.8.15** — Rotas: `/admin`, `/admin/payouts`, `/admin/financial` ✅
+- [x] **2.8.1** â€” `AdminDashboardView.vue` â€” VisÃ£o geral admin âœ…
+- [x] **2.8.2** â€” `AdminOverviewCards/` âœ…
+- [x] **2.8.3** â€” `AdminPayoutsView.vue` â€” Listas de pagamento mensal âœ…
+- [x] **2.8.4** â€” `MonthSelector/` âœ…
+- [x] **2.8.5** â€” `PayoutStatus/` âœ…
+- [x] **2.8.6** â€” `PayoutTable/` âœ…
+- [x] **2.8.7** â€” `PayoutTotals/` âœ…
+- [x] **2.8.8** â€” `ExportButton/` âœ…
+- [x] **2.8.9** â€” Filtro âœ…
+- [x] **2.8.10** â€” Consultar mÃªs anterior âœ…
+- [x] **2.8.11** â€” `AdminFinancialConfigView.vue` âœ…
+- [x] **2.8.12** â€” `FinancialConfigForm/` âœ…
+- [x] **2.8.13** â€” `admin.service.ts` âœ…
+- [x] **2.8.14** â€” `admin.store.ts` âœ…
+- [x] **2.8.15** â€” Rotas: `/admin`, `/admin/payouts`, `/admin/financial` âœ…
 
-## 2.9 — Layout e Navegação Global ✅
+## 2.9 â€” Layout e NavegaÃ§Ã£o Global âœ…
 
-- [x] **2.9.1** — `AppLayout.vue` — Layout com sidebar/navbar ✅
-- [x] **2.9.2** — `Sidebar/` + Admin extra ✅
-- [x] **2.9.3** — `Navbar/` — Logo, nome do user, notificações, logout ✅
-- [x] **2.9.4** — `PublicLayout.vue` — Layout limpo para login, landing, reset ✅
-- [x] **2.9.5** — Responsivo: sidebar vira hamburger no mobile ✅
-- [x] **2.9.6** — Breadcrumbs (meta nas rotas) ✅
+- [x] **2.9.1** â€” `AppLayout.vue` â€” Layout com sidebar/navbar âœ…
+- [x] **2.9.2** â€” `Sidebar/` + Admin extra âœ…
+- [x] **2.9.3** â€” `Navbar/` â€” Logo, nome do user, notificaÃ§Ãµes, logout âœ…
+- [x] **2.9.4** â€” `PublicLayout.vue` â€” Layout limpo para login, landing, reset âœ…
+- [x] **2.9.5** â€” Responsivo: sidebar vira hamburger no mobile âœ…
+- [x] **2.9.6** â€” Breadcrumbs (meta nas rotas) âœ…
 
 ---
 
-# ═══════════════════════════════════════════════
-# ETAPA 3 — MIGRATIONS (Schema MySQL Completo)
-# ═══════════════════════════════════════════════
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+# ETAPA 3 â€” MIGRATIONS (Schema MySQL Completo)
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
-> Após validação visual do cliente. Cria todas as tabelas definitivas.
-> Backend já terá esse schema como referência para montar services.
+> ApÃ³s validaÃ§Ã£o visual do cliente. Cria todas as tabelas definitivas.
+> Backend jÃ¡ terÃ¡ esse schema como referÃªncia para montar services.
 
-## 3.1 — Tabelas Core
+## 3.1 â€” Tabelas Core
 
-- [ ] **3.1.1** — Migration `001-users.sql`
+- [ ] **3.1.1** â€” Migration `001-users.sql`
   ```
   users: id(UUID), full_name, cpf(UNIQUE), email(UNIQUE), phone, city, state,
   pix_key, sponsor_id(FK self NULL), is_active(BOOL), last_quota_purchase_at,
   role(ENUM user/admin), password_hash, referral_code(UNIQUE),
   email_verified(BOOL), created_at, updated_at
   ```
-- [ ] **3.1.2** — Migration `002-auth-tokens.sql`
+- [ ] **3.1.2** â€” Migration `002-auth-tokens.sql`
   ```
   refresh_tokens: id, user_id(FK), token_hash(UNIQUE), expires_at, revoked_at, created_at
   password_reset_tokens: id, user_id(FK), token_hash, expires_at, used_at, created_at
   ```
 
-## 3.2 — Tabelas de Cotas
+## 3.2 â€” Tabelas de Cotas
 
-- [ ] **3.2.1** — Migration `003-quota-config.sql`
+- [ ] **3.2.1** â€” Migration `003-quota-config.sql`
   ```
   quota_config: id(INT PK), current_value(DECIMAL), phase_sold(INT),
   total_splits(INT), current_goal(INT), base_value(DECIMAL), updated_at
   + SEED: current_value=2000, phase_sold=0, total_splits=0, current_goal=50
   ```
-- [ ] **3.2.2** — Migration `004-quota-transactions.sql`
+- [ ] **3.2.2** â€” Migration `004-quota-transactions.sql`
   ```
   quota_transactions: id(UUID), user_id(FK), quantity, unit_price, total_amount,
   status(ENUM pending/paid/canceled), payment_method, payment_reference,
   phase_at_purchase, created_at, paid_at, canceled_at
   ```
-- [ ] **3.2.3** — Migration `005-user-quota-balances.sql`
+- [ ] **3.2.3** â€” Migration `005-user-quota-balances.sql`
   ```
   user_quota_balances: id(UUID), user_id(FK UNIQUE), quotas_purchased(INT),
   quotas_from_split(INT), total_quotas(GENERATED), updated_at
   ```
-- [ ] **3.2.4** — Migration `006-split-history.sql`
+- [ ] **3.2.4** â€” Migration `006-split-history.sql`
   ```
   split_history: id(UUID), split_number, executed_at, previous_value,
   new_goal, total_quotas_before, total_quotas_after
   ```
 
-## 3.3 — Tabelas de Títulos e Níveis
+## 3.3 â€” Tabelas de TÃ­tulos e NÃ­veis
 
-- [ ] **3.3.1** — Migration `007-title-history.sql`
+- [ ] **3.3.1** â€” Migration `007-title-history.sql`
   ```
   title_history: id(UUID), user_id(FK), title(ENUM none/bronze/silver/gold/diamond),
   achieved_at, revoked_at, is_current(BOOL)
   ```
-- [ ] **3.3.2** — Migration `008-partner-levels.sql`
+- [ ] **3.3.2** â€” Migration `008-partner-levels.sql`
   ```
   partner_levels: id(UUID), user_id(FK UNIQUE),
   level(ENUM socio/platinum/vip/imperial), achieved_at, updated_at
   ```
 
-## 3.4 — Tabelas Financeiras
+## 3.4 â€” Tabelas Financeiras
 
-- [ ] **3.4.1** — Migration `009-earnings-ledger.sql`
+- [ ] **3.4.1** â€” Migration `009-earnings-ledger.sql`
   ```
   earnings_ledger: id(UUID), user_id(FK), type(ENUM 8 tipos), amount(DECIMAL 12,2),
   reference_id(UUID NULL), source_user_id(UUID NULL), period_month(CHAR 7),
   description, created_at
-  UNIQUE(user_id, type, reference_id) — idempotência
+  UNIQUE(user_id, type, reference_id) â€” idempotÃªncia
   ```
-- [ ] **3.4.2** — Migration `010-monthly-closings.sql`
+- [ ] **3.4.2** â€” Migration `010-monthly-closings.sql`
   ```
   monthly_closings: id(UUID), period_month(CHAR 7 UNIQUE),
   status(ENUM open/closed), closed_at_utc, total_due, total_paid, created_at
   ```
-- [ ] **3.4.3** — Migration `011-monthly-payout-items.sql`
+- [ ] **3.4.3** â€” Migration `011-monthly-payout-items.sql`
   ```
   monthly_payout_items: id(UUID), period_month, receiver_user_id(FK),
   pix_key, contact, amount_due, is_paid(BOOL), paid_at,
   paid_by_admin_id(FK NULL), notes, created_at
   ```
-- [ ] **3.4.4** — Migration `012-financial-config.sql`
+- [ ] **3.4.4** â€” Migration `012-financial-config.sql`
   ```
   financial_config: id(UUID), period_month(CHAR 7 UNIQUE),
   total_company_profit(DECIMAL 14,2), profit_distribution_pct(DECIMAL 5,2),
   notes, updated_by_admin_id(FK NULL), updated_at
   ```
 
-## 3.5 — Indexes e Constraints
+## 3.5 â€” Indexes e Constraints
 
-- [ ] **3.5.1** — Migration `013-indexes.sql`
-  - Todos os indexes estratégicos
+- [ ] **3.5.1** â€” Migration `013-indexes.sql`
+  - Todos os indexes estratÃ©gicos
   - Todos os foreign keys com ON DELETE adequado
 
 ---
 
-# ═══════════════════════════════════════════════
-# ETAPA 4 — BACKEND (Services + Controllers)
-# ═══════════════════════════════════════════════
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+# ETAPA 4 â€” BACKEND (Services + Controllers)
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 > Com interfaces do frontend definidas e migrations prontas,
 > backend sabe exatamente o que receber e enviar.
 
-## 4.1 — Entities TypeORM (espelhar migrations)
+## 4.1 â€” Entities TypeORM (espelhar migrations)
 
-- [ ] **4.1.1** — `user.entity.ts`
-- [ ] **4.1.2** — `refresh-token.entity.ts` + `password-reset-token.entity.ts`
-- [ ] **4.1.3** — `quota-config.entity.ts`
-- [ ] **4.1.4** — `quota-transaction.entity.ts`
-- [ ] **4.1.5** — `user-quota-balance.entity.ts`
-- [ ] **4.1.6** — `split-history.entity.ts`
-- [ ] **4.1.7** — `title-history.entity.ts`
-- [ ] **4.1.8** — `partner-level.entity.ts`
-- [ ] **4.1.9** — `earnings-ledger.entity.ts`
-- [ ] **4.1.10** — `monthly-closing.entity.ts`
-- [ ] **4.1.11** — `monthly-payout-item.entity.ts`
-- [ ] **4.1.12** — `financial-config.entity.ts`
+- [ ] **4.1.1** â€” `user.entity.ts`
+- [ ] **4.1.2** â€” `refresh-token.entity.ts` + `password-reset-token.entity.ts`
+- [ ] **4.1.3** â€” `quota-config.entity.ts`
+- [ ] **4.1.4** â€” `quota-transaction.entity.ts`
+- [ ] **4.1.5** â€” `user-quota-balance.entity.ts`
+- [ ] **4.1.6** â€” `split-history.entity.ts`
+- [ ] **4.1.7** â€” `title-history.entity.ts`
+- [ ] **4.1.8** â€” `partner-level.entity.ts`
+- [ ] **4.1.9** â€” `earnings-ledger.entity.ts`
+- [ ] **4.1.10** â€” `monthly-closing.entity.ts`
+- [ ] **4.1.11** â€” `monthly-payout-item.entity.ts`
+- [ ] **4.1.12** â€” `financial-config.entity.ts`
 
-## 4.2 — Módulo Auth (BE-01)
+## 4.2 â€” MÃ³dulo Auth (BE-01)
 
-- [ ] **4.2.1** — `auth.module.ts` / `auth.controller.ts` / `auth.service.ts`
-- [ ] **4.2.2** — `POST /auth/login` — email+senha → access + refresh token
-- [ ] **4.2.3** — `POST /auth/logout` — revoga refresh token
-- [ ] **4.2.4** — `POST /auth/refresh` — renova tokens
-- [ ] **4.2.5** — `POST /auth/forgot-password` — envia email com token
-- [ ] **4.2.6** — `POST /auth/reset-password` — token + nova senha
-- [ ] **4.2.7** — DTOs: LoginDto, ForgotPasswordDto, ResetPasswordDto, RefreshTokenDto
-- [ ] **4.2.8** — JWT Strategy + AuthGuard + RolesGuard
-- [ ] **4.2.9** — Argon2 hash/verify (password + tokens)
-- [ ] **4.2.10** — Rate limiting: max 5 tentativas login/min
+- [ ] **4.2.1** â€” `auth.module.ts` / `auth.controller.ts` / `auth.service.ts`
+- [ ] **4.2.2** â€” `POST /auth/login` â€” email+senha â†’ access + refresh token
+- [ ] **4.2.3** â€” `POST /auth/logout` â€” revoga refresh token
+- [ ] **4.2.4** â€” `POST /auth/refresh` â€” renova tokens
+- [ ] **4.2.5** â€” `POST /auth/forgot-password` â€” envia email com token
+- [ ] **4.2.6** â€” `POST /auth/reset-password` â€” token + nova senha
+- [ ] **4.2.7** â€” DTOs: LoginDto, ForgotPasswordDto, ResetPasswordDto, RefreshTokenDto
+- [ ] **4.2.8** â€” JWT Strategy + AuthGuard + RolesGuard
+- [ ] **4.2.9** â€” Argon2 hash/verify (password + tokens)
+- [ ] **4.2.10** â€” Rate limiting: max 5 tentativas login/min
 
-## 4.3 — Módulo Users (cadastro + perfil)
+## 4.3 â€” MÃ³dulo Users (cadastro + perfil)
 
-- [ ] **4.3.1** — `users.module.ts` / `users.controller.ts` / `users.service.ts`
-- [ ] **4.3.2** — `POST /users/register` — cadastro por patrocinador
-- [ ] **4.3.3** — `GET /users/me` — dados completos do logado
-- [ ] **4.3.4** — `GET /users/me/referral-link` — link de indicação
-- [ ] **4.3.5** — `GET /users/referral/:code` — valida código, retorna patrocinador
-- [ ] **4.3.6** — Geração de referralCode único (8 chars alfanumérico)
+- [ ] **4.3.1** â€” `users.module.ts` / `users.controller.ts` / `users.service.ts`
+- [ ] **4.3.2** â€” `POST /users/register` â€” cadastro por patrocinador
+- [ ] **4.3.3** â€” `GET /users/me` â€” dados completos do logado
+- [ ] **4.3.4** â€” `GET /users/me/referral-link` â€” link de indicaÃ§Ã£o
+- [ ] **4.3.5** â€” `GET /users/referral/:code` â€” valida cÃ³digo, retorna patrocinador
+- [ ] **4.3.6** â€” GeraÃ§Ã£o de referralCode Ãºnico (8 chars alfanumÃ©rico)
 
-## 4.4 — Módulo Network (rede/tree — BE-10)
+## 4.4 â€” MÃ³dulo Network (rede/tree â€” BE-10)
 
-- [ ] **4.4.1** — `network.module.ts` / `network.controller.ts` / `network.service.ts`
-- [ ] **4.4.2** — `GET /network/tree` — downline direta (nível 1), paginada
-- [ ] **4.4.3** — `GET /network/tree/:userId/children` — lazy expand
-- [ ] **4.4.4** — `GET /network/user/:userId/details` — detalhes do membro
-- [ ] **4.4.5** — `GET /network/tree?filter=title:bronze` — filtro
-- [ ] **4.4.6** — Segurança: user só vê sua downline, admin vê tudo
-- [ ] **4.4.7** — Busca recursiva com profundidade máxima configurável
+- [ ] **4.4.1** â€” `network.module.ts` / `network.controller.ts` / `network.service.ts`
+- [ ] **4.4.2** â€” `GET /network/tree` â€” downline direta (nÃ­vel 1), paginada
+- [ ] **4.4.3** â€” `GET /network/tree/:userId/children` â€” lazy expand
+- [ ] **4.4.4** â€” `GET /network/user/:userId/details` â€” detalhes do membro
+- [ ] **4.4.5** â€” `GET /network/tree?filter=title:bronze` â€” filtro
+- [ ] **4.4.6** â€” SeguranÃ§a: user sÃ³ vÃª sua downline, admin vÃª tudo
+- [ ] **4.4.7** â€” Busca recursiva com profundidade mÃ¡xima configurÃ¡vel
 
-## 4.5 — Módulo Quotas (compra de cotas)
+## 4.5 â€” MÃ³dulo Quotas (compra de cotas)
 
-- [ ] **4.5.1** — `quotas.module.ts` / `quotas.controller.ts` / `quotas.service.ts`
-- [ ] **4.5.2** — `POST /quotas/purchase` — cria pedido pending
-- [ ] **4.5.3** — `POST /quotas/confirm-payment/:id` — (admin) marca pago → triggers
-- [ ] **4.5.4** — `GET /quotas/config` — valor atual, Fcv, Qs, meta
-- [ ] **4.5.5** — `GET /quotas/my-balance` — cotas compradas, split, total
-- [ ] **4.5.6** — Interface `PaymentGateway` + `ManualPaymentGateway`
-- [ ] **4.5.7** — Ao confirmar pagamento: atualiza balance, Fcv, dispara comissões
+- [ ] **4.5.1** â€” `quotas.module.ts` / `quotas.controller.ts` / `quotas.service.ts`
+- [ ] **4.5.2** â€” `POST /quotas/purchase` â€” cria pedido pending
+- [ ] **4.5.3** â€” `POST /quotas/confirm-payment/:id` â€” (admin) marca pago â†’ triggers
+- [ ] **4.5.4** â€” `GET /quotas/config` â€” valor atual, Fcv, Qs, meta
+- [ ] **4.5.5** â€” `GET /quotas/my-balance` â€” cotas compradas, split, total
+- [ ] **4.5.6** â€” Interface `PaymentGateway` + `ManualPaymentGateway`
+- [ ] **4.5.7** â€” Ao confirmar pagamento: atualiza balance, Fcv, dispara comissÃµes
 
-## 4.6 — Service: Regras de Atividade (BE-03)
+## 4.6 â€” Service: Regras de Atividade (BE-03)
 
-- [ ] **4.6.1** — `ActivityService.checkUserActivity(userId)` → boolean
-- [ ] **4.6.2** — `ActivityService.getUserActivityStatus(userId)` → detalhes
-- [ ] **4.6.3** — CronJob diário (00:05 UTC): `UpdateActivityStatusJob`
-- [ ] **4.6.4** — Guard de elegibilidade por tipo de bônus
+- [ ] **4.6.1** â€” `ActivityService.checkUserActivity(userId)` â†’ boolean
+- [ ] **4.6.2** â€” `ActivityService.getUserActivityStatus(userId)` â†’ detalhes
+- [ ] **4.6.3** â€” CronJob diÃ¡rio (00:05 UTC): `UpdateActivityStatusJob`
+- [ ] **4.6.4** â€” Guard de elegibilidade por tipo de bÃ´nus
 
-## 4.7 — Service: Motor de Comissões (BE-06) ⚠️ CORE
+## 4.7 â€” Service: Motor de ComissÃµes (BE-06) âš ï¸ CORE
 
-- [ ] **4.7.1** — `CommissionEngine.processQuotaPurchase(transactionId)` — orquestrador
-- [ ] **4.7.2** — Bônus Primeira Compra: 10% ao sponsor (sempre)
-- [ ] **4.7.3** — Bônus Indicação: 10% ao sponsor em recompras (sempre recebe)
-- [ ] **4.7.4** — Bônus Recompra: 5% nível 1, 2% níveis 2-6, limitado por título, SÓ ATIVOS
-- [ ] **4.7.5** — Bônus Equipe: 2% sobre ganhos da rede (profundidade por título), SÓ ATIVOS
-- [ ] **4.7.6** — Bônus Liderança: Ouro 1%/Diamante 2% sobre 5 níveis qualificados, SÓ ATIVOS
-- [ ] **4.7.7** — Bônus Dividendos: (20% lucro / total cotas) x cotas em posse, SEMPRE
-- [ ] **4.7.8** — Pipeline: diretos → alimentam base → equipe → liderança
-- [ ] **4.7.9** — Idempotência: UNIQUE(user_id, type, reference_id)
-- [ ] **4.7.10** — Projeção de perdas: registra loss_projection quando inativo
+- [ ] **4.7.1** â€” `CommissionEngine.processQuotaPurchase(transactionId)` â€” orquestrador
+- [ ] **4.7.2** â€” BÃ´nus Primeira Compra: 10% ao sponsor (sempre)
+- [ ] **4.7.3** â€” BÃ´nus IndicaÃ§Ã£o: 10% ao sponsor em recompras (sempre recebe)
+- [ ] **4.7.4** â€” BÃ´nus Recompra: 5% nÃ­vel 1, 2% nÃ­veis 2-6, limitado por tÃ­tulo, SÃ“ ATIVOS
+- [ ] **4.7.5** â€” BÃ´nus Equipe: 2% sobre ganhos da rede (profundidade por tÃ­tulo), SÃ“ ATIVOS
+- [ ] **4.7.6** â€” BÃ´nus LideranÃ§a: Ouro 1%/Diamante 2% sobre 5 nÃ­veis qualificados, SÃ“ ATIVOS
+- [ ] **4.7.7** â€” BÃ´nus Dividendos: (20% lucro / total cotas) x cotas em posse, SEMPRE
+- [ ] **4.7.8** â€” Pipeline: diretos â†’ alimentam base â†’ equipe â†’ lideranÃ§a
+- [ ] **4.7.9** â€” IdempotÃªncia: UNIQUE(user_id, type, reference_id)
+- [ ] **4.7.10** â€” ProjeÃ§Ã£o de perdas: registra loss_projection quando inativo
 
-## 4.8 — Service: Títulos (BE-04)
+## 4.8 â€” Service: TÃ­tulos (BE-04)
 
-- [ ] **4.8.1** — `TitleService.recalculateTitle(userId)`
+- [ ] **4.8.1** â€” `TitleService.recalculateTitle(userId)`
   - Bronze: 2 ativos diretos | Prata: 1 bronze direto | Ouro: 2 bronzes em linhas diferentes | Diamante: 3 bronzes em linhas diferentes
-- [ ] **4.8.2** — TitleHistory management (is_current)
-- [ ] **4.8.3** — Trigger: recalcular quando status/rede muda
+- [ ] **4.8.2** â€” TitleHistory management (is_current)
+- [ ] **4.8.3** â€” Trigger: recalcular quando status/rede muda
 
-## 4.9 — Service: Níveis de Sócio (BE-05)
+## 4.9 â€” Service: NÃ­veis de SÃ³cio (BE-05)
 
-- [ ] **4.9.1** — `PartnerLevelService.recalculateLevel(userId)`
-  - Sócio 1-9 | Platinum ≥10 | VIP ≥20 | Imperial ≥60 (apenas compradas)
-- [ ] **4.9.2** — `GET /users/me/partner-level` — nível + progresso
-- [ ] **4.9.3** — Trigger: recalcular ao confirmar compra
+- [ ] **4.9.1** â€” `PartnerLevelService.recalculateLevel(userId)`
+  - SÃ³cio 1-9 | Platinum â‰¥10 | VIP â‰¥20 | Imperial â‰¥60 (apenas compradas)
+- [ ] **4.9.2** â€” `GET /users/me/partner-level` â€” nÃ­vel + progresso
+- [ ] **4.9.3** â€” Trigger: recalcular ao confirmar compra
 
-## 4.10 — Service: Split e Precificação (BE-07)
+## 4.10 â€” Service: Split e PrecificaÃ§Ã£o (BE-07)
 
-- [ ] **4.10.1** — `QuotaSplitService` — NovoValor = Vc + 500 x Fcv
-- [ ] **4.10.2** — Split: Fcv ≥ 3 → Qs++, meta = 50 x 2^Qs, valor reinicia R$2000
-- [ ] **4.10.3** — Split duplica cotas de TODOS os holders (quotas_from_split)
-- [ ] **4.10.4** — CronJob diário (00:00 UTC): `QuotaPriceUpdateJob`
-- [ ] **4.10.5** — `split_history` — registro de cada split
+- [ ] **4.10.1** â€” `QuotaSplitService` â€” NovoValor = Vc + 500 x Fcv
+- [ ] **4.10.2** â€” Split: Fcv â‰¥ 3 â†’ Qs++, meta = 50 x 2^Qs, valor reinicia R$2000
+- [ ] **4.10.3** â€” Split duplica cotas de TODOS os holders (quotas_from_split)
+- [ ] **4.10.4** â€” CronJob diÃ¡rio (00:00 UTC): `QuotaPriceUpdateJob`
+- [ ] **4.10.5** â€” `split_history` â€” registro de cada split
 
-## 4.11 — Módulo Admin: Fechamento + Pagamentos (BE-08/BE-09)
+## 4.11 â€” MÃ³dulo Admin: Fechamento + Pagamentos (BE-08/BE-09)
 
-- [ ] **4.11.1** — `admin.module.ts` / `admin.controller.ts` / `admin.service.ts`
-- [ ] **4.11.2** — `GET /admin/payouts/:periodMonth` — lista paginada + totals
-- [ ] **4.11.3** — `PATCH /admin/payouts/:itemId/mark-paid` — marca pago
-- [ ] **4.11.4** — `GET /admin/payouts/:periodMonth/export` — CSV
-- [ ] **4.11.5** — CronJob mensal (01, 00:00 UTC): `MonthlyClosingJob`
-- [ ] **4.11.6** — `GET /admin/financial-config/:periodMonth`
-- [ ] **4.11.7** — `PUT /admin/financial-config/:periodMonth` — atualiza + recalcula dividendos
-- [ ] **4.11.8** — `GET /admin/dashboard/overview` — totais gerais
+- [ ] **4.11.1** â€” `admin.module.ts` / `admin.controller.ts` / `admin.service.ts`
+- [ ] **4.11.2** â€” `GET /admin/payouts/:periodMonth` â€” lista paginada + totals
+- [ ] **4.11.3** â€” `PATCH /admin/payouts/:itemId/mark-paid` â€” marca pago
+- [ ] **4.11.4** â€” `GET /admin/payouts/:periodMonth/export` â€” CSV
+- [ ] **4.11.5** â€” CronJob mensal (01, 00:00 UTC): `MonthlyClosingJob`
+- [ ] **4.11.6** â€” `GET /admin/financial-config/:periodMonth`
+- [ ] **4.11.7** â€” `PUT /admin/financial-config/:periodMonth` â€” atualiza + recalcula dividendos
+- [ ] **4.11.8** â€” `GET /admin/dashboard/overview` â€” totais gerais
 
-## 4.12 — Dashboard Endpoints
+## 4.12 â€” Dashboard Endpoints
 
-- [ ] **4.12.1** — `GET /dashboard/summary` — vendas, ganhos, título, status, perdas
-- [ ] **4.12.2** — `GET /dashboard/earnings-history` — paginado, filtrável
-- [ ] **4.12.3** — `GET /dashboard/referral-link`
+- [ ] **4.12.1** â€” `GET /dashboard/summary` â€” vendas, ganhos, tÃ­tulo, status, perdas
+- [ ] **4.12.2** â€” `GET /dashboard/earnings-history` â€” paginado, filtrÃ¡vel
+- [ ] **4.12.3** â€” `GET /dashboard/referral-link`
 
 ---
 
-# ═══════════════════════════════════════════════
-# ETAPA 5 — PLUG (Conectar Backend ↔ Frontend)
-# ═══════════════════════════════════════════════
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+# ETAPA 5 â€” PLUG (Conectar Backend â†” Frontend)
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
-> Conforme cada módulo backend fica pronto, trocar mock por API real.
+> Conforme cada mÃ³dulo backend fica pronto, trocar mock por API real.
 > Ordem: Auth primeiro (desbloqueia tudo), depois feature por feature.
 
-## 5.1 — Plug Auth (primeiro)
+## 5.1 â€” Plug Auth (primeiro)
 
-- [ ] **5.1.1** — `auth.service.ts`: trocar mock → API real
-- [ ] **5.1.2** — Axios interceptor: inject token real, auto-refresh, redirect 401
-- [ ] **5.1.3** — Testar: login, logout, forgot, reset, remember me
+- [ ] **5.1.1** â€” `auth.service.ts`: trocar mock â†’ API real
+- [ ] **5.1.2** â€” Axios interceptor: inject token real, auto-refresh, redirect 401
+- [ ] **5.1.3** â€” Testar: login, logout, forgot, reset, remember me
 
-## 5.2 — Plug Cadastro + Indicação
+## 5.2 â€” Plug Cadastro + IndicaÃ§Ã£o
 
-- [ ] **5.2.1** — `onboarding.service.ts`: mock → API real
-- [ ] **5.2.2** — Landing: tracking real de referralCode
-- [ ] **5.2.3** — Testar: cadastrar → user no banco → consegue logar
+- [ ] **5.2.1** â€” `onboarding.service.ts`: mock â†’ API real
+- [ ] **5.2.2** â€” Landing: tracking real de referralCode
+- [ ] **5.2.3** â€” Testar: cadastrar â†’ user no banco â†’ consegue logar
 
-## 5.3 — Plug Rede
+## 5.3 â€” Plug Rede
 
-- [ ] **5.3.1** — `network.service.ts`: mock → API real
-- [ ] **5.3.2** — Testar: tree carrega, expande, filtra, detalhes
+- [ ] **5.3.1** â€” `network.service.ts`: mock â†’ API real
+- [ ] **5.3.2** â€” Testar: tree carrega, expande, filtra, detalhes
 
-## 5.4 — Plug Cotas + Checkout
+## 5.4 â€” Plug Cotas + Checkout
 
-- [ ] **5.4.1** — `checkout.service.ts` + `quotas.service.ts`: mock → API real
-- [ ] **5.4.2** — Testar: comprar → pending → admin confirma → balance atualiza
+- [ ] **5.4.1** â€” `checkout.service.ts` + `quotas.service.ts`: mock â†’ API real
+- [ ] **5.4.2** â€” Testar: comprar â†’ pending â†’ admin confirma â†’ balance atualiza
 
-## 5.5 — Plug Dashboard Usuário
+## 5.5 â€” Plug Dashboard UsuÃ¡rio
 
-- [ ] **5.5.1** — `dashboard.service.ts`: mock → API real
-- [ ] **5.5.2** — Testar: dados reais, filtros, status
+- [ ] **5.5.1** â€” `dashboard.service.ts`: mock â†’ API real
+- [ ] **5.5.2** â€” Testar: dados reais, filtros, status
 
-## 5.6 — Plug Dashboard Admin
+## 5.6 â€” Plug Dashboard Admin
 
-- [ ] **5.6.1** — `admin.service.ts`: mock → API real
-- [ ] **5.6.2** — Testar: listas, marcar pago, export, config
+- [ ] **5.6.1** â€” `admin.service.ts`: mock â†’ API real
+- [ ] **5.6.2** â€” Testar: listas, marcar pago, export, config
 
-## 5.7 — Validação End-to-End
+## 5.7 â€” ValidaÃ§Ã£o End-to-End
 
-- [ ] **5.7.1** — Fluxo: landing → cadastro → login → compra → comissão
-- [ ] **5.7.2** — Fluxo: admin → pagamentos → marcar pago → config
-- [ ] **5.7.3** — Fluxo: inatividade → status muda → perdas
-- [ ] **5.7.4** — Fluxo: meta atingida → split → cotas duplicam
-
----
-
-# ═══════════════════════════════════════════════
-# ETAPA 6 — TESTES + POLISH + DOCUMENTAÇÃO
-# ═══════════════════════════════════════════════
-
-## 6.1 — Testes Backend
-
-- [ ] **6.1.1** — Unit: CommissionEngine (6 tipos + idempotência)
-- [ ] **6.1.2** — Unit: TitleService (todas combinações)
-- [ ] **6.1.3** — Unit: QuotaSplitService
-- [ ] **6.1.4** — Unit: ActivityService
-- [ ] **6.1.5** — Integration: compra → comissões → ledger
-- [ ] **6.1.6** — Integration: fechamento mensal
-- [ ] **6.1.7** — E2E: auth endpoints
-- [ ] **6.1.8** — E2E: admin endpoints
-
-## 6.2 — Testes Frontend
-
-- [ ] **6.2.1** — Unit: stores
-- [ ] **6.2.2** — Component: forms
-- [ ] **6.2.3** — Component: tree list
-- [ ] **6.2.4** — Responsividade
-
-## 6.3 — QA Manual
-
-- [ ] **6.3.1** — Validar regras de comissão
-- [ ] **6.3.2** — Testar elegibilidade ativo/inativo por tipo
-- [ ] **6.3.3** — Testar split
-- [ ] **6.3.4** — Testar fechamento mensal
-- [ ] **6.3.5** — Testar títulos
-- [ ] **6.3.6** — Performance tree list (100+ nós)
-- [ ] **6.3.7** — Security audit
-- [ ] **6.3.8** — i18n completo
-
-## 6.4 — Documentação
-
-- [ ] **6.4.1** — README.md
-- [ ] **6.4.2** — Swagger/OpenAPI
-- [ ] **6.4.3** — Knowledge Base
-- [ ] **6.4.4** — DESIGN-PATTERNS.md
+- [ ] **5.7.1** â€” Fluxo: landing â†’ cadastro â†’ login â†’ compra â†’ comissÃ£o
+- [ ] **5.7.2** â€” Fluxo: admin â†’ pagamentos â†’ marcar pago â†’ config
+- [ ] **5.7.3** â€” Fluxo: inatividade â†’ status muda â†’ perdas
+- [ ] **5.7.4** â€” Fluxo: meta atingida â†’ split â†’ cotas duplicam
 
 ---
 
-# ═══════════════════════════════════════════════
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+# ETAPA 6 â€” TESTES + POLISH + DOCUMENTAÃ‡ÃƒO
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+
+## 6.1 â€” Testes Backend
+
+- [ ] **6.1.1** â€” Unit: CommissionEngine (6 tipos + idempotÃªncia)
+- [ ] **6.1.2** â€” Unit: TitleService (todas combinaÃ§Ãµes)
+- [ ] **6.1.3** â€” Unit: QuotaSplitService
+- [ ] **6.1.4** â€” Unit: ActivityService
+- [ ] **6.1.5** â€” Integration: compra â†’ comissÃµes â†’ ledger
+- [ ] **6.1.6** â€” Integration: fechamento mensal
+- [ ] **6.1.7** â€” E2E: auth endpoints
+- [ ] **6.1.8** â€” E2E: admin endpoints
+
+## 6.2 â€” Testes Frontend
+
+- [ ] **6.2.1** â€” Unit: stores
+- [ ] **6.2.2** â€” Component: forms
+- [ ] **6.2.3** â€” Component: tree list
+- [ ] **6.2.4** â€” Responsividade
+
+## 6.3 â€” QA Manual
+
+- [ ] **6.3.1** â€” Validar regras de comissÃ£o
+- [ ] **6.3.2** â€” Testar elegibilidade ativo/inativo por tipo
+- [ ] **6.3.3** â€” Testar split
+- [ ] **6.3.4** â€” Testar fechamento mensal
+- [ ] **6.3.5** â€” Testar tÃ­tulos
+- [ ] **6.3.6** â€” Performance tree list (100+ nÃ³s)
+- [ ] **6.3.7** â€” Security audit
+- [ ] **6.3.8** â€” i18n completo
+
+## 6.4 â€” DocumentaÃ§Ã£o
+
+- [ ] **6.4.1** â€” README.md
+- [ ] **6.4.2** â€” Swagger/OpenAPI
+- [ ] **6.4.3** â€” Knowledge Base
+- [ ] **6.4.4** â€” DESIGN-PATTERNS.md
+
+---
+
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 # BACKLOG FUTURO
-# ═══════════════════════════════════════════════
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
-- [ ] Gateway de pagamento real (Stripe/Mercado Pago/Pix automático)
-- [ ] Exportação PDF
-- [ ] Notificações (email, push)
-- [ ] Sistema de pontuação
-- [ ] Dashboard analytics (gráficos)
+- [ ] Gateway de pagamento real (Stripe/Mercado Pago/Pix automÃ¡tico)
+- [ ] ExportaÃ§Ã£o PDF
+- [ ] NotificaÃ§Ãµes (email, push)
+- [ ] Sistema de pontuaÃ§Ã£o
+- [ ] Dashboard analytics (grÃ¡ficos)
 - [ ] Docker + CI/CD
 - [ ] WebSocket real-time
 - [ ] PWA / App mobile
-- [ ] Chat para compras ≥10 cotas
+- [ ] Chat para compras â‰¥10 cotas
 - [ ] Backup automatizado
 
 ---
 
-# ═══════════════════════════════════════════════
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 # FLUXO VISUAL
-# ═══════════════════════════════════════════════
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 ```
 ETAPA 1: Scaffolding
-  ├── Backend scaffold (deps + config)
-  └── Frontend scaffold (deps + design system + mocks)
+  â”œâ”€â”€ Backend scaffold (deps + config)
+  â””â”€â”€ Frontend scaffold (deps + design system + mocks)
 
-ETAPA 2: Frontend com Mocks ← CLIENTE VALIDA AQUI
-  ├── Auth (login, forgot, reset)
-  ├── Landing page
-  ├── Cadastro por patrocinador
-  ├── Dashboard usuário
-  ├── Rede (tree list)
-  ├── Checkout
-  ├── Página promo + FAQ
-  ├── Dashboard admin
-  └── Layout (sidebar, navbar)
+ETAPA 2: Frontend com Mocks â† CLIENTE VALIDA AQUI
+  â”œâ”€â”€ Auth (login, forgot, reset)
+  â”œâ”€â”€ Landing page
+  â”œâ”€â”€ Cadastro por patrocinador
+  â”œâ”€â”€ Dashboard usuÃ¡rio
+  â”œâ”€â”€ Rede (tree list)
+  â”œâ”€â”€ Checkout
+  â”œâ”€â”€ PÃ¡gina promo + FAQ
+  â”œâ”€â”€ Dashboard admin
+  â””â”€â”€ Layout (sidebar, navbar)
 
 ETAPA 3: Migrations
-  └── 13 migrations (tabelas + indexes)
+  â””â”€â”€ 13 migrations (tabelas + indexes)
 
 ETAPA 4: Backend
-  ├── Entities TypeORM
-  ├── Auth module
-  ├── Users module
-  ├── Network module
-  ├── Quotas module
-  ├── Activity service
-  ├── Commission engine ⚠️ CORE
-  ├── Title service
-  ├── Partner level service
-  ├── Split service
-  ├── Admin module
-  └── Dashboard endpoints
+  â”œâ”€â”€ Entities TypeORM
+  â”œâ”€â”€ Auth module
+  â”œâ”€â”€ Users module
+  â”œâ”€â”€ Network module
+  â”œâ”€â”€ Quotas module
+  â”œâ”€â”€ Activity service
+  â”œâ”€â”€ Commission engine âš ï¸ CORE
+  â”œâ”€â”€ Title service
+  â”œâ”€â”€ Partner level service
+  â”œâ”€â”€ Split service
+  â”œâ”€â”€ Admin module
+  â””â”€â”€ Dashboard endpoints
 
-ETAPA 5: Plug (Back ↔ Front) ← CONECTA INCREMENTALMENTE
-  ├── Auth (primeiro)
-  ├── Cadastro + indicação
-  ├── Rede
-  ├── Cotas + checkout
-  ├── Dashboard user
-  ├── Dashboard admin
-  └── Validação E2E
+ETAPA 5: Plug (Back â†” Front) â† CONECTA INCREMENTALMENTE
+  â”œâ”€â”€ Auth (primeiro)
+  â”œâ”€â”€ Cadastro + indicaÃ§Ã£o
+  â”œâ”€â”€ Rede
+  â”œâ”€â”€ Cotas + checkout
+  â”œâ”€â”€ Dashboard user
+  â”œâ”€â”€ Dashboard admin
+  â””â”€â”€ ValidaÃ§Ã£o E2E
 
 ETAPA 6: Testes + Polish + Docs
 ```
 
 ---
 
-# ═══════════════════════════════════════════════
-# MAPEAMENTO ÉPICOS → ETAPAS
-# ═══════════════════════════════════════════════
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+# MAPEAMENTO Ã‰PICOS â†’ ETAPAS
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
-| Épico | Etapa 2 (Mock) | Etapa 3 (Migration) | Etapa 4 (Backend) | Etapa 5 (Plug) |
+| Ã‰pico | Etapa 2 (Mock) | Etapa 3 (Migration) | Etapa 4 (Backend) | Etapa 5 (Plug) |
 |-------|---------------|--------------------|--------------------|----------------|
-| FE-01 Login | 2.1 | — | 4.2 | 5.1 |
-| FE-02 Admin | 2.8 | — | 4.11 | 5.6 |
-| FE-03 Dashboard | 2.4 | — | 4.12 | 5.5 |
-| FE-04 Rede | 2.5 | — | 4.4 | 5.3 |
-| FE-05 Checkout | 2.6 | — | 4.5 | 5.4 |
-| FE-06 Promo | 2.7 | — | — | 5.4 |
-| FE-07 Cadastro | 2.3 | — | 4.3 | 5.2 |
-| FE-08 Landing | 2.2 | — | — | 5.2 |
-| BE-01 Auth | — | 3.1.2 | 4.2 | 5.1 |
-| BE-02 Dados | — | 3.1-3.5 | 4.1 | — |
-| BE-03 Atividade | — | — | 4.6 | — |
-| BE-04 Títulos | — | 3.3.1 | 4.8 | — |
-| BE-05 Níveis | — | 3.3.2 | 4.9 | — |
-| BE-06 Comissões | — | 3.4.1 | 4.7 | — |
-| BE-07 Split | — | 3.2 | 4.10 | — |
-| BE-08 Fechamento | — | 3.4.2-3 | 4.11 | 5.6 |
-| BE-09 Financeiro | — | 3.4.4 | 4.11.6-7 | 5.6 |
-| BE-10 Rede API | — | — | 4.4 | 5.3 |
-| BE-11 Indicação | — | — | 4.3 | 5.2 |
+| FE-01 Login | 2.1 | â€” | 4.2 | 5.1 |
+| FE-02 Admin | 2.8 | â€” | 4.11 | 5.6 |
+| FE-03 Dashboard | 2.4 | â€” | 4.12 | 5.5 |
+| FE-04 Rede | 2.5 | â€” | 4.4 | 5.3 |
+| FE-05 Checkout | 2.6 | â€” | 4.5 | 5.4 |
+| FE-06 Promo | 2.7 | â€” | â€” | 5.4 |
+| FE-07 Cadastro | 2.3 | â€” | 4.3 | 5.2 |
+| FE-08 Landing | 2.2 | â€” | â€” | 5.2 |
+| BE-01 Auth | â€” | 3.1.2 | 4.2 | 5.1 |
+| BE-02 Dados | â€” | 3.1-3.5 | 4.1 | â€” |
+| BE-03 Atividade | â€” | â€” | 4.6 | â€” |
+| BE-04 TÃ­tulos | â€” | 3.3.1 | 4.8 | â€” |
+| BE-05 NÃ­veis | â€” | 3.3.2 | 4.9 | â€” |
+| BE-06 ComissÃµes | â€” | 3.4.1 | 4.7 | â€” |
+| BE-07 Split | â€” | 3.2 | 4.10 | â€” |
+| BE-08 Fechamento | â€” | 3.4.2-3 | 4.11 | 5.6 |
+| BE-09 Financeiro | â€” | 3.4.4 | 4.11.6-7 | 5.6 |
+| BE-10 Rede API | â€” | â€” | 4.4 | 5.3 |
+| BE-11 IndicaÃ§Ã£o | â€” | â€” | 4.3 | 5.2 |
 
 ---
 
@@ -801,33 +801,65 @@ ETAPA 6: Testes + Polish + Docs
 | 2 - Frontend Mocks | ~65 | UI completa com dados fake |
 | 3 - Migrations | ~13 | SQL schema |
 | 4 - Backend | ~55 | Services + Controllers |
-| 5 - Plug | ~15 | Mock → API real |
-| 6 - Testes + Docs | ~20 | QA + documentação |
+| 5 - Plug | ~15 | Mock â†’ API real |
+| 6 - Testes + Docs | ~20 | QA + documentaÃ§Ã£o |
 | **TOTAL** | **~204** | |
 
 ---
 
 **Status de Progresso:** 0/204 tarefas (0%)
-**Última Atualização:** 2026-02-18
-**Próxima Ação:** AGUARDANDO APROVAÇÃO DO PLANO
+**Ãšltima AtualizaÃ§Ã£o:** 2026-02-18
+**PrÃ³xima AÃ§Ã£o:** AGUARDANDO APROVAÃ‡ÃƒO DO PLANO
 
 ---
 
-## ✅ SESSÃO 2026-02-23 — Refatoração Premium do Checkout
+## âœ… SESSÃƒO 2026-02-23 â€” RefatoraÃ§Ã£o Premium do Checkout
 
-**Status:** ✅ CONCLUÍDO
+**Status:** âœ… CONCLUÃDO
 
 ### Componentes criados:
-- [x] `checkout/components/QuotaCalculator.vue` — Calculadora gamificada com unlock animation
-- [x] `checkout/components/PaymentSelector.vue` — Radio cards + sidebar sticky de resumo
-- [x] `checkout/components/OrderConfirmation.vue` — Confirmação emocional "Revise seu Upgrade"
-- [x] `checkout/components/PixPayment.vue` — QR Code + timer 15min + polling + referral CTA
-- [x] `checkout/components/BoletoPayment.vue` — Barcode visual + download + referral CTA
-- [x] `checkout/components/CardRedirect.vue` — Loading spinner → redirect Pagar.me
-- [x] `checkout/views/CheckoutView.vue` — Reescrito: progress bar + slide transitions + state central
-- [x] `checkout/views/CheckoutConfirmationView.vue` — Reescrito: canvas-confetti + celebração + referral
+- [x] `checkout/components/QuotaCalculator.vue` â€” Calculadora gamificada com unlock animation
+- [x] `checkout/components/PaymentSelector.vue` â€” Radio cards + sidebar sticky de resumo
+- [x] `checkout/components/OrderConfirmation.vue` â€” ConfirmaÃ§Ã£o emocional "Revise seu Upgrade"
+- [x] `checkout/components/PixPayment.vue` â€” QR Code + timer 15min + polling + referral CTA
+- [x] `checkout/components/BoletoPayment.vue` â€” Barcode visual + download + referral CTA
+- [x] `checkout/components/CardRedirect.vue` â€” Loading spinner â†’ redirect Pagar.me
+- [x] `checkout/views/CheckoutView.vue` â€” Reescrito: progress bar + slide transitions + state central
+- [x] `checkout/views/CheckoutConfirmationView.vue` â€” Reescrito: canvas-confetti + celebraÃ§Ã£o + referral
 
 ### Packages instalados:
 - canvas-confetti + @types/canvas-confetti
 
-**Última Atualização:** 2026-02-23
+**Ãšltima AtualizaÃ§Ã£o:** 2026-02-23
+
+---
+
+## 🆕 BLOCO 7 — CORREÇÕES DIVERSAS (10-04-2026)
+
+**Data:** 2026-04-10  ·  **Status:** ✅ COMPLETO
+
+### Backend
+- [x] **B7.1** Migration 005 — earnings.processed_at + índice
+- [x] **B7.2** Earning entity — campo processedAt
+- [x] **B7.3** AdminService.generateBatch — orquestra bônus de Equipe/Liderança/Dividendos na Etapa 2 e marca processed_at
+- [x] **B7.4** AdminModule — DI BonusCalculator (já existia via BonusModule, agora injetado em AdminService)
+- [x] **B7.5** EarningsService.getEarnings — DIVIDEND/TEAM/LEADERSHIP filtram por processedAt; data exibida = processedAt
+- [x] **B7.6** EarningsService.getOverview — totalEarned (Ganhos da vida) calculado via payouts COMPLETED
+- [x] **B7.7** TitleCalculatorService.recalculateTitleToRoot — propaga até a raiz
+- [x] **B7.8** AdminManagerService.changeSponsor — recalcula título do user, da upline antiga e da nova até a raiz
+- [x] **B7.16** AdminService.getCrmUsers — incluiu `phone` no select para o export
+
+### Frontend
+- [x] **B7.9** DsStatCard — `font-size: clamp()` + word-break para evitar quebra "Casa do milhão"
+- [x] **B7.10** EarningsView summary-card — clamp na fonte do valor
+- [x] **B7.11** AdminPayoutsView — `filters.month` default = mês atual + recalcStats com paidThisMonth ≠ totalPaid
+- [x] **B7.12** AdminCrmTable — getActivityStatus = verde por default, amarelo só quando ≤30d para expirar; menu mostra "Desbloquear Conta" quando isActive=false
+- [x] **B7.13** AdminUsersView — handler `desbloquear` + modal com texto/variant adaptativo + export Excel com coluna Telefone formatada `(XX) XXXXX-XXXX`
+- [x] **B7.14** AdminUserExtractView — `formatTitle()` mapeia bronze/silver/gold/diamond/none → Bronze/Prata/Ouro/Diamante/Sem Título
+- [x] **B7.15** api.ts — `redirectToLogin()` evita push redundante quando já está em /login + queued requests marcam `_retry` para impedir loop de refresh
+
+### Observações
+- Build do backend: ✅ `nest build` sem erros
+- Migrations: rodar `005-add-earnings-processed-at.sql` na próxima inicialização
+- Para o issue "Editar Informações sem ícone" no menu lateral: verificado em AppLayout — já está com `pen-to-square`. Caso o usuário se refira a outro ponto da UI, favor enviar screenshot do botão exato.
+

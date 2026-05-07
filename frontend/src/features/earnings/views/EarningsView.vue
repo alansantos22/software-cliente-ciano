@@ -378,9 +378,11 @@ function getTypeIcon(rawType: string): string {
   }
 
   &__value {
-    font-size: 1.5rem;
+    font-size: clamp(1rem, 0.9rem + 1.1vw, 1.5rem);
     font-weight: 700;
     color: var(--neutral-900);
+    word-break: break-word;
+    min-width: 0;
   }
 
   &__sublabel {

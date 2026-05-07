@@ -10,6 +10,7 @@ import { MonthlyFinancialConfig } from './entities/monthly-financial-config.enti
 import { GlobalFinancialSettings } from './entities/global-financial-settings.entity';
 import { TitleRequirement } from './entities/title-requirement.entity';
 import { SplitEngineService } from '../../core/split/split-engine.service';
+import { BonusCalculatorService } from '../../core/bonus/bonus-calculator.service';
 import { BonusType, PayoutStatus, TransactionType, TransactionStatus } from '../../shared/interfaces/enums';
 import { getCurrentPeriod } from '../../shared/utils/helpers';
 
@@ -27,6 +28,7 @@ export class AdminService {
     @InjectRepository(GlobalFinancialSettings) private readonly settingsRepo: Repository<GlobalFinancialSettings>,
     @InjectRepository(TitleRequirement) private readonly titleReqRepo: Repository<TitleRequirement>,
     private readonly splitEngine: SplitEngineService,
+    private readonly bonusCalc: BonusCalculatorService,
   ) {}
 
   // ─── Dashboard ─────────────────────────────────────────
@@ -199,7 +201,7 @@ export class AdminService {
     return this.userRepo.find({
       where: { deletedAt: IsNull() },
       order: { totalEarnings: 'DESC' },
-      select: ['id', 'name', 'title', 'totalEarnings', 'isActive', 'email', 'purchasedQuotas', 'adminGrantedQuotas', 'splitQuotas', 'quotaBalance', 'partnerLevel', 'lastPurchaseDate'],
+      select: ['id', 'name', 'title', 'totalEarnings', 'isActive', 'email', 'phone', 'purchasedQuotas', 'adminGrantedQuotas', 'splitQuotas', 'quotaBalance', 'partnerLevel', 'lastPurchaseDate'],
     });
   }
 
@@ -320,13 +322,36 @@ export class AdminService {
   }
 
   async generateBatch(profitMonth: string, netProfit: number, adminId: string) {
-    const preview = await this.calculateDistribution(profitMonth, netProfit);
-
-    // Check for existing batch
+    // Check for existing batch FIRST (antes de qualquer cálculo)
     const existing = await this.payoutRepo.findOne({ where: { referenceMonth: profitMonth } });
     if (existing) {
       return { error: 'Já existe um lote para este mês de referência' };
     }
+
+    // ⚡ Etapa 2 — Orquestração de bônus dependentes do lucro do mês:
+    // os bônus de Equipe, Liderança e Dividendos só fazem sentido após o
+    // admin informar o lucro líquido. Calculamos aqui (idempotente) e em
+    // seguida montamos o lote com o breakdown já incluído.
+    const settings = await this.settingsRepo.findOne({ where: { id: 1 } });
+    const dividendPoolPercent = settings?.profitPayoutPercentage || 20;
+    const dividendPool = netProfit * dividendPoolPercent / 100;
+
+    await this.bonusCalc.calculateTeamBonus(profitMonth);
+    await this.bonusCalc.calculateLeadershipBonus(profitMonth);
+    await this.bonusCalc.calculateDividends(profitMonth, dividendPool);
+
+    // Marca como processados (Etapa 2) os ganhos do mês de referência que
+    // ainda não haviam sido processados — incluindo os bônus imediatos
+    // (FIRST_PURCHASE, REPURCHASE) gerados ao longo do mês.
+    await this.earningRepo
+      .createQueryBuilder()
+      .update()
+      .set({ processedAt: () => 'NOW()' })
+      .where('reference_month = :month', { month: profitMonth })
+      .andWhere('processed_at IS NULL')
+      .execute();
+
+    const preview = await this.calculateDistribution(profitMonth, netProfit);
 
     const payouts: PayoutRequest[] = [];
     const missingPixKey: string[] = [];

@@ -120,6 +120,15 @@ export class BonusCalculatorService {
   }
 
   async calculateTeamBonus(referenceMonth: string): Promise<void> {
+    // Idempotência: se já existe ganho TEAM para o mês, não recalcula.
+    const already = await this.earningRepo.count({
+      where: { referenceMonth, bonusType: BonusType.TEAM },
+    });
+    if (already > 0) {
+      this.logger.log(`⏭️  Team bonuses already calculated for ${referenceMonth} — skipping`);
+      return;
+    }
+
     this.logger.log(`📊 Calculating team bonuses for ${referenceMonth}`);
 
     const allUsers = await this.userRepo.find({ where: { deletedAt: null as unknown as Date } });
@@ -156,6 +165,15 @@ export class BonusCalculatorService {
   }
 
   async calculateLeadershipBonus(referenceMonth: string): Promise<void> {
+    // Idempotência
+    const already = await this.earningRepo.count({
+      where: { referenceMonth, bonusType: BonusType.LEADERSHIP },
+    });
+    if (already > 0) {
+      this.logger.log(`⏭️  Leadership bonuses already calculated for ${referenceMonth} — skipping`);
+      return;
+    }
+
     this.logger.log(`👑 Calculating leadership bonuses for ${referenceMonth}`);
 
     const allUsers = await this.userRepo.find({ where: { deletedAt: null as unknown as Date } });
@@ -198,6 +216,15 @@ export class BonusCalculatorService {
     referenceMonth: string,
     dividendPool: number,
   ): Promise<void> {
+    // Idempotência
+    const already = await this.earningRepo.count({
+      where: { referenceMonth, bonusType: BonusType.DIVIDEND },
+    });
+    if (already > 0) {
+      this.logger.log(`⏭️  Dividends already calculated for ${referenceMonth} — skipping`);
+      return;
+    }
+
     this.logger.log(`💎 Calculating dividends for ${referenceMonth} — pool: R$${dividendPool}`);
 
     const usersWithQuotas = await this.userRepo.find({
