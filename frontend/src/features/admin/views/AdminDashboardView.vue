@@ -192,13 +192,17 @@
       </DsCard>
     </section>
 
-    <!-- Modal de confirmação (Bloquear conta) -->
+    <!-- Modal de confirmação (Bloquear / Desbloquear conta) -->
     <ManagerActionConfirmModal
       v-model="showBlockModal"
-      title="Bloquear conta"
-      :description="blockUser ? `Confirma o bloqueio da conta de ${blockUser.name}? O usuário não conseguirá acessar o sistema até ser reativado.` : ''"
-      confirm-label="Bloquear conta"
-      variant="danger"
+      :title="blockMode === 'unblock' ? 'Desbloquear conta' : 'Bloquear conta'"
+      :description="blockUser
+        ? blockMode === 'unblock'
+          ? `Confirma a reativação da conta de ${blockUser.name}? O usuário voltará a ter acesso ao sistema.`
+          : `Confirma o bloqueio da conta de ${blockUser.name}? O usuário não conseguirá acessar o sistema até ser reativado.`
+        : ''"
+      :confirm-label="blockMode === 'unblock' ? 'Desbloquear conta' : 'Bloquear conta'"
+      :variant="blockMode === 'unblock' ? 'success' : 'danger'"
       :loading="blockLoading"
       :error="blockError"
       @confirm="confirmBlock"
@@ -335,11 +339,13 @@ function handleForceSplit() {
   console.info('[Admin] Force split triggered');
 }
 
-function handleCrmAction(type: 'extrato' | 'bloquear', user: any) {
+function handleCrmAction(type: 'extrato' | 'bloquear' | 'desbloquear', user: any) {
   if (type === 'extrato') {
     router.push(`/admin/users/${user.id}`);
   } else if (type === 'bloquear') {
-    openBlockModal(user);
+    openBlockModal(user, 'block');
+  } else if (type === 'desbloquear') {
+    openBlockModal(user, 'unblock');
   }
 }
 
@@ -348,11 +354,13 @@ function handleCrmAction(type: 'extrato' | 'bloquear', user: any) {
 // =====================================================
 const showBlockModal = ref(false);
 const blockUser = ref<any | null>(null);
+const blockMode = ref<'block' | 'unblock'>('block');
 const blockLoading = ref(false);
 const blockError = ref('');
 
-function openBlockModal(user: any) {
+function openBlockModal(user: any, mode: 'block' | 'unblock' = 'block') {
   blockUser.value = user;
+  blockMode.value = mode;
   blockError.value = '';
   showBlockModal.value = true;
 }
@@ -368,8 +376,9 @@ async function confirmBlock(password: string) {
   blockLoading.value = true;
   blockError.value = '';
   try {
+    const targetActive = blockMode.value === 'unblock';
     await adminService.setUserActive(blockUser.value.id, {
-      isActive: false,
+      isActive: targetActive,
       managerPassword: password,
     });
     showBlockModal.value = false;
