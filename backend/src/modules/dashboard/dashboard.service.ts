@@ -118,6 +118,9 @@ export class DashboardService {
     const daysUntilPayment = Math.round(
       (nextPaymentDateObj.getTime() - todayMid.getTime()) / 86_400_000,
     );
+    // Envia como YYYY-MM-DD para evitar desvio de fuso horário no client
+    const pd = nextPaymentDateObj;
+    const nextPaymentDateStr = `${pd.getFullYear()}-${String(pd.getMonth() + 1).padStart(2, '0')}-${String(pd.getDate()).padStart(2, '0')}`;
 
     // ── Expiração da ativação (lastPurchaseDate + 6 meses) ──
     let daysUntilExpiry: number | null = null;
@@ -144,7 +147,7 @@ export class DashboardService {
       // Janela de pagamento
       paymentDay,
       paymentWindowOpen,
-      nextPaymentDate: nextPaymentDateObj.toISOString(),
+      nextPaymentDate: nextPaymentDateStr,
       daysUntilPayment,
       // Expiração / inatividade
       daysUntilExpiry,

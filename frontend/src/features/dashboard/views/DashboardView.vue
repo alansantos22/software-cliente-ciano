@@ -490,11 +490,13 @@ function formatCurrency(value: number): string {
 }
 
 function formatDate(dateStr: string): string {
+  // Datas YYYY-MM-DD precisam de 'T12:00:00' para evitar desvio de fuso horário UTC
+  const safeDateStr = /^\d{4}-\d{2}-\d{2}$/.test(dateStr) ? dateStr + 'T12:00:00' : dateStr;
   return new Intl.DateTimeFormat('pt-BR', {
     day: '2-digit',
     month: '2-digit',
     year: 'numeric',
-  }).format(new Date(dateStr));
+  }).format(new Date(safeDateStr));
 }
 
 function activityIcon(type: string): string {
