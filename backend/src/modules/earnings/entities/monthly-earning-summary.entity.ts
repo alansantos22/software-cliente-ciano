@@ -53,6 +53,6 @@ export class MonthlyEarningSummary {
   @Column({ type: 'decimal', precision: 15, scale: 2, default: 0, name: 'loss_projection' })
   lossProjection: number;
 
-  @Column({ type: 'date', name: 'cutoff_date' })
-  cutoffDate: string;
+  @Column({ type: 'date', name: 'cutoff_date', nullable: true })
+  cutoffDate: string | null;
 }

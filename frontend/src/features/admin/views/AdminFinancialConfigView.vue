@@ -297,7 +297,7 @@
               <template #header>
                 <h2 class="gov-card__title">
                   <font-awesome-icon icon="chart-pie" />
-                  Pool de Dividendos e Bônus de Liderança
+                  Pool de Dividendos
                 </h2>
               </template>
               <div class="config-grid">
@@ -511,27 +511,6 @@
               <span class="diff-row__new">{{ change.newFormatted }}</span>
             </div>
           </div>
-
-          <div class="confirm-modal__pin-section">
-            <label for="pin-confirm" class="confirm-modal__pin-label">
-              <font-awesome-icon icon="lock" />
-              Digite seu PIN de administrador para confirmar:
-            </label>
-            <input
-              id="pin-confirm"
-              v-model="pinInput"
-              type="password"
-              maxlength="4"
-              class="pin-input"
-              placeholder="····"
-              autocomplete="off"
-              @keyup.enter="confirmSave"
-            />
-            <p v-if="pinError" class="confirm-modal__pin-error">
-              <font-awesome-icon icon="circle-xmark" />
-              {{ pinError }}
-            </p>
-          </div>
         </template>
       </div>
 
@@ -593,8 +572,6 @@ const isSaving         = ref(false);
 const saveSuccess      = ref(false);
 const activeTab        = ref<TabId>('global');
 const showConfirmModal = ref(false);
-const pinInput         = ref('');
-const pinError         = ref('');
 
 const auditInfo = reactive({
   user: '—',
@@ -746,20 +723,12 @@ function tabHasChanges(tabId: TabId): boolean {
 
 // Actions
 function openSaveModal() {
-  pinInput.value = ''; pinError.value = ''; showConfirmModal.value = true;
+  showConfirmModal.value = true;
 }
 
 async function confirmSave() {
   if (pendingDiff.value.length === 0) { showConfirmModal.value = false; return; }
-  if (pinInput.value.length < 4) { pinError.value = 'PIN deve ter pelo menos 4 dígitos.'; return; }
-  pinError.value = ''; isSaving.value = true;
-  try {
-    await adminService.verifyManagerPassword({ password: pinInput.value, operation: 'update-financial-config' });
-  } catch {
-    pinError.value = 'PIN incorreto. Verifique e tente novamente.';
-    isSaving.value = false;
-    return;
-  }
+  isSaving.value = true;
   try {
     await adminService.updateFinancialConfig({
       minQuotas: config.minQuotas,

@@ -108,6 +108,10 @@ export class MonthlyCloseJob {
             total,
             networkEarnings: fp + rp + tm + ld,
             quotaEarnings: dv,
+            // último dia do mês de referência
+            cutoffDate: new Date(prev.getFullYear(), prev.getMonth() + 1, 0)
+              .toISOString()
+              .slice(0, 10),
           });
           await this.summaryRepo.save(summary);
         }

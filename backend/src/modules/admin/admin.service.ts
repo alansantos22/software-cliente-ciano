@@ -444,6 +444,18 @@ export class AdminService {
     } else if (action === 'completed') {
       payout.status = PayoutStatus.COMPLETED;
       payout.completedAt = new Date();
+      // Garante que totalEarnings do usuário reflita o pagamento caso os
+      // dividendos ainda não tenham sido contabilizados via generateBatch.
+      const dividendAlreadyCounted = await this.earningRepo.count({
+        where: {
+          userId: payout.userId,
+          bonusType: BonusType.DIVIDEND,
+          referenceMonth: payout.referenceMonth,
+        },
+      });
+      if (dividendAlreadyCounted === 0) {
+        await this.userRepo.increment({ id: payout.userId }, 'totalEarnings', Number(payout.amount));
+      }
     } else if (action === 'failed') {
       payout.status = PayoutStatus.FAILED;
       payout.failureReason = failureReason || '';

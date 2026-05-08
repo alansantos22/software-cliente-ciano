@@ -168,11 +168,35 @@ export class EarningsService {
       }
     }
 
-    // ── 4) Filtro por nível ──
-    const all = [...earningRows, ...purchaseRows, ...downlineRows];
+    // ── 4) Pagamentos concluídos (mostrar no mês em que foram pagos) ──────────
+    const completedPayouts = await this.payoutRepo.find({
+      where: {
+        userId,
+        status: PayoutStatus.COMPLETED,
+        ...(month ? { paymentMonth: month } : {}),
+      },
+      order: { completedAt: 'DESC' },
+    });
+
+    const payoutHistoryRows: EarningHistoryRow[] = completedPayouts.map((p) => ({
+      id: `payout-${p.id}`,
+      source: 'earning' as const,
+      bonusType: BonusType.DIVIDEND,
+      amount: Number(p.amount),
+      description: `Pagamento recebido — dividendos + rede (${p.paymentMonth})`,
+      level: 0,
+      referenceMonth: p.paymentMonth,
+      status: 'completed',
+      cutoffEligible: true,
+      createdAt: p.completedAt ?? p.generatedAt,
+      sourceUserName: null,
+    }));
+
+    // ── 5) Filtro por nível ──
+    const all = [...earningRows, ...purchaseRows, ...downlineRows, ...payoutHistoryRows];
     const filtered = (level === undefined || level === null || (level as any) === '')
       ? all
-      : all.filter((r) => r.level === Number(level));
+      : all.filter((r) => r.level === Number(level) || r.id.startsWith('payout-'));
 
     filtered.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 
