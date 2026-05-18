@@ -197,7 +197,9 @@ Implementado (servidor novo, sem necessidade de backfill de meses passados):
 
 Pendências fora do backend / acompanhamento:
 
-- [ ] Tela do usuário "a receber" no frontend (o dado já é exposto pelo dashboard/API).
+- [x] Tela do usuário "a receber": dashboard já mostra o agregado ("Previsão a Receber");
+      adicionada a lista detalhada de lotes na tela de Ganhos (`EarningsView`) +
+      `payouts.service.ts` no frontend.
 - [ ] Atualizar o descritivo: regra de 10%/5% no bônus de primeira compra.
 - [ ] Reescrever ou remover `earnings.service.spec.ts` (teste obsoleto, pré-existente).
 - [ ] Avaliar remoção do controller user-driven `/payouts/*` (não consumido; modelo é
