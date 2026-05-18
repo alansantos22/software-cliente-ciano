@@ -31,15 +31,19 @@ CREATE TABLE IF NOT EXISTS `title_requirements` (
   UNIQUE KEY `UQ_title_requirements_title` (`title`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Seed dos requisitos — INSERT IGNORE garante idempotência
+-- Seed dos requisitos — INSERT IGNORE garante idempotência.
+-- IMPORTANTE: as colunas repurchase_levels / team_levels / leadership_percent
+-- DEVEM ser preenchidas aqui. Se ficarem no DEFAULT 0, os bônus de recompra,
+-- equipe e liderança são pulados para toda a base (corrigido na migration 007).
 INSERT IGNORE INTO `title_requirements`
-  (`title`, `requirement_desc`, `req_type`, `req_quantity`, `req_level`)
+  (`title`, `requirement_desc`, `req_type`, `req_quantity`, `req_level`,
+   `repurchase_levels`, `team_levels`, `leadership_percent`)
 VALUES
-  ('none',    'Sem requisito',                                     NULL,             NULL, NULL    ),
-  ('bronze',  'Ter 2 pessoas ativas na rede direta',               'pessoas_ativas', 2,    NULL    ),
-  ('silver',  'Ter 1 indicado direto ativo com título Bronze',     'indicado',       1,    'bronze'),
-  ('gold',    '2 indicados Bronze em linhas diretas diferentes',   'linhas',         2,    'bronze'),
-  ('diamond', '3 indicados Bronze em linhas diretas diferentes',   'linhas',         3,    'bronze');
+  ('none',    'Sem requisito',                                     NULL,             NULL, NULL,     0, 0, 0),
+  ('bronze',  'Ter 2 pessoas ativas na rede direta',               'pessoas_ativas', 2,    NULL,     1, 2, 0),
+  ('silver',  'Ter 1 indicado direto ativo com título Bronze',     'indicado',       1,    'bronze', 2, 3, 0),
+  ('gold',    '2 indicados Bronze em linhas diretas diferentes',   'linhas',         2,    'bronze', 4, 4, 1),
+  ('diamond', '3 indicados Bronze em linhas diretas diferentes',   'linhas',         3,    'bronze', 6, 5, 2);
 
 SELECT CONCAT('title_requirements: ', COUNT(*), ' registro(s) presentes.') AS seed_status
 FROM `title_requirements`;

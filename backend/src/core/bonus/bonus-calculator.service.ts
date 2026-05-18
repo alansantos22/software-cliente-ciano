@@ -3,20 +3,41 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from '../../modules/users/entities/user.entity';
 import { Earning } from '../../modules/earnings/entities/earning.entity';
+import { MonthlyUserSnapshot } from '../../modules/users/entities/monthly-user-snapshot.entity';
 import { TitleRequirement } from '../../modules/admin/entities/title-requirement.entity';
 import { MonthlyFinancialConfig } from '../../modules/admin/entities/monthly-financial-config.entity';
-import { BonusType, EarningStatus, UserTitle } from '../../shared/interfaces/enums';
+import { SnapshotService } from '../snapshot/snapshot.service';
+import { BonusType, UserTitle } from '../../shared/interfaces/enums';
 import { getCurrentPeriod } from '../../shared/utils/helpers';
 
+/**
+ * Motor de bônus.
+ *
+ * Ordem de cálculo de um mês de referência (ditada pela regra de cascata):
+ *   1. FIRST_PURCHASE / REPURCHASE — gerados ao longo do mês (evento de compra).
+ *   2. DIVIDEND                    — gerado quando o admin informa o lucro líquido.
+ *   3. TEAM + LEADERSHIP           — gerados por último, em travessia leaf-up.
+ *
+ * Cascata: o bônus de equipe é 2% de TUDO que a rede ganhou (compra, recompra,
+ * dividendos E os próprios bônus de equipe/liderança dos downlines). Por isso o
+ * cálculo precisa percorrer a árvore das folhas para a raiz — ver
+ * `calculateTeamAndLeadershipBonuses`.
+ */
 @Injectable()
 export class BonusCalculatorService {
   private readonly logger = new Logger(BonusCalculatorService.name);
+
+  /** Percentual fixo do bônus de equipe (todos os títulos). */
+  private static readonly TEAM_BONUS_RATE = 0.02;
+  /** Profundidade fixa do bônus de liderança (níveis de qualificados). */
+  private static readonly LEADERSHIP_DEPTH = 5;
 
   constructor(
     @InjectRepository(User) private readonly userRepo: Repository<User>,
     @InjectRepository(Earning) private readonly earningRepo: Repository<Earning>,
     @InjectRepository(TitleRequirement) private readonly titleReqRepo: Repository<TitleRequirement>,
     @InjectRepository(MonthlyFinancialConfig) private readonly monthConfigRepo: Repository<MonthlyFinancialConfig>,
+    private readonly snapshotService: SnapshotService,
   ) {}
 
   private isActive(user: User): boolean {
@@ -24,6 +45,27 @@ export class BonusCalculatorService {
     const sixMonthsAgo = new Date();
     sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
     return user.lastPurchaseDate > sixMonthsAgo;
+  }
+
+  /**
+   * Garante que exista snapshot para o mês e o devolve.
+   *
+   * Caminho normal: o snapshot foi capturado pelo `MonthlyCloseJob` no
+   * fechamento. Caso não exista (ex.: admin lançando um mês antes do
+   * fechamento, ou ambiente recém-migrado), captura-se o estado ATUAL como
+   * fallback degradado — funciona, mas não reflete o fim do mês. O aviso no
+   * log sinaliza esse caso.
+   */
+  private async ensureSnapshot(referenceMonth: string): Promise<MonthlyUserSnapshot[]> {
+    let snaps = await this.snapshotService.getSnapshot(referenceMonth);
+    if (snaps.length === 0) {
+      this.logger.warn(
+        `⚠️  Sem snapshot para ${referenceMonth} — capturando estado ATUAL como fallback (degradado)`,
+      );
+      await this.snapshotService.captureMonth(referenceMonth);
+      snaps = await this.snapshotService.getSnapshot(referenceMonth);
+    }
+    return snaps;
   }
 
   private getCutoffDate(referenceMonth: string): Date {
@@ -36,6 +78,8 @@ export class BonusCalculatorService {
     return purchaseDate <= cutoff;
   }
 
+  // ─── Bônus imediatos (evento de compra) ──────────────────────────────────
+
   async calculateFirstPurchaseBonus(
     buyer: User,
     purchaseValue: number,
@@ -47,6 +91,8 @@ export class BonusCalculatorService {
     if (!sponsor) return;
 
     const month = getCurrentPeriod(purchaseDate);
+    // Regra (pós-documento): 10% se o patrocinador tem cotas, 5% se não tem —
+    // incentiva o patrocinador a comprar cotas para ganhar mais.
     const bonusPercent = sponsor.quotaBalance > 0 ? 10 : 5;
     const amount = purchaseValue * (bonusPercent / 100);
 
@@ -63,8 +109,6 @@ export class BonusCalculatorService {
     });
 
     await this.earningRepo.save(earning);
-
-    // Update sponsor total_earnings
     await this.userRepo.increment({ id: sponsor.id }, 'totalEarnings', amount);
 
     this.logger.log(`💰 First purchase bonus: R$${amount} → ${sponsor.name}`);
@@ -119,104 +163,21 @@ export class BonusCalculatorService {
     }
   }
 
-  async calculateTeamBonus(referenceMonth: string): Promise<void> {
-    // Idempotência: se já existe ganho TEAM para o mês, não recalcula.
-    const already = await this.earningRepo.count({
-      where: { referenceMonth, bonusType: BonusType.TEAM },
-    });
-    if (already > 0) {
-      this.logger.log(`⏭️  Team bonuses already calculated for ${referenceMonth} — skipping`);
-      return;
-    }
+  // ─── Dividendos (pool de liquidez) ───────────────────────────────────────
 
-    this.logger.log(`📊 Calculating team bonuses for ${referenceMonth}`);
-
-    const allUsers = await this.userRepo.find({ where: { deletedAt: null as unknown as Date } });
-    const activeUsers = allUsers.filter((u) => this.isActive(u));
-
-    for (const user of activeUsers) {
-      const titleReq = await this.titleReqRepo.findOne({ where: { title: user.title } });
-      if (!titleReq || titleReq.teamLevels === 0) continue;
-
-      // Sum earnings of all downline within N levels
-      const downlineEarnings = await this.getDownlineEarnings(
-        user.id,
-        titleReq.teamLevels,
-        referenceMonth,
-      );
-
-      if (downlineEarnings <= 0) continue;
-
-      const amount = downlineEarnings * 0.02;
-
-      const earning = this.earningRepo.create({
-        userId: user.id,
-        bonusType: BonusType.TEAM,
-        amount,
-        description: `Bônus de equipe (${titleReq.teamLevels} níveis)`,
-        level: 0,
-        referenceMonth,
-        cutoffEligible: true,
-      });
-
-      await this.earningRepo.save(earning);
-      await this.userRepo.increment({ id: user.id }, 'totalEarnings', amount);
-    }
-  }
-
-  async calculateLeadershipBonus(referenceMonth: string): Promise<void> {
-    // Idempotência
-    const already = await this.earningRepo.count({
-      where: { referenceMonth, bonusType: BonusType.LEADERSHIP },
-    });
-    if (already > 0) {
-      this.logger.log(`⏭️  Leadership bonuses already calculated for ${referenceMonth} — skipping`);
-      return;
-    }
-
-    this.logger.log(`👑 Calculating leadership bonuses for ${referenceMonth}`);
-
-    const allUsers = await this.userRepo.find({ where: { deletedAt: null as unknown as Date } });
-    const qualifiedUsers = allUsers.filter(
-      (u) =>
-        this.isActive(u) &&
-        (u.title === UserTitle.GOLD || u.title === UserTitle.DIAMOND),
-    );
-
-    for (const user of qualifiedUsers) {
-      const percent = user.title === UserTitle.DIAMOND ? 2 : 1;
-
-      // Sum earnings of qualified users (gold/diamond) in downline up to 5 levels
-      const qualifiedDownlineEarnings = await this.getQualifiedDownlineEarnings(
-        user.id,
-        5,
-        referenceMonth,
-      );
-
-      if (qualifiedDownlineEarnings <= 0) continue;
-
-      const amount = qualifiedDownlineEarnings * (percent / 100);
-
-      const earning = this.earningRepo.create({
-        userId: user.id,
-        bonusType: BonusType.LEADERSHIP,
-        amount,
-        description: `Bônus de liderança (${user.title})`,
-        level: 0,
-        referenceMonth,
-        cutoffEligible: true,
-      });
-
-      await this.earningRepo.save(earning);
-      await this.userRepo.increment({ id: user.id }, 'totalEarnings', amount);
-    }
-  }
-
+  /**
+   * Dividendos = pool de liquidez (% do lucro líquido informado pelo admin)
+   * distribuída proporcionalmente às cotas. Quem detém X% da pool de cotas
+   * recebe X% da pool de dividendos. Pago a TODOS que têm cotas,
+   * independentemente do status ativo/inativo.
+   *
+   * As cotas usadas são as do SNAPSHOT do mês de referência — não o saldo
+   * atual — para que o cálculo seja determinístico.
+   */
   async calculateDividends(
     referenceMonth: string,
     dividendPool: number,
   ): Promise<void> {
-    // Idempotência
     const already = await this.earningRepo.count({
       where: { referenceMonth, bonusType: BonusType.DIVIDEND },
     });
@@ -227,106 +188,210 @@ export class BonusCalculatorService {
 
     this.logger.log(`💎 Calculating dividends for ${referenceMonth} — pool: R$${dividendPool}`);
 
-    const usersWithQuotas = await this.userRepo.find({
-      where: { deletedAt: null as unknown as Date },
-    });
+    const snapshots = await this.ensureSnapshot(referenceMonth);
 
-    const totalQuotas = usersWithQuotas.reduce((sum, u) => sum + u.quotaBalance, 0);
+    const totalQuotas = snapshots.reduce((sum, s) => sum + s.quotaBalance, 0);
     if (totalQuotas === 0) return;
 
-    for (const user of usersWithQuotas) {
-      if (user.quotaBalance <= 0) continue;
+    for (const snap of snapshots) {
+      if (snap.quotaBalance <= 0) continue;
 
-      const amount = (dividendPool / totalQuotas) * user.quotaBalance;
+      const amount = (dividendPool / totalQuotas) * snap.quotaBalance;
 
       const earning = this.earningRepo.create({
-        userId: user.id,
+        userId: snap.userId,
         bonusType: BonusType.DIVIDEND,
         amount,
-        description: `Dividendos (${user.quotaBalance} cotas)`,
+        description: `Dividendos (${snap.quotaBalance} cotas)`,
         level: 0,
         referenceMonth,
         cutoffEligible: true,
       });
 
       await this.earningRepo.save(earning);
-      await this.userRepo.increment({ id: user.id }, 'totalEarnings', amount);
+      await this.userRepo.increment({ id: snap.userId }, 'totalEarnings', amount);
     }
   }
 
-  private async getDownlineEarnings(
-    userId: string,
-    maxLevels: number,
-    referenceMonth: string,
-  ): Promise<number> {
-    let total = 0;
-    let currentLevelIds = [userId];
+  // ─── Bônus de equipe + liderança (cascata, leaf-up) ──────────────────────
 
-    for (let level = 1; level <= maxLevels; level++) {
-      if (currentLevelIds.length === 0) break;
-
-      const downline = await this.userRepo.find({
-        where: currentLevelIds.map((id) => ({ sponsorId: id })),
-      });
-
-      if (downline.length === 0) break;
-
-      const ids = downline.map((u) => u.id);
-
-      const earnings = await this.earningRepo
-        .createQueryBuilder('e')
-        .select('SUM(e.amount)', 'total')
-        .where('e.user_id IN (:...ids)', { ids })
-        .andWhere('e.reference_month = :month', { month: referenceMonth })
-        .andWhere('e.bonus_type IN (:...types)', {
-          types: [BonusType.FIRST_PURCHASE, BonusType.REPURCHASE],
-        })
-        .getRawOne();
-
-      total += parseFloat(earnings?.total || '0');
-      currentLevelIds = ids;
+  /**
+   * Calcula os bônus de equipe e liderança do mês.
+   *
+   * DEVE ser chamado APÓS `calculateDividends` (o bônus de equipe incide também
+   * sobre os dividendos da rede).
+   *
+   * Lê do SNAPSHOT do mês de referência (título, níveis de bônus, posição na
+   * rede e status ativo) — não o estado atual — garantindo determinismo.
+   *
+   * Regra de cascata: equipe = 2% de TUDO que os downlines ganharam, inclusive
+   * os bônus de equipe/liderança deles. Para fechar a cascata sem recursão
+   * frágil, processa-se a árvore das folhas para a raiz (ordem de altura
+   * crescente): ao calcular um nó, todos os seus descendentes já têm
+   * equipe/liderança gravados.
+   */
+  async calculateTeamAndLeadershipBonuses(referenceMonth: string): Promise<void> {
+    const already = await this.earningRepo.count({
+      where: [
+        { referenceMonth, bonusType: BonusType.TEAM },
+        { referenceMonth, bonusType: BonusType.LEADERSHIP },
+      ],
+    });
+    if (already > 0) {
+      this.logger.log(`⏭️  Team/leadership already calculated for ${referenceMonth} — skipping`);
+      return;
     }
 
-    return total;
-  }
+    this.logger.log(`📊👑 Calculating team + leadership bonuses for ${referenceMonth}`);
 
-  private async getQualifiedDownlineEarnings(
-    userId: string,
-    maxLevels: number,
-    referenceMonth: string,
-  ): Promise<number> {
-    let total = 0;
-    let currentLevelIds = [userId];
+    const snapshots = await this.ensureSnapshot(referenceMonth);
+    const snapById = new Map(snapshots.map((s) => [s.userId, s]));
 
-    for (let level = 1; level <= maxLevels; level++) {
-      if (currentLevelIds.length === 0) break;
+    // Mapa patrocinador → ids dos filhos diretos (estrutura congelada no mês).
+    const childrenOf = new Map<string, string[]>();
+    for (const s of snapshots) {
+      if (!s.sponsorId) continue;
+      const arr = childrenOf.get(s.sponsorId) ?? [];
+      arr.push(s.userId);
+      childrenOf.set(s.sponsorId, arr);
+    }
 
-      const downline = await this.userRepo.find({
-        where: currentLevelIds.map((id) => ({ sponsorId: id })),
-      });
+    // Altura = maior distância até uma folha. Processar por altura crescente
+    // garante que todo descendente seja calculado antes do seu ancestral.
+    const heightCache = new Map<string, number>();
+    const heightOf = (id: string): number => {
+      const cached = heightCache.get(id);
+      if (cached !== undefined) return cached;
+      heightCache.set(id, 0); // guarda contra ciclos acidentais
+      const children = childrenOf.get(id) ?? [];
+      const h = children.length === 0
+        ? 0
+        : 1 + Math.max(...children.map((c) => heightOf(c)));
+      heightCache.set(id, h);
+      return h;
+    };
+    const ordered = [...snapshots].sort((a, b) => heightOf(a.userId) - heightOf(b.userId));
 
-      if (downline.length === 0) break;
+    let teamCount = 0;
+    let leadershipCount = 0;
 
-      const qualifiedDownline = downline.filter(
-        (u) => u.title === UserTitle.GOLD || u.title === UserTitle.DIAMOND,
-      );
+    for (const snap of ordered) {
+      // Só usuários ativos (no fechamento) RECEBEM bônus de equipe/liderança.
+      if (!snap.isActive) continue;
 
-      if (qualifiedDownline.length > 0) {
-        const ids = qualifiedDownline.map((u) => u.id);
+      // ── Bônus de equipe ──────────────────────────────────────────────────
+      if (snap.teamLevels > 0) {
+        const downlineIds = this.collectDownlineIds(snap.userId, snap.teamLevels, childrenOf);
+        const downlineEarnings = await this.sumEarnings(downlineIds, referenceMonth);
 
-        const earnings = await this.earningRepo
-          .createQueryBuilder('e')
-          .select('SUM(e.amount)', 'total')
-          .where('e.user_id IN (:...ids)', { ids })
-          .andWhere('e.reference_month = :month', { month: referenceMonth })
-          .getRawOne();
-
-        total += parseFloat(earnings?.total || '0');
+        if (downlineEarnings > 0) {
+          const amount = downlineEarnings * BonusCalculatorService.TEAM_BONUS_RATE;
+          await this.saveBatchBonus(
+            snap.userId,
+            BonusType.TEAM,
+            amount,
+            `Bônus de equipe (${snap.teamLevels} níveis)`,
+            referenceMonth,
+          );
+          teamCount++;
+        }
       }
 
-      currentLevelIds = downline.map((u) => u.id);
+      // ── Bônus de liderança ───────────────────────────────────────────────
+      const leadershipPercent = Number(snap.leadershipPercent);
+      if (leadershipPercent > 0) {
+        const downlineIds = this.collectDownlineIds(
+          snap.userId,
+          BonusCalculatorService.LEADERSHIP_DEPTH,
+          childrenOf,
+        );
+        // Apenas downlines QUALIFICADOS (Ouro/Diamante) entram na base.
+        const qualifiedIds = downlineIds.filter((id) => {
+          const t = snapById.get(id)?.title;
+          return t === UserTitle.GOLD || t === UserTitle.DIAMOND;
+        });
+        const qualifiedEarnings = await this.sumEarnings(qualifiedIds, referenceMonth);
+
+        if (qualifiedEarnings > 0) {
+          const amount = qualifiedEarnings * (leadershipPercent / 100);
+          await this.saveBatchBonus(
+            snap.userId,
+            BonusType.LEADERSHIP,
+            amount,
+            `Bônus de liderança (${snap.title} — ${leadershipPercent}%)`,
+            referenceMonth,
+          );
+          leadershipCount++;
+        }
+      }
     }
 
-    return total;
+    this.logger.log(
+      `✅ Team/leadership done for ${referenceMonth}: ${teamCount} equipe, ${leadershipCount} liderança`,
+    );
+  }
+
+  /** Persiste um bônus de lote (equipe/liderança) e atualiza o totalEarnings. */
+  private async saveBatchBonus(
+    userId: string,
+    bonusType: BonusType,
+    amount: number,
+    description: string,
+    referenceMonth: string,
+  ): Promise<void> {
+    const earning = this.earningRepo.create({
+      userId,
+      bonusType,
+      amount,
+      description,
+      level: 0,
+      referenceMonth,
+      cutoffEligible: true,
+    });
+    await this.earningRepo.save(earning);
+    await this.userRepo.increment({ id: userId }, 'totalEarnings', amount);
+  }
+
+  /**
+   * Coleta os ids dos descendentes de `rootId` até `maxLevels` níveis,
+   * usando o mapa de filhos em memória.
+   */
+  private collectDownlineIds(
+    rootId: string,
+    maxLevels: number,
+    childrenOf: Map<string, string[]>,
+  ): string[] {
+    const ids: string[] = [];
+    let frontier = [rootId];
+
+    for (let level = 1; level <= maxLevels; level++) {
+      const next: string[] = [];
+      for (const id of frontier) {
+        for (const childId of childrenOf.get(id) ?? []) next.push(childId);
+      }
+      if (next.length === 0) break;
+      ids.push(...next);
+      frontier = next;
+    }
+
+    return ids;
+  }
+
+  /**
+   * Soma TODOS os ganhos (qualquer bonusType) dos usuários informados no mês.
+   * Inclui FIRST_PURCHASE, REPURCHASE, DIVIDEND, TEAM e LEADERSHIP — é isso que
+   * dá o efeito de cascata ao bônus de equipe/liderança.
+   */
+  private async sumEarnings(userIds: string[], referenceMonth: string): Promise<number> {
+    if (userIds.length === 0) return 0;
+
+    const row = await this.earningRepo
+      .createQueryBuilder('e')
+      .select('SUM(e.amount)', 'total')
+      .where('e.user_id IN (:...ids)', { ids: userIds })
+      .andWhere('e.reference_month = :month', { month: referenceMonth })
+      .getRawOne();
+
+    return parseFloat(row?.total || '0');
   }
 }

@@ -13,6 +13,7 @@ import { GlobalFinancialSettings } from '../modules/admin/entities/global-financ
 import { BonusModule } from '../core/bonus/bonus.module';
 import { TitleModule } from '../core/title/title.module';
 import { SplitModule } from '../core/split/split.module';
+import { SnapshotModule } from '../core/snapshot/snapshot.module';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { SplitModule } from '../core/split/split.module';
     BonusModule,
     TitleModule,
     SplitModule,
+    SnapshotModule,
   ],
   providers: [
     MonthlyCloseJob,

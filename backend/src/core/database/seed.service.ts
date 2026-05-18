@@ -83,9 +83,6 @@ export class SeedService implements OnModuleInit {
   }
 
   private async seedTitleRequirements() {
-    const count = await this.titleReqRepo.count();
-    if (count > 0) return;
-
     const seeds: Partial<TitleRequirement>[] = [
       { title: UserTitle.NONE, requirementDesc: 'Sem título', reqType: null, reqQuantity: null, reqLevel: null, repurchaseLevels: 0, teamLevels: 0, leadershipPercent: 0 },
       { title: UserTitle.BRONZE, requirementDesc: '2 pessoas ativas na rede', reqType: TitleReqType.PESSOAS_ATIVAS, reqQuantity: 2, reqLevel: TitleReqLevel.QUALQUER, repurchaseLevels: 1, teamLevels: 2, leadershipPercent: 0 },
@@ -94,8 +91,44 @@ export class SeedService implements OnModuleInit {
       { title: UserTitle.DIAMOND, requirementDesc: '3 Bronzes em linhas diferentes', reqType: TitleReqType.LINHAS, reqQuantity: 3, reqLevel: TitleReqLevel.BRONZE, repurchaseLevels: 6, teamLevels: 5, leadershipPercent: 2 },
     ];
 
-    await this.titleReqRepo.save(seeds.map((s) => this.titleReqRepo.create(s)));
-    this.logger.log('🏆 Title requirements seeded');
+    // Upsert auto-corretivo. Não basta `if (count > 0) return`: a migration 004
+    // (versão antiga) populava a tabela SEM as colunas repurchase_levels /
+    // team_levels / leadership_percent, deixando-as em 0 — o que zerava os
+    // bônus de recompra/equipe/liderança de toda a base. Aqui garantimos, a
+    // cada boot, que essas colunas reflitam as regras de negócio canônicas.
+    let inserted = 0;
+    let healed = 0;
+    for (const seed of seeds) {
+      const existing = await this.titleReqRepo.findOne({ where: { title: seed.title } });
+
+      if (!existing) {
+        await this.titleReqRepo.save(this.titleReqRepo.create(seed));
+        inserted++;
+        continue;
+      }
+
+      const needsFix =
+        existing.repurchaseLevels !== seed.repurchaseLevels ||
+        existing.teamLevels !== seed.teamLevels ||
+        Number(existing.leadershipPercent) !== Number(seed.leadershipPercent);
+
+      if (needsFix) {
+        existing.repurchaseLevels = seed.repurchaseLevels as number;
+        existing.teamLevels = seed.teamLevels as number;
+        existing.leadershipPercent = seed.leadershipPercent as number;
+        await this.titleReqRepo.save(existing);
+        healed++;
+        this.logger.warn(
+          `🔧 title_requirements '${seed.title}' corrigido → ` +
+            `recompra=${seed.repurchaseLevels}, equipe=${seed.teamLevels}, ` +
+            `liderança=${seed.leadershipPercent}%`,
+        );
+      }
+    }
+
+    if (inserted > 0) this.logger.log(`🏆 Title requirements seeded (${inserted} inseridos)`);
+    if (healed > 0) this.logger.warn(`🔧 Title requirements corrigidos: ${healed} título(s)`);
+    if (inserted === 0 && healed === 0) this.logger.log('🏆 Title requirements OK');
   }
 
   private async seedPartnerLevelRequirements() {
