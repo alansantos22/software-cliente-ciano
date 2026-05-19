@@ -1,163 +1,242 @@
 #!/usr/bin/env bash
-# =============================================================================
-# Ciano Cotas - Instalação e deploy completo em VPS (Ubuntu 22.04 / 24.04)
-# =============================================================================
-# Script autossuficiente: clona o projeto, instala TODAS as dependências e
-# deixa o sistema no ar. Pensado para rodar numa VPS limpa com um comando.
 #
-# USO (na VPS, como root):
+# setup.sh — Instalação inicial (bootstrap) do sistema Ciano Cotas
+#            numa VPS Ubuntu limpa (22.04 / 24.04).
+#
+# Faz, de uma vez só, toda a configuração:
+#   - atualiza o sistema e configura o firewall
+#   - cria o usuário do sistema (o app NUNCA roda como root)
+#   - instala Node 22, MySQL, Nginx, Git e Certbot
+#   - cria o banco e o usuário do MySQL
+#   - clona o repositório e gera os arquivos .env
+#   - sobe o backend (NestJS) como serviço systemd
+#   - compila o frontend (Vue/Vite) e configura o Nginx
+#   - emite o certificado HTTPS (Let's Encrypt)
+#
+# COMO USAR (numa VPS recém-criada, logado como root):
+#
 #   wget https://raw.githubusercontent.com/alansantos22/software-cliente-ciano/main/setup.sh
 #   bash setup.sh
 #
-# O que ele faz:
-#   - Instala Node.js 22, MySQL 8, Nginx, Certbot, PM2 e ferramentas de build
-#   - Clona o repositório do projeto em /var/www/ciano
-#   - Cria o banco de dados e o usuário do MySQL
-#   - Gera os arquivos .env do backend e frontend
-#   - Instala dependências e builda backend + frontend
-#   - Sobe a API com PM2 e configura o Nginx (frontend + proxy /api + SSL)
+# O script faz algumas perguntas no início e depois roda sozinho.
+# É idempotente: pode ser rodado de novo sem quebrar nada.
 #
-# É idempotente: pode ser executado novamente para atualizar o sistema.
-# =============================================================================
-
 set -euo pipefail
 
-# -----------------------------------------------------------------------------
-# CONFIGURAÇÃO  ->  EDITE OS VALORES ABAIXO ANTES DE RODAR
-# -----------------------------------------------------------------------------
-
-# Domínio público do sistema (sem http/https). Ex.: cotas.suaempresa.com.br
-DOMAIN="seudominio.com.br"
-
-# E-mail usado pelo Certbot para emitir/renovar o certificado SSL.
-SSL_EMAIL="seu-email@exemplo.com"
-
-# --- Repositório -------------------------------------------------------------
-REPO_URL="https://github.com/alansantos22/software-cliente-ciano.git"
-BRANCH="main"
-# Token do GitHub. OBRIGATÓRIO se o repositório for PRIVADO; deixe vazio se público.
-# Crie em: GitHub > Settings > Developer settings > Personal access tokens.
-GIT_TOKEN=""
-
-# Pasta onde o projeto será clonado na VPS.
-PROJECT_DIR="/var/www/ciano"
-
-# --- Banco de dados ----------------------------------------------------------
+# ============================ CONFIGURAÇÃO ============================
+APP_DIR="/var/www/ciano"
+DEFAULT_REPO="https://github.com/alansantos22/software-cliente-ciano.git"
+DEFAULT_BRANCH="main"
+DEFAULT_DEPLOY_USER="ciano"
 DB_NAME="ciano_cotas"
 DB_USER="ciano"
-DB_PASSWORD="TROQUE_ESTA_SENHA_DO_BANCO"          # senha do usuário da aplicação
-DB_ROOT_PASSWORD="TROQUE_A_SENHA_ROOT_DO_MYSQL"   # senha do root do MySQL
+SERVICE="ciano"
+APP_PORT="3000"
+NODE_MAJOR="22"
+# ======================================================================
 
-# --- JWT / segurança ---------------------------------------------------------
-# Deixe vazio para o script gerar um segredo aleatório automaticamente.
-JWT_SECRET=""
+# --- cores -------------------------------------------------------------
+C_OK=$'\e[32m'; C_INFO=$'\e[36m'; C_WARN=$'\e[33m'; C_ERR=$'\e[31m'; C_OFF=$'\e[0m'
+log()  { echo; echo "${C_INFO}=== $* ===${C_OFF}"; }
+ok()   { echo "${C_OK}✓${C_OFF} $*"; }
+warn() { echo "${C_WARN}!${C_OFF} $*"; }
+die()  { echo "${C_ERR}✗ $*${C_OFF}" >&2; exit 1; }
 
-# --- E-mail (SMTP) -----------------------------------------------------------
-MAIL_HOST="smtp.hostinger.com"
-MAIL_PORT="465"
-MAIL_SECURE="true"
-MAIL_USER="adm@gshark.com.br"
-MAIL_PASSWORD="TROQUE_A_SENHA_DO_EMAIL"
-MAIL_FROM="Ciano Cotas <adm@gshark.com.br>"
+# --- precisa ser root --------------------------------------------------
+[ "$(id -u)" -eq 0 ] || die "Rode este script como root: sudo bash setup.sh"
 
-# --- App ---------------------------------------------------------------------
-APP_PORT="3000"          # porta interna da API (proxy reverso do Nginx aponta aqui)
-NODE_MAJOR="22"          # versão major do Node.js
+# helper: roda um comando como o usuário do deploy
+as_deploy() { sudo -u "$DEPLOY_USER" bash -lc "$*"; }
 
-# Emitir certificado SSL com Certbot? (true/false)
-# Use false se o DNS do domínio ainda não estiver apontando para esta VPS.
-ENABLE_SSL="true"
+# ======================================================================
+#  PERGUNTAS
+# ======================================================================
+log "Configuração inicial — responda as perguntas abaixo"
 
-# =============================================================================
-# A PARTIR DAQUI NÃO É NECESSÁRIO EDITAR
-# =============================================================================
+read -rp "Domínio do site (ex.: cotas.suaempresa.com.br): " DOMAIN
+[ -n "$DOMAIN" ] || die "O domínio é obrigatório."
 
-log()  { echo -e "\n\033[1;36m==> $*\033[0m"; }
-warn() { echo -e "\033[1;33m[aviso] $*\033[0m"; }
-die()  { echo -e "\033[1;31m[erro] $*\033[0m"; exit 1; }
+read -rp "Servir também o www.${DOMAIN}? (responda N se for um subdomínio) [s/N] " ADD_WWW
+if [[ "$ADD_WWW" =~ ^[sSyY]$ ]]; then
+  WWW_DOMAIN="www.${DOMAIN}"
+else
+  WWW_DOMAIN=""
+fi
 
-[ "$(id -u)" -eq 0 ] || die "Rode este script como root (ex.: sudo bash setup.sh)."
+read -rp "E-mail para o certificado HTTPS (avisos de expiração): " EMAIL
+[ -n "$EMAIL" ] || die "O e-mail é obrigatório."
 
-export DEBIAN_FRONTEND=noninteractive
+read -rp "URL do repositório Git [$DEFAULT_REPO]: " REPO_URL
+REPO_URL="${REPO_URL:-$DEFAULT_REPO}"
 
-# -----------------------------------------------------------------------------
-log "1/10 Atualizando o sistema e instalando pacotes base"
-# -----------------------------------------------------------------------------
-apt-get update -y
-apt-get upgrade -y
-apt-get install -y curl ca-certificates gnupg git build-essential python3 ufw openssl
+read -rp "Branch do repositório [$DEFAULT_BRANCH]: " BRANCH
+BRANCH="${BRANCH:-$DEFAULT_BRANCH}"
 
-# -----------------------------------------------------------------------------
-log "2/10 Clonando / atualizando o repositório do projeto"
-# -----------------------------------------------------------------------------
+read -rsp "Token do GitHub (só se o repositório for PRIVADO; Enter pra pular): " GIT_TOKEN
+echo
+
+read -rp "Nome do usuário do sistema (logar/rodar o app) [$DEFAULT_DEPLOY_USER]: " DEPLOY_USER
+DEPLOY_USER="${DEPLOY_USER:-$DEFAULT_DEPLOY_USER}"
+
+read -rsp "Senha para o usuário '$DEPLOY_USER' (pra você logar depois): " DEPLOY_PASS
+echo
+[ -n "$DEPLOY_PASS" ] || die "A senha do usuário '$DEPLOY_USER' é obrigatória."
+
+echo
+echo "--- Configuração de e-mail (SMTP) — usado pra enviar e-mails do sistema ---"
+read -rp "Servidor SMTP [smtp.hostinger.com]: " MAIL_HOST
+MAIL_HOST="${MAIL_HOST:-smtp.hostinger.com}"
+
+read -rp "Porta SMTP [465]: " MAIL_PORT
+MAIL_PORT="${MAIL_PORT:-465}"
+
+read -rp "Usuário/e-mail SMTP [adm@gshark.com.br]: " MAIL_USER
+MAIL_USER="${MAIL_USER:-adm@gshark.com.br}"
+
+read -rsp "Senha do e-mail SMTP: " MAIL_PASSWORD
+echo
+[ -n "$MAIL_PASSWORD" ] || warn "Senha de e-mail vazia — o envio de e-mails não vai funcionar."
+
+read -rp "Nome do remetente [Ciano Cotas <${MAIL_USER}>]: " MAIL_FROM
+MAIL_FROM="${MAIL_FROM:-Ciano Cotas <${MAIL_USER}>}"
+
+echo
+echo "Resumo:"
+echo "  Domínio ........: $DOMAIN${WWW_DOMAIN:+ (+ $WWW_DOMAIN)}"
+echo "  E-mail HTTPS ...: $EMAIL"
+echo "  Repositório ....: $REPO_URL  (branch: $BRANCH)"
+echo "  Repo privado ...: $([ -n "$GIT_TOKEN" ] && echo 'sim (token informado)' || echo 'não / público')"
+echo "  Usuário sistema : $DEPLOY_USER"
+echo "  SMTP ...........: $MAIL_USER @ $MAIL_HOST:$MAIL_PORT"
+read -rp "Confirma e inicia a instalação? [s/N] " CONFIRM
+[[ "$CONFIRM" =~ ^[sSyY]$ ]] || die "Cancelado pelo usuário."
+
+# segredos gerados automaticamente
+# o sufixo "Aa1_" garante maiúscula + minúscula + dígito + caractere especial,
+# pra senha passar na política validate_password do MySQL, se estiver ativa.
+DB_PASSWORD="$(openssl rand -hex 16)Aa1_"
+JWT_SECRET="$(openssl rand -hex 48)"
+
+# porta 465 = conexão SSL direta (secure=true); demais (ex.: 587) = STARTTLS.
+if [ "$MAIL_PORT" = "465" ]; then MAIL_SECURE="true"; else MAIL_SECURE="false"; fi
+
+# monta a URL de clone (com token embutido, se for repo privado)
 if [ -n "$GIT_TOKEN" ]; then
-  CLONE_URL="https://${GIT_TOKEN}@github.com/alansantos22/software-cliente-ciano.git"
+  CLONE_URL="$(echo "$REPO_URL" | sed "s#https://#https://${GIT_TOKEN}@#")"
 else
   CLONE_URL="$REPO_URL"
 fi
 
-if [ -d "$PROJECT_DIR/.git" ]; then
-  log "Repositório já existe, atualizando (git pull)..."
-  git -C "$PROJECT_DIR" fetch origin "$BRANCH"
-  git -C "$PROJECT_DIR" checkout "$BRANCH"
-  git -C "$PROJECT_DIR" pull origin "$BRANCH"
+export DEBIAN_FRONTEND=noninteractive
+
+# ======================================================================
+#  1. SISTEMA + FIREWALL
+# ======================================================================
+log "1/12 — Atualizando o sistema"
+apt-get update -y
+apt-get upgrade -y
+ok "Sistema atualizado."
+
+log "2/12 — Instalando pacotes (git, nginx, mysql, certbot, curl, fail2ban)"
+apt-get install -y git nginx mysql-server certbot python3-certbot-nginx \
+  curl ufw fail2ban build-essential python3 ca-certificates gnupg openssl
+ok "Pacotes instalados."
+
+log "3/12 — Configurando o firewall (UFW)"
+ufw allow OpenSSH      >/dev/null
+ufw allow 'Nginx Full' >/dev/null
+ufw --force enable     >/dev/null
+ok "Firewall ativo (SSH + HTTP/HTTPS liberados)."
+
+# ======================================================================
+#  2. USUÁRIO DO SISTEMA
+# ======================================================================
+log "4/12 — Criando o usuário '$DEPLOY_USER'"
+if id "$DEPLOY_USER" &>/dev/null; then
+  ok "Usuário '$DEPLOY_USER' já existe — mantendo."
 else
-  mkdir -p "$(dirname "$PROJECT_DIR")"
-  git clone -b "$BRANCH" "$CLONE_URL" "$PROJECT_DIR"
+  adduser --disabled-password --gecos "" "$DEPLOY_USER"
+  usermod -aG sudo "$DEPLOY_USER"
+  ok "Usuário '$DEPLOY_USER' criado e adicionado ao grupo sudo."
 fi
-
-[ -d "$PROJECT_DIR/backend" ]  || die "Pasta backend não encontrada após o clone."
-[ -d "$PROJECT_DIR/frontend" ] || die "Pasta frontend não encontrada após o clone."
-
-if [ -z "$JWT_SECRET" ]; then
-  JWT_SECRET="$(openssl rand -hex 48)"
-  log "JWT_SECRET gerado automaticamente."
+echo "$DEPLOY_USER:$DEPLOY_PASS" | chpasswd
+# copia as chaves SSH do root pro usuário (pra você logar com a mesma chave)
+if [ -f /root/.ssh/authorized_keys ]; then
+  mkdir -p "/home/$DEPLOY_USER/.ssh"
+  cp /root/.ssh/authorized_keys "/home/$DEPLOY_USER/.ssh/authorized_keys"
+  chown -R "$DEPLOY_USER:$DEPLOY_USER" "/home/$DEPLOY_USER/.ssh"
+  chmod 700 "/home/$DEPLOY_USER/.ssh"
+  chmod 600 "/home/$DEPLOY_USER/.ssh/authorized_keys"
 fi
+ok "Acesso do usuário '$DEPLOY_USER' configurado."
 
-# -----------------------------------------------------------------------------
-log "3/10 Instalando Node.js ${NODE_MAJOR}.x e PM2"
-# -----------------------------------------------------------------------------
-if ! command -v node >/dev/null 2>&1 || [ "$(node -v | cut -d. -f1 | tr -d v)" -lt "$NODE_MAJOR" ]; then
+# ======================================================================
+#  3. NODE.JS
+# ======================================================================
+log "5/12 — Instalando o Node.js ${NODE_MAJOR}"
+if command -v node &>/dev/null && [ "$(node -v | cut -d. -f1 | tr -d v)" -ge "$NODE_MAJOR" ]; then
+  ok "Node $(node -v) já instalado."
+else
   curl -fsSL "https://deb.nodesource.com/setup_${NODE_MAJOR}.x" | bash -
   apt-get install -y nodejs
+  ok "Node $(node -v) instalado."
 fi
-node -v
-npm -v
-npm install -g pm2
 
-# -----------------------------------------------------------------------------
-log "4/10 Instalando e configurando MySQL Server"
-# -----------------------------------------------------------------------------
-apt-get install -y mysql-server
+# ======================================================================
+#  4. MYSQL — BANCO E USUÁRIO
+# ======================================================================
+log "6/12 — Configurando o MySQL (banco + usuário)"
 systemctl enable --now mysql
-
-mysql --protocol=socket -uroot <<SQL || mysql -uroot -p"${DB_ROOT_PASSWORD}" <<SQL
-ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY '${DB_ROOT_PASSWORD}';
-CREATE DATABASE IF NOT EXISTS \`${DB_NAME}\`
-  CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+mysql <<SQL
+CREATE DATABASE IF NOT EXISTS \`${DB_NAME}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 CREATE USER IF NOT EXISTS '${DB_USER}'@'localhost' IDENTIFIED BY '${DB_PASSWORD}';
 ALTER USER '${DB_USER}'@'localhost' IDENTIFIED BY '${DB_PASSWORD}';
 GRANT ALL PRIVILEGES ON \`${DB_NAME}\`.* TO '${DB_USER}'@'localhost';
 FLUSH PRIVILEGES;
 SQL
+ok "Banco '${DB_NAME}' e usuário '${DB_USER}' prontos."
 
-log "Banco '${DB_NAME}' e usuário '${DB_USER}' prontos."
-
-# -----------------------------------------------------------------------------
-log "5/10 Instalando Nginx e Certbot"
-# -----------------------------------------------------------------------------
-apt-get install -y nginx
-systemctl enable --now nginx
-if [ "$ENABLE_SSL" = "true" ]; then
-  apt-get install -y certbot python3-certbot-nginx
+# ======================================================================
+#  5. (opcional) SWAP — pra VPS com pouca RAM não falhar no build
+# ======================================================================
+MEM_KB="$(awk '/MemTotal/{print $2}' /proc/meminfo)"
+if [ "$MEM_KB" -lt 1500000 ] && [ ! -f /swapfile ]; then
+  log "RAM baixa detectada — criando 2 GB de swap"
+  fallocate -l 2G /swapfile
+  chmod 600 /swapfile
+  mkswap /swapfile >/dev/null
+  swapon /swapfile
+  echo '/swapfile none swap sw 0 0' >> /etc/fstab
+  ok "Swap de 2 GB ativo."
 fi
 
-# -----------------------------------------------------------------------------
-log "6/10 Gerando arquivos .env"
-# -----------------------------------------------------------------------------
-BACKEND_ENV="$PROJECT_DIR/backend/.env.production"
-cat > "$BACKEND_ENV" <<ENV
-# Gerado por setup.sh
+# ======================================================================
+#  6. CLONAR O CÓDIGO
+# ======================================================================
+log "7/12 — Baixando o código do projeto"
+mkdir -p "$(dirname "$APP_DIR")"
+if [ -d "$APP_DIR/.git" ]; then
+  chown -R "$DEPLOY_USER:$DEPLOY_USER" "$APP_DIR"
+  as_deploy "cd '$APP_DIR' && git fetch origin '$BRANCH' && git checkout '$BRANCH' && git reset --hard 'origin/$BRANCH'"
+  ok "Repositório já existia — atualizado."
+else
+  # cria o diretório vazio e dá a posse ao usuário ANTES do clone — assim o
+  # 'git clone' (que roda como esse usuário) consegue escrever.
+  rm -rf "$APP_DIR"
+  mkdir -p "$APP_DIR"
+  chown "$DEPLOY_USER:$DEPLOY_USER" "$APP_DIR"
+  as_deploy "git clone -b '$BRANCH' '$CLONE_URL' '$APP_DIR'"
+  ok "Repositório clonado em $APP_DIR."
+fi
+chown -R "$DEPLOY_USER:$DEPLOY_USER" "$APP_DIR"
+
+# ======================================================================
+#  7. BACKEND — .env, dependências, build
+# ======================================================================
+log "8/12 — Configurando o backend (NestJS)"
+# O backend carrega .env.<NODE_ENV>; em produção isso é .env.production.
+cat > "$APP_DIR/backend/.env.production" <<ENV
+# Gerado automaticamente pelo setup.sh
 NODE_ENV=production
 PORT=${APP_PORT}
 API_PREFIX=api
@@ -179,7 +258,7 @@ THROTTLE_TTL=60
 THROTTLE_LIMIT=100
 
 # CORS
-CORS_ORIGINS=https://${DOMAIN}
+CORS_ORIGINS=https://${DOMAIN}${WWW_DOMAIN:+,https://${WWW_DOMAIN}}
 
 # Logging
 LOG_LEVEL=info
@@ -195,59 +274,62 @@ MAIL_FROM=${MAIL_FROM}
 # Frontend URL (usado nos links de e-mail)
 FRONTEND_URL=https://${DOMAIN}
 ENV
-chmod 600 "$BACKEND_ENV"
-log "Backend  -> $BACKEND_ENV"
+chown "$DEPLOY_USER:$DEPLOY_USER" "$APP_DIR/backend/.env.production"
+chmod 600 "$APP_DIR/backend/.env.production"
 
-FRONTEND_ENV="$PROJECT_DIR/frontend/.env.production"
-cat > "$FRONTEND_ENV" <<ENV
-VITE_API_URL=https://${DOMAIN}/api
-ENV
-log "Frontend -> $FRONTEND_ENV"
+as_deploy "cd '$APP_DIR/backend' && npm ci && npm run build"
+ok "Backend instalado e compilado."
 
-# -----------------------------------------------------------------------------
-log "7/10 Instalando dependências e buildando o BACKEND"
-# -----------------------------------------------------------------------------
-cd "$PROJECT_DIR/backend"
-npm ci || npm install
-npm run build
+# ======================================================================
+#  8. SERVIÇO SYSTEMD
+# ======================================================================
+log "9/12 — Criando o serviço systemd"
+cat > /etc/systemd/system/${SERVICE}.service <<UNIT
+[Unit]
+Description=Ciano Cotas API
+After=network.target mysql.service
 
-# -----------------------------------------------------------------------------
-log "8/10 Instalando dependências e buildando o FRONTEND"
-# -----------------------------------------------------------------------------
-cd "$PROJECT_DIR/frontend"
-npm ci || npm install
-npm run build   # gera frontend/dist
+[Service]
+Type=simple
+User=${DEPLOY_USER}
+WorkingDirectory=${APP_DIR}/backend
+ExecStart=/usr/bin/node dist/main.js
+Restart=on-failure
+RestartSec=5
+Environment=NODE_ENV=production
 
-# -----------------------------------------------------------------------------
-log "9/10 Subindo a API com PM2"
-# -----------------------------------------------------------------------------
-cd "$PROJECT_DIR/backend"
-# A API cria o schema automaticamente (TypeORM synchronize) e roda o seed inicial.
-pm2 delete ciano-api 2>/dev/null || true
-NODE_ENV=production pm2 start dist/main.js --name ciano-api --time
-pm2 save
-pm2 startup systemd -u root --hp /root | tail -n 1 | bash || true
+[Install]
+WantedBy=multi-user.target
+UNIT
+systemctl daemon-reload
+systemctl enable ${SERVICE}
+systemctl restart ${SERVICE}
+ok "Serviço '${SERVICE}' ativo (a API cria o schema e roda o seed na 1ª subida)."
 
-# -----------------------------------------------------------------------------
-log "10/10 Configurando Nginx (frontend + proxy /api)"
-# -----------------------------------------------------------------------------
-NGINX_SITE="/etc/nginx/sites-available/ciano"
-cat > "$NGINX_SITE" <<NGINX
+# ======================================================================
+#  9. FRONTEND — build
+# ======================================================================
+log "10/12 — Compilando o frontend (Vue/Vite)"
+echo "VITE_API_URL=https://${DOMAIN}/api" > "$APP_DIR/frontend/.env.production"
+chown "$DEPLOY_USER:$DEPLOY_USER" "$APP_DIR/frontend/.env.production"
+as_deploy "cd '$APP_DIR/frontend' && npm ci && npm run build"
+ok "Frontend compilado em frontend/dist."
+
+# ======================================================================
+#  10. NGINX
+# ======================================================================
+log "11/12 — Configurando o Nginx"
+cat > /etc/nginx/sites-available/${SERVICE} <<NGINX
 server {
     listen 80;
-    server_name ${DOMAIN};
+    server_name ${DOMAIN}${WWW_DOMAIN:+ ${WWW_DOMAIN}};
 
-    # Frontend (SPA Vue/Vite)
-    root ${PROJECT_DIR}/frontend/dist;
+    root ${APP_DIR}/frontend/dist;
     index index.html;
-
-    location / {
-        try_files \$uri \$uri/ /index.html;
-    }
 
     # API (proxy reverso para o NestJS)
     location /api/ {
-        proxy_pass http://127.0.0.1:${APP_PORT}/api/;
+        proxy_pass http://127.0.0.1:${APP_PORT};
         proxy_http_version 1.1;
         proxy_set_header Host \$host;
         proxy_set_header X-Real-IP \$remote_addr;
@@ -256,43 +338,75 @@ server {
         proxy_read_timeout 60s;
     }
 
+    # Frontend (SPA)
+    location / {
+        try_files \$uri \$uri/ /index.html;
+    }
+
     client_max_body_size 10M;
 }
 NGINX
-
-ln -sf "$NGINX_SITE" /etc/nginx/sites-enabled/ciano
+ln -sf /etc/nginx/sites-available/${SERVICE} /etc/nginx/sites-enabled/${SERVICE}
 rm -f /etc/nginx/sites-enabled/default
 nginx -t
 systemctl reload nginx
+ok "Nginx configurado e recarregado."
 
-# Firewall
-ufw allow OpenSSH      >/dev/null 2>&1 || true
-ufw allow 'Nginx Full' >/dev/null 2>&1 || true
-yes | ufw enable        >/dev/null 2>&1 || true
+# regra de sudo: o usuário pode reiniciar os serviços sem senha (pros deploys)
+cat > /etc/sudoers.d/deploy-ciano <<SUDO
+${DEPLOY_USER} ALL=(root) NOPASSWD: /usr/bin/systemctl restart ${SERVICE}, /usr/bin/systemctl reload nginx
+SUDO
+chmod 440 /etc/sudoers.d/deploy-ciano
 
-# SSL
-if [ "$ENABLE_SSL" = "true" ]; then
-  log "Emitindo certificado SSL para ${DOMAIN}"
-  if certbot --nginx -d "${DOMAIN}" --non-interactive --agree-tos -m "${SSL_EMAIL}" --redirect; then
-    log "SSL configurado com sucesso."
-  else
-    warn "Falha ao emitir SSL. Verifique se o DNS de ${DOMAIN} aponta para esta VPS"
-    warn "e rode manualmente:  certbot --nginx -d ${DOMAIN}"
-  fi
+# ======================================================================
+#  11. HTTPS (Let's Encrypt)
+# ======================================================================
+log "12/12 — Emitindo o certificado HTTPS"
+CERT_FLAGS=(-d "$DOMAIN")
+[ -n "$WWW_DOMAIN" ] && CERT_FLAGS+=(-d "$WWW_DOMAIN")
+if certbot --nginx "${CERT_FLAGS[@]}" \
+     --non-interactive --agree-tos -m "$EMAIL" --redirect; then
+  ok "HTTPS ativo."
+  HTTPS_OK=1
+else
+  warn "Certbot falhou (DNS ainda não aponta pra esta VPS?)."
+  warn "O site funciona em HTTP por enquanto. Quando o DNS propagar, rode:"
+  warn "  sudo certbot --nginx ${CERT_FLAGS[*]}"
+  HTTPS_OK=0
 fi
 
-# -----------------------------------------------------------------------------
+# fail2ban — bane temporariamente IPs que erram a senha no SSH.
+systemctl enable --now fail2ban
+ok "fail2ban ativo — protege o SSH contra força bruta."
+
+# ======================================================================
+#  FIM
+# ======================================================================
 echo
-echo -e "\033[1;32m============================================================\033[0m"
-echo -e "\033[1;32m  Instalação concluída!\033[0m"
-echo -e "\033[1;32m============================================================\033[0m"
-echo "  Site:      https://${DOMAIN}"
-echo "  API:       https://${DOMAIN}/api"
-echo "  Projeto:   ${PROJECT_DIR}"
-echo "  Logs API:  pm2 logs ciano-api"
-echo "  Status:    pm2 status"
-echo "  Reiniciar: pm2 restart ciano-api"
+echo "${C_OK}============================================================${C_OFF}"
+echo "${C_OK}            INSTALAÇÃO CONCLUÍDA                            ${C_OFF}"
+echo "${C_OK}============================================================${C_OFF}"
 echo
-echo "  Para atualizar o sistema depois (novo deploy), basta rodar de novo:"
-echo "    bash setup.sh"
+echo "  Site .................: https://${DOMAIN}"
+echo "  API ..................: https://${DOMAIN}/api"
+echo "  Backend (interno) ....: http://127.0.0.1:${APP_PORT}"
+echo
+echo "${C_WARN}  GUARDE estes segredos (também estão em backend/.env.production):${C_OFF}"
+echo "  Usuário do sistema .....: ${DEPLOY_USER}"
+echo "  Senha do usuário .......: (a que você digitou)"
+echo "  Senha do MySQL .........: ${DB_PASSWORD}"
+echo "  JWT_SECRET .............: ${JWT_SECRET}"
+echo
+echo "  Comandos úteis:"
+echo "    Logs da API ..........: journalctl -u ${SERVICE} -f"
+echo "    Status ...............: systemctl status ${SERVICE}"
+echo "    Reiniciar ............: sudo systemctl restart ${SERVICE}"
+echo
+echo "  Próximos deploys (atualizações):"
+echo "    cd ${APP_DIR} && git pull \\"
+echo "      && (cd backend  && npm ci && npm run build) \\"
+echo "      && (cd frontend && npm ci && npm run build) \\"
+echo "      && sudo systemctl restart ${SERVICE}"
+echo
+[ "${HTTPS_OK}" -eq 0 ] && echo "${C_WARN}  ! Configure o HTTPS quando o DNS propagar (veja acima).${C_OFF}"
 echo
