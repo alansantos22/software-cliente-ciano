@@ -83,22 +83,34 @@ echo
 [ -n "$DEPLOY_PASS" ] || die "A senha do usuário '$DEPLOY_USER' é obrigatória."
 
 echo
-echo "--- Configuração de e-mail (SMTP) — usado pra enviar e-mails do sistema ---"
-read -rp "Servidor SMTP [smtp.hostinger.com]: " MAIL_HOST
-MAIL_HOST="${MAIL_HOST:-smtp.hostinger.com}"
+echo "--- Envio de e-mails (recuperação de senha, notificações) ---"
+echo "  1) Servidor local da VPS (Postfix) — sem custo e sem credenciais."
+echo "     Aviso: parte dos e-mails pode cair na caixa de spam do destinatário."
+echo "  2) SMTP externo (Resend, Brevo, Gmail, etc.) — você informa as credenciais."
+read -rp "Como o sistema deve enviar e-mails? [1/2] (padrão: 1): " MAIL_MODE
+MAIL_MODE="${MAIL_MODE:-1}"
 
-read -rp "Porta SMTP [465]: " MAIL_PORT
-MAIL_PORT="${MAIL_PORT:-465}"
-
-read -rp "Usuário/e-mail SMTP [adm@gshark.com.br]: " MAIL_USER
-MAIL_USER="${MAIL_USER:-adm@gshark.com.br}"
-
-read -rsp "Senha do e-mail SMTP: " MAIL_PASSWORD
-echo
-[ -n "$MAIL_PASSWORD" ] || warn "Senha de e-mail vazia — o envio de e-mails não vai funcionar."
-
-read -rp "Nome do remetente [Ciano Cotas <${MAIL_USER}>]: " MAIL_FROM
-MAIL_FROM="${MAIL_FROM:-Ciano Cotas <${MAIL_USER}>}"
+if [ "$MAIL_MODE" = "2" ]; then
+  read -rp "Servidor SMTP (ex.: smtp.resend.com): " MAIL_HOST
+  [ -n "$MAIL_HOST" ] || die "O servidor SMTP é obrigatório na opção 2."
+  read -rp "Porta SMTP [587]: " MAIL_PORT
+  MAIL_PORT="${MAIL_PORT:-587}"
+  read -rp "Usuário SMTP: " MAIL_USER
+  read -rsp "Senha / API key SMTP: " MAIL_PASSWORD
+  echo
+  read -rp "E-mail remetente (From) [nao-responda@${DOMAIN}]: " MAIL_FROM_ADDR
+  MAIL_FROM_ADDR="${MAIL_FROM_ADDR:-nao-responda@${DOMAIN}}"
+  MAIL_FROM="Ciano Cotas <${MAIL_FROM_ADDR}>"
+  MAIL_DESC="SMTP externo ($MAIL_USER @ $MAIL_HOST:$MAIL_PORT)"
+else
+  # Servidor local: o Postfix da própria VPS entrega os e-mails, sem login.
+  MAIL_HOST="localhost"
+  MAIL_PORT="25"
+  MAIL_USER=""
+  MAIL_PASSWORD=""
+  MAIL_FROM="Ciano Cotas <nao-responda@${DOMAIN}>"
+  MAIL_DESC="Servidor local da VPS (Postfix)"
+fi
 
 echo
 echo "Resumo:"
@@ -107,7 +119,7 @@ echo "  E-mail HTTPS ...: $EMAIL"
 echo "  Repositório ....: $REPO_URL  (branch: $BRANCH)"
 echo "  Repo privado ...: $([ -n "$GIT_TOKEN" ] && echo 'sim (token informado)' || echo 'não / público')"
 echo "  Usuário sistema : $DEPLOY_USER"
-echo "  SMTP ...........: $MAIL_USER @ $MAIL_HOST:$MAIL_PORT"
+echo "  E-mails ........: $MAIL_DESC"
 read -rp "Confirma e inicia a instalação? [s/N] " CONFIRM
 [[ "$CONFIRM" =~ ^[sSyY]$ ]] || die "Cancelado pelo usuário."
 
@@ -141,6 +153,16 @@ log "2/12 — Instalando pacotes (git, nginx, mysql, certbot, curl, fail2ban)"
 apt-get install -y git nginx mysql-server certbot python3-certbot-nginx \
   curl ufw fail2ban build-essential python3 ca-certificates gnupg openssl
 ok "Pacotes instalados."
+
+if [ "$MAIL_MODE" = "1" ]; then
+  log "2b/12 — Instalando o servidor de e-mail local (Postfix)"
+  # Pré-configura o Postfix em modo não-interativo (evita a tela azul de setup).
+  debconf-set-selections <<< "postfix postfix/main_mailer_type string 'Internet Site'"
+  debconf-set-selections <<< "postfix postfix/mailname string ${DOMAIN}"
+  apt-get install -y postfix
+  systemctl enable --now postfix
+  ok "Postfix ativo — e-mails sairão de nao-responda@${DOMAIN}."
+fi
 
 log "3/12 — Configurando o firewall (UFW)"
 ufw allow OpenSSH      >/dev/null
@@ -409,4 +431,11 @@ echo "      && (cd frontend && npm ci && npm run build) \\"
 echo "      && sudo systemctl restart ${SERVICE}"
 echo
 [ "${HTTPS_OK}" -eq 0 ] && echo "${C_WARN}  ! Configure o HTTPS quando o DNS propagar (veja acima).${C_OFF}"
+if [ "$MAIL_MODE" = "1" ]; then
+  echo "${C_WARN}  ! E-mails: usando o Postfix local. Eles podem cair no spam do destinatário.${C_OFF}"
+  echo "${C_WARN}    - Para reduzir isso (de graça), adicione no DNS de ${DOMAIN} um registro SPF:${C_OFF}"
+  echo "${C_WARN}        TXT  @  \"v=spf1 a mx ip4:<IP-DA-VPS> ~all\"${C_OFF}"
+  echo "${C_WARN}    - Se nenhum e-mail chegar (nem no spam), o provedor da VPS pode estar${C_OFF}"
+  echo "${C_WARN}      bloqueando a porta 25 de saída — peça a liberação ao suporte dele.${C_OFF}"
+fi
 echo

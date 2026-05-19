@@ -9,14 +9,16 @@ export class EmailService {
   private transporter: Transporter;
 
   constructor(private readonly configService: ConfigService) {
+    const user = this.configService.get<string>('email.user');
+    const pass = this.configService.get<string>('email.password');
+
     this.transporter = nodemailer.createTransport({
       host: this.configService.get<string>('email.host'),
       port: this.configService.get<number>('email.port'),
       secure: this.configService.get<boolean>('email.secure'),
-      auth: {
-        user: this.configService.get<string>('email.user'),
-        pass: this.configService.get<string>('email.password'),
-      },
+      // Com credenciais => SMTP externo autenticado.
+      // Sem credenciais => servidor de e-mail local da VPS (Postfix), sem login.
+      ...(user && pass ? { auth: { user, pass } } : {}),
     });
   }
 
