@@ -14,6 +14,7 @@ export interface ManagerUser {
   role: string;
   isActive: boolean;
   purchasedQuotas: number;
+  adminGrantedQuotas: number;
   splitQuotas: number;
   quotaBalance: number;
   sponsorId: string | null;
@@ -106,9 +107,10 @@ export const useAdminManagerStore = defineStore('adminManager', () => {
     userId: string,
     qty: number,
     pwd: string,
+    source: 'admin' | 'split' = 'admin',
   ): Promise<{ ok: boolean; error?: string }> {
     try {
-      await adminService.removeQuotas(userId, { quantity: qty, managerPassword: pwd });
+      await adminService.removeQuotas(userId, { quantity: qty, managerPassword: pwd, source });
       await loadUsers();
       return { ok: true };
     } catch (e: any) {
