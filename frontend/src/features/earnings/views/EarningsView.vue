@@ -22,6 +22,38 @@
       </div>
     </section>
 
+    <!-- A Receber — lotes gerados pelo admin ainda não pagos -->
+    <DsCard v-if="receivables.length > 0" class="earnings-view__receivables">
+      <template #header>
+        <h2>A Receber</h2>
+        <span class="earnings-view__receivables-total">{{ formatCurrency(totalReceivable) }}</span>
+      </template>
+
+      <ul class="receivable-list">
+        <li v-for="p in receivables" :key="p.id" class="receivable-item">
+          <div class="receivable-item__icon">
+            <font-awesome-icon icon="wallet" />
+          </div>
+          <div class="receivable-item__main">
+            <span class="receivable-item__title">
+              Pagamento em {{ formatMonthYear(p.paymentMonth) }}
+            </span>
+            <span class="receivable-item__ref">
+              Referente a {{ formatMonthYear(p.referenceMonth) }}
+              · Rede {{ formatCurrency(p.networkAmount) }}
+              · Cotas {{ formatCurrency(p.quotaAmount) }}
+            </span>
+          </div>
+          <div class="receivable-item__side">
+            <DsBadge :variant="p.status === 'processing' ? 'info' : 'warning'">
+              {{ p.status === 'processing' ? 'Em processamento' : 'Pendente' }}
+            </DsBadge>
+            <span class="receivable-item__amount">{{ formatCurrency(p.amount) }}</span>
+          </div>
+        </li>
+      </ul>
+    </DsCard>
+
     <!-- Filters -->
     <DsCard class="earnings-view__filters">
       <div class="filters-row">
@@ -136,6 +168,7 @@ import DsTable from '@/design-system/DsTable.vue';
 import DsBadge from '@/design-system/DsBadge.vue';
 import DsMonthPicker from '@/design-system/DsMonthPicker.vue';
 import { earningsService } from '@/shared/services/earnings.service';
+import { payoutsService } from '@/shared/services/payouts.service';
 
 // ─── Types ───────────────────────────────────────────
 interface ActivityRow {
@@ -153,6 +186,17 @@ interface ActivityRow {
   cutoffEligible?: boolean;
 }
 
+/** Lote a receber (payout PENDING ou PROCESSING gerado pelo admin). */
+interface ReceivablePayout {
+  id: string;
+  status: string;
+  amount: number;
+  networkAmount: number;
+  quotaAmount: number;
+  referenceMonth: string;
+  paymentMonth: string;
+}
+
 // ─── State ────────────────────────────────────────
 const selectedMonth = ref(new Date().toISOString().slice(0, 7));
 const selectedLevel = ref<string>('');
@@ -160,6 +204,7 @@ const activeFilter = ref('all');
 
 // ─── Data loaded from API ─────────────────────────────
 const allRows = ref<ActivityRow[]>([]);
+const receivables = ref<ReceivablePayout[]>([]);
 
 const bonusTypeLabel: Record<string, string> = {
   firstPurchase: 'Comissão',
@@ -196,8 +241,34 @@ async function loadEarnings() {
   }
 }
 
+/**
+ * Carrega os lotes a receber — payouts PENDING/PROCESSING gerados pelo admin.
+ * Independe do mês selecionado: mostra tudo que o usuário ainda vai receber.
+ */
+async function loadReceivables() {
+  try {
+    const { data } = await payoutsService.myPayouts();
+    receivables.value = ((data as any[]) || [])
+      .filter((p) => p.status === 'pending' || p.status === 'processing')
+      .map((p) => ({
+        id: p.id,
+        status: p.status,
+        amount: Number(p.amount) || 0,
+        networkAmount: Number(p.networkAmount) || 0,
+        quotaAmount: Number(p.quotaAmount) || 0,
+        referenceMonth: p.referenceMonth || '',
+        paymentMonth: p.paymentMonth || '',
+      }));
+  } catch {
+    receivables.value = [];
+  }
+}
+
 watch([selectedMonth, selectedLevel], loadEarnings);
-onMounted(loadEarnings);
+onMounted(() => {
+  loadEarnings();
+  loadReceivables();
+});
 
 // ─── Filters config ───────────────────────────────────
 const typeFilters = [
@@ -255,6 +326,11 @@ const totalOut = computed(() =>
   filteredRows.value.filter(r => r.amount < 0).reduce((s, r) => s + Math.abs(r.amount), 0)
 );
 
+/** Total a receber — soma dos lotes pendentes/processando. */
+const totalReceivable = computed(() =>
+  receivables.value.reduce((s, p) => s + p.amount, 0)
+);
+
 // ─── Helpers ──────────────────────────────────────────
 function formatCurrency(value: number): string {
   const safe = Number(value) || 0;
@@ -263,6 +339,16 @@ function formatCurrency(value: number): string {
 
 function formatDate(date: string): string {
   return new Intl.DateTimeFormat('pt-BR').format(new Date(date + 'T12:00:00'));
+}
+
+/** 'YYYY-MM' → 'mês de ano' (ex.: 'fevereiro de 2026'). */
+function formatMonthYear(ym: string): string {
+  if (!ym || !/^\d{4}-\d{2}$/.test(ym)) return '—';
+  const parts = ym.split('-');
+  const y = Number(parts[0]);
+  const m = Number(parts[1]);
+  return new Intl.DateTimeFormat('pt-BR', { month: 'long', year: 'numeric' })
+    .format(new Date(y, m - 1, 1));
 }
 
 function getVariant(type: string): 'default' | 'success' | 'warning' | 'info' | 'primary' {
@@ -339,7 +425,97 @@ function getTypeIcon(rawType: string): string {
     border-radius: 20px;
   }
 
-  &__level-select {
+  // ── A Receber ──────────────────────────────────────
+  &__receivables {
+    :deep(.ds-card__header) {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+
+      h2 {
+        margin: 0;
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--neutral-900);
+      }
+    }
+  }
+
+  &__receivables-total {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--color-success-dark);
+    background: rgba(var(--success-rgb), 0.1);
+    padding: 0.25rem 0.7rem;
+    border-radius: 20px;
+  }
+}
+
+.receivable-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.receivable-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem 0.9rem;
+  border: 1px solid var(--neutral-200);
+  border-radius: 12px;
+  background: var(--bg-primary);
+
+  &__icon {
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    background: rgba(var(--success-rgb), 0.1);
+    color: var(--color-success-dark);
+  }
+
+  &__main {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex: 1;
+    min-width: 0;
+  }
+
+  &__title {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--neutral-900);
+  }
+
+  &__ref {
+    font-size: 0.75rem;
+    color: var(--neutral-500);
+  }
+
+  &__side {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 4px;
+    flex-shrink: 0;
+  }
+
+  &__amount {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--color-success-dark);
+  }
+}
+
+.earnings-view__level-select {
     height: 36px;
     padding: 0 0.75rem;
     border-radius: 8px;
@@ -353,7 +529,6 @@ function getTypeIcon(rawType: string): string {
       outline: none;
       border-color: var(--primary-500);
     }
-  }
 }
 
 // ── Summary Card ───────────────────────────────────────

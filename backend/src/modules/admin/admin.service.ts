@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, IsNull, Not, MoreThan } from 'typeorm';
+import { Repository, IsNull, Not, MoreThan, In } from 'typeorm';
 import { User } from '../users/entities/user.entity';
 import { QuotaTransaction } from '../quotas/entities/quota-transaction.entity';
 import { QuotaSystemState } from '../quotas/entities/quota-system-state.entity';
@@ -11,7 +11,8 @@ import { GlobalFinancialSettings } from './entities/global-financial-settings.en
 import { TitleRequirement } from './entities/title-requirement.entity';
 import { SplitEngineService } from '../../core/split/split-engine.service';
 import { BonusCalculatorService } from '../../core/bonus/bonus-calculator.service';
-import { BonusType, PayoutStatus, TransactionType, TransactionStatus } from '../../shared/interfaces/enums';
+import { SnapshotService } from '../../core/snapshot/snapshot.service';
+import { BonusType, EarningStatus, PayoutStatus, TransactionType, TransactionStatus } from '../../shared/interfaces/enums';
 import { getCurrentPeriod } from '../../shared/utils/helpers';
 
 @Injectable()
@@ -29,6 +30,7 @@ export class AdminService {
     @InjectRepository(TitleRequirement) private readonly titleReqRepo: Repository<TitleRequirement>,
     private readonly splitEngine: SplitEngineService,
     private readonly bonusCalc: BonusCalculatorService,
+    private readonly snapshotService: SnapshotService,
   ) {}
 
   // ─── Dashboard ─────────────────────────────────────────
@@ -252,12 +254,24 @@ export class AdminService {
     const paymentDate = new Date(y, m + 1, 1); // +2 months from profitMonth
     const paymentMonth = `${paymentDate.getFullYear()}-${String(paymentDate.getMonth() + 1).padStart(2, '0')}`;
 
-    // All users with quotas
-    const users = await this.userRepo.find({
-      where: { deletedAt: IsNull() },
-    });
+    // Usuários vivos — fonte de PIX (atual) e ganhos da vida (acumulador).
+    const users = await this.userRepo.find({ where: { deletedAt: IsNull() } });
+    const userById = new Map(users.map((u) => [u.id, u]));
 
-    // Earnings by user and bonusType for the reference month
+    // Cotas vêm do SNAPSHOT do mês de referência (determinístico). Se o
+    // snapshot ainda não existir (preview antes do fechamento), cai para o
+    // saldo atual como aproximação.
+    const snapshots = await this.snapshotService.getSnapshot(profitMonth);
+    const usingSnapshot = snapshots.length > 0;
+    const quotaById = new Map<string, number>(
+      usingSnapshot
+        ? snapshots.map((s) => [s.userId, s.quotaBalance])
+        : users.map((u) => [u.id, u.quotaBalance]),
+    );
+    const quotaOf = (userId: string) => quotaById.get(userId) ?? 0;
+    const totalQuotas = [...quotaById.values()].reduce((s, q) => s + q, 0);
+
+    // Ganhos por usuário e bonusType no mês de referência.
     const monthlyEarnings = await this.earningRepo
       .createQueryBuilder('e')
       .select('e.user_id', 'userId')
@@ -268,7 +282,6 @@ export class AdminService {
       .addGroupBy('e.bonus_type')
       .getRawMany<{ userId: string; bonusType: string; total: string }>();
 
-    // Build lookup: userId -> { firstPurchase, repurchase, team, leadership }
     const earningsMap = new Map<string, { firstPurchase: number; repurchase: number; team: number; leadership: number }>();
     for (const row of monthlyEarnings) {
       if (!earningsMap.has(row.userId)) {
@@ -282,20 +295,25 @@ export class AdminService {
       else if (row.bonusType === BonusType.LEADERSHIP) entry.leadership = val;
     }
 
-    const totalQuotas = users.reduce((s, u) => s + u.quotaBalance, 0);
+    // Universo de pagamento: quem tem cota OU ganho de rede no mês. Antes,
+    // quem tinha ganho de rede mas nenhuma cota ficava de fora do lote.
+    const payeeIds = new Set<string>([...quotaById.keys(), ...earningsMap.keys()]);
 
-    const distributions = users
-      .filter((u) => u.quotaBalance > 0)
-      .map((u) => {
-        const share = totalQuotas > 0 ? u.quotaBalance / totalQuotas : 0;
+    const distributions = [...payeeIds]
+      .map((userId) => {
+        const u = userById.get(userId);
+        if (!u) return null; // usuário removido — não há como pagar
+
+        const quotaBalance = quotaOf(userId);
+        const share = totalQuotas > 0 ? quotaBalance / totalQuotas : 0;
         const quotaAmount = dividendPool * share;
-        const breakdown = earningsMap.get(u.id) || { firstPurchase: 0, repurchase: 0, team: 0, leadership: 0 };
+        const breakdown = earningsMap.get(userId) || { firstPurchase: 0, repurchase: 0, team: 0, leadership: 0 };
         const networkAmount = breakdown.firstPurchase + breakdown.repurchase + breakdown.team + breakdown.leadership;
 
         return {
           userId: u.id,
           userName: u.name,
-          quotaBalance: u.quotaBalance,
+          quotaBalance,
           percentageShare: Math.round(share * 10000) / 100,
           quotaAmount: Math.round(quotaAmount * 100) / 100,
           networkAmount: Math.round(networkAmount * 100) / 100,
@@ -308,7 +326,8 @@ export class AdminService {
           pixKey: u.pixKey,
           pixKeyType: u.pixKeyType,
         };
-      });
+      })
+      .filter((d): d is NonNullable<typeof d> => d !== null && d.totalAmount > 0);
 
     return {
       profitMonth,
@@ -317,6 +336,7 @@ export class AdminService {
       dividendPoolPercent,
       dividendPool,
       totalQuotasInSystem: totalQuotas,
+      snapshotUsed: usingSnapshot,
       distributions,
     };
   }
@@ -336,9 +356,17 @@ export class AdminService {
     const dividendPoolPercent = settings?.profitPayoutPercentage || 20;
     const dividendPool = netProfit * dividendPoolPercent / 100;
 
-    await this.bonusCalc.calculateTeamBonus(profitMonth);
-    await this.bonusCalc.calculateLeadershipBonus(profitMonth);
+    // Garante o snapshot do mês (idempotente). Normalmente já foi capturado
+    // pelo MonthlyCloseJob no fechamento; aqui é uma rede de segurança para o
+    // caso de o lote ser gerado antes do job ter rodado.
+    await this.snapshotService.captureMonth(profitMonth);
+
+    // ⚠️ Ordem obrigatória (regra de cascata): os dividendos precisam existir
+    // ANTES do cálculo de equipe/liderança, pois o bônus de equipe incide
+    // também sobre os dividendos da rede. Equipe + liderança são calculados
+    // por último, em travessia leaf-up — ver BonusCalculatorService.
     await this.bonusCalc.calculateDividends(profitMonth, dividendPool);
+    await this.bonusCalc.calculateTeamAndLeadershipBonuses(profitMonth);
 
     // Marca como processados (Etapa 2) os ganhos do mês de referência que
     // ainda não haviam sido processados — incluindo os bônus imediatos
@@ -352,6 +380,15 @@ export class AdminService {
       .execute();
 
     const preview = await this.calculateDistribution(profitMonth, netProfit);
+
+    // ── Validações de sanidade ───────────────────────────────────────────
+    // Erros bloqueiam a geração do lote; avisos são devolvidos para o admin
+    // revisar, mas não impedem.
+    const validation = this.validateBatch(netProfit, preview.distributions);
+    if (validation.errors.length > 0) {
+      this.logger.error(`❌ Lote ${profitMonth} bloqueado: ${validation.errors.join(' | ')}`);
+      return { error: validation.errors.join(' | '), validationErrors: validation.errors };
+    }
 
     const payouts: PayoutRequest[] = [];
     const missingPixKey: string[] = [];
@@ -389,6 +426,9 @@ export class AdminService {
       this.logger.warn(`⚠️ ${missingPixKey.length} users without PIX key included in batch (will need PIX before payment): ${missingPixKey.join(', ')}`);
     }
     this.logger.log(`📋 Batch generated for ${profitMonth}: ${payouts.length} payouts`);
+    if (validation.warnings.length > 0) {
+      this.logger.warn(`⚠️ Lote ${profitMonth} gerado com avisos: ${validation.warnings.join(' | ')}`);
+    }
 
     return {
       profitMonth,
@@ -396,6 +436,155 @@ export class AdminService {
       totalPayouts: payouts.length,
       missingPixKey: missingPixKey.length,
       totalAmount: payouts.reduce((s, p) => s + Number(p.amount), 0),
+      warnings: validation.warnings,
+    };
+  }
+
+  /**
+   * Validações de sanidade do lote antes de gravá-lo.
+   *
+   * `errors`  → bloqueiam a geração (provável erro de cálculo/entrada).
+   * `warnings`→ não bloqueiam; sinalizam ao admin algo a conferir.
+   */
+  private validateBatch(
+    netProfit: number,
+    distributions: Array<{
+      userName: string;
+      quotaAmount: number;
+      networkAmount: number;
+      totalAmount: number;
+      pixKey: string | null;
+    }>,
+  ): { errors: string[]; warnings: string[] } {
+    const errors: string[] = [];
+    const warnings: string[] = [];
+
+    if (netProfit < 0) {
+      errors.push('Lucro líquido não pode ser negativo.');
+    }
+
+    // Valores negativos indicam erro de cálculo — nunca devem ocorrer.
+    const negativos = distributions.filter(
+      (d) => d.totalAmount < 0 || d.quotaAmount < 0 || d.networkAmount < 0,
+    );
+    if (negativos.length > 0) {
+      errors.push(
+        `${negativos.length} pagamento(s) com valor negativo (erro de cálculo): ` +
+          negativos.slice(0, 5).map((d) => d.userName).join(', '),
+      );
+    }
+
+    const totalPayout = distributions.reduce((s, d) => s + d.totalAmount, 0);
+
+    // O total a pagar não deveria ultrapassar o lucro líquido do mês.
+    if (netProfit > 0 && totalPayout > netProfit) {
+      warnings.push(
+        `Total a pagar (R$${totalPayout.toFixed(2)}) excede o lucro líquido ` +
+          `informado (R$${netProfit.toFixed(2)}).`,
+      );
+    }
+
+    // Outliers — pagamentos muito acima da média (5×), para revisão manual.
+    if (distributions.length >= 3) {
+      const media = totalPayout / distributions.length;
+      const outliers = distributions.filter(
+        (d) => media > 0 && d.totalAmount > media * 5,
+      );
+      if (outliers.length > 0) {
+        warnings.push(
+          `${outliers.length} pagamento(s) muito acima da média — revisar: ` +
+            outliers
+              .slice(0, 5)
+              .map((d) => `${d.userName} (R$${d.totalAmount.toFixed(2)})`)
+              .join(', '),
+        );
+      }
+    }
+
+    const semPix = distributions.filter((d) => !d.pixKey);
+    if (semPix.length > 0) {
+      warnings.push(
+        `${semPix.length} usuário(s) sem chave PIX — precisarão informar antes do pagamento.`,
+      );
+    }
+
+    return { errors, warnings };
+  }
+
+  /**
+   * Anula um lote ainda não pago, revertendo todos os efeitos colaterais,
+   * para que o admin possa corrigir o lucro líquido e gerar de novo.
+   *
+   * Só é permitido se NENHUM pagamento do lote estiver em processamento ou
+   * concluído. A reversão:
+   *   1. Apaga os ganhos calculados no lote (dividendos/equipe/liderança) e
+   *      desfaz o incremento correspondente em user.totalEarnings.
+   *   2. Limpa o `processed_at` dos ganhos imediatos (compra/recompra) do mês.
+   *   3. Apaga os PayoutRequests do mês.
+   *
+   * O snapshot do mês é preservado — regenerar o lote usa a mesma foto,
+   * garantindo um recálculo determinístico.
+   */
+  async voidBatch(profitMonth: string) {
+    const payouts = await this.payoutRepo.find({ where: { referenceMonth: profitMonth } });
+    if (payouts.length === 0) {
+      return { error: 'Nenhum lote encontrado para este mês de referência.' };
+    }
+
+    const travados = payouts.filter(
+      (p) => p.status === PayoutStatus.PROCESSING || p.status === PayoutStatus.COMPLETED,
+    );
+    if (travados.length > 0) {
+      return {
+        error:
+          `Lote não pode ser anulado: ${travados.length} pagamento(s) ` +
+          `em processamento ou já concluído(s).`,
+      };
+    }
+
+    // 1. Reverter os ganhos calculados no lote.
+    const batchEarnings = await this.earningRepo.find({
+      where: {
+        referenceMonth: profitMonth,
+        bonusType: In([BonusType.DIVIDEND, BonusType.TEAM, BonusType.LEADERSHIP]),
+      },
+    });
+    const decByUser = new Map<string, number>();
+    for (const e of batchEarnings) {
+      decByUser.set(e.userId, (decByUser.get(e.userId) ?? 0) + Number(e.amount));
+    }
+    for (const [userId, amount] of decByUser) {
+      if (amount > 0) {
+        await this.userRepo.decrement({ id: userId }, 'totalEarnings', amount);
+      }
+    }
+    await this.earningRepo.delete({
+      referenceMonth: profitMonth,
+      bonusType: In([BonusType.DIVIDEND, BonusType.TEAM, BonusType.LEADERSHIP]),
+    });
+
+    // 2. Limpar o processed_at dos ganhos imediatos (compra/recompra) do mês,
+    //    para que a regeração volte a marcá-los.
+    await this.earningRepo
+      .createQueryBuilder()
+      .update()
+      .set({ processedAt: null })
+      .where('reference_month = :month', { month: profitMonth })
+      .execute();
+
+    // 3. Apagar os PayoutRequests do mês (todos PENDING/FAILED neste ponto).
+    await this.payoutRepo.delete({ referenceMonth: profitMonth });
+
+    this.logger.warn(
+      `🗑️ Lote ${profitMonth} anulado: ${payouts.length} payout(s) removido(s), ` +
+        `${batchEarnings.length} ganho(s) de lote revertido(s).`,
+    );
+
+    return {
+      voided: true,
+      profitMonth,
+      removedPayouts: payouts.length,
+      revertedEarnings: batchEarnings.length,
     };
   }
 
@@ -444,18 +633,25 @@ export class AdminService {
     } else if (action === 'completed') {
       payout.status = PayoutStatus.COMPLETED;
       payout.completedAt = new Date();
-      // Garante que totalEarnings do usuário reflita o pagamento caso os
-      // dividendos ainda não tenham sido contabilizados via generateBatch.
-      const dividendAlreadyCounted = await this.earningRepo.count({
-        where: {
-          userId: payout.userId,
-          bonusType: BonusType.DIVIDEND,
-          referenceMonth: payout.referenceMonth,
-        },
-      });
-      if (dividendAlreadyCounted === 0) {
-        await this.userRepo.increment({ id: payout.userId }, 'totalEarnings', Number(payout.amount));
-      }
+
+      // NÃO incrementa user.totalEarnings aqui. Esse acumulador já é
+      // atualizado pelo BonusCalculatorService a cada ganho criado
+      // (compra, recompra, equipe, liderança e dividendos). Incrementar de
+      // novo na conclusão do pagamento causava double-count — em especial
+      // para quem tem ganhos de rede sem cotas (sem linha de dividendo, o
+      // antigo heurístico `dividendAlreadyCounted === 0` disparava o
+      // incremento sobre valores já contabilizados).
+
+      // Fecha o ciclo de vida dos ganhos: ao pagar o lote, os ganhos do mês
+      // de referência daquele usuário passam de PENDING → PAID.
+      await this.earningRepo
+        .createQueryBuilder()
+        .update()
+        .set({ status: EarningStatus.PAID, paidAt: () => 'NOW()' })
+        .where('user_id = :userId', { userId: payout.userId })
+        .andWhere('reference_month = :month', { month: payout.referenceMonth })
+        .andWhere('status = :status', { status: EarningStatus.PENDING })
+        .execute();
     } else if (action === 'failed') {
       payout.status = PayoutStatus.FAILED;
       payout.failureReason = failureReason || '';

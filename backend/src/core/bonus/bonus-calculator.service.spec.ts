@@ -1,8 +1,10 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { BonusCalculatorService } from './bonus-calculator.service';
+import { SnapshotService } from '../snapshot/snapshot.service';
 import { User } from '../../modules/users/entities/user.entity';
 import { Earning } from '../../modules/earnings/entities/earning.entity';
+import { MonthlyUserSnapshot } from '../../modules/users/entities/monthly-user-snapshot.entity';
 import { TitleRequirement } from '../../modules/admin/entities/title-requirement.entity';
 import { MonthlyFinancialConfig } from '../../modules/admin/entities/monthly-financial-config.entity';
 import { BonusType, UserTitle } from '../../shared/interfaces/enums';
@@ -23,6 +25,22 @@ function makeUser(overrides: Partial<User> = {}): User {
   } as User;
 }
 
+function makeSnapshot(overrides: Partial<MonthlyUserSnapshot> = {}): MonthlyUserSnapshot {
+  return {
+    userId: 'user-1',
+    month: '2025-03',
+    name: 'Usuário Teste',
+    sponsorId: null,
+    title: UserTitle.NONE,
+    repurchaseLevels: 0,
+    teamLevels: 0,
+    leadershipPercent: 0,
+    quotaBalance: 5,
+    isActive: true,
+    ...overrides,
+  } as MonthlyUserSnapshot;
+}
+
 const makeQueryBuilder = (rawResult = { total: '0' }) => ({
   select: jest.fn().mockReturnThis(),
   where: jest.fn().mockReturnThis(),
@@ -41,10 +59,16 @@ describe('BonusCalculatorService', () => {
   let earningRepo: {
     create: jest.Mock;
     save: jest.Mock;
+    count: jest.Mock;
     createQueryBuilder: jest.Mock;
   };
   let titleReqRepo: { findOne: jest.Mock };
   let monthConfigRepo: { findOne: jest.Mock };
+  let snapshotService: {
+    getSnapshot: jest.Mock;
+    captureMonth: jest.Mock;
+    hasSnapshot: jest.Mock;
+  };
 
   beforeEach(async () => {
     userRepo = {
@@ -56,10 +80,16 @@ describe('BonusCalculatorService', () => {
     earningRepo = {
       create: jest.fn().mockReturnValue({}),
       save: jest.fn().mockResolvedValue({}),
+      count: jest.fn().mockResolvedValue(0),
       createQueryBuilder: jest.fn().mockReturnValue(makeQueryBuilder()),
     };
     titleReqRepo = { findOne: jest.fn() };
     monthConfigRepo = { findOne: jest.fn() };
+    snapshotService = {
+      getSnapshot: jest.fn().mockResolvedValue([]),
+      captureMonth: jest.fn().mockResolvedValue({ created: 0, skipped: true }),
+      hasSnapshot: jest.fn().mockResolvedValue(true),
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -68,6 +98,7 @@ describe('BonusCalculatorService', () => {
         { provide: getRepositoryToken(Earning), useValue: earningRepo },
         { provide: getRepositoryToken(TitleRequirement), useValue: titleReqRepo },
         { provide: getRepositoryToken(MonthlyFinancialConfig), useValue: monthConfigRepo },
+        { provide: SnapshotService, useValue: snapshotService },
       ],
     }).compile();
 
@@ -178,12 +209,11 @@ describe('BonusCalculatorService', () => {
   // ─── calculateDividends ──────────────────────────────────────────────────────
 
   describe('calculateDividends', () => {
-    it('should distribute dividends proportionally to quota holders', async () => {
-      const users = [
-        makeUser({ id: 'u1', quotaBalance: 10 }),
-        makeUser({ id: 'u2', quotaBalance: 10 }),
-      ];
-      userRepo.find.mockResolvedValue(users);
+    it('should distribute dividends proportionally to quota holders (from snapshot)', async () => {
+      snapshotService.getSnapshot.mockResolvedValue([
+        makeSnapshot({ userId: 'u1', quotaBalance: 10 }),
+        makeSnapshot({ userId: 'u2', quotaBalance: 10 }),
+      ]);
 
       const amounts: number[] = [];
       earningRepo.create.mockImplementation((data: Partial<Earning>) => {
@@ -198,12 +228,11 @@ describe('BonusCalculatorService', () => {
       expect(amounts[1]).toBeCloseTo(500);
     });
 
-    it('should skip users with no quotas', async () => {
-      const users = [
-        makeUser({ id: 'u1', quotaBalance: 10 }),
-        makeUser({ id: 'u2', quotaBalance: 0 }),
-      ];
-      userRepo.find.mockResolvedValue(users);
+    it('should skip snapshot users with no quotas', async () => {
+      snapshotService.getSnapshot.mockResolvedValue([
+        makeSnapshot({ userId: 'u1', quotaBalance: 10 }),
+        makeSnapshot({ userId: 'u2', quotaBalance: 0 }),
+      ]);
 
       earningRepo.create.mockImplementation((data: Partial<Earning>) => data);
 
@@ -213,7 +242,9 @@ describe('BonusCalculatorService', () => {
     });
 
     it('should do nothing when total quotas is zero', async () => {
-      userRepo.find.mockResolvedValue([makeUser({ quotaBalance: 0 })]);
+      snapshotService.getSnapshot.mockResolvedValue([
+        makeSnapshot({ userId: 'u1', quotaBalance: 0 }),
+      ]);
 
       await service.calculateDividends('2025-03', 1000);
 
@@ -221,92 +252,67 @@ describe('BonusCalculatorService', () => {
     });
   });
 
-  // ─── calculateLeadershipBonus ─────────────────────────────────────────────────
+  // ─── calculateTeamAndLeadershipBonuses ───────────────────────────────────────
 
-  describe('calculateLeadershipBonus', () => {
-    it('should calculate 1% leadership bonus for GOLD title when qualified downline has earnings', async () => {
-      const goldUser = makeUser({ id: 'gold-1', title: UserTitle.GOLD });
-      const qualifiedDownline = makeUser({ id: 'gold-child', title: UserTitle.GOLD, sponsorId: 'gold-1' });
+  describe('calculateTeamAndLeadershipBonuses', () => {
+    it('should give a 2% team bonus on everything the downline earned', async () => {
+      snapshotService.getSnapshot.mockResolvedValue([
+        makeSnapshot({ userId: 's', title: UserTitle.BRONZE, teamLevels: 2 }),
+        makeSnapshot({ userId: 'd', sponsorId: 's', title: UserTitle.NONE }),
+      ]);
 
-      // First call: allUsers; subsequent calls inside getQualifiedDownlineEarnings
-      userRepo.find
-        .mockResolvedValueOnce([goldUser])           // allUsers
-        .mockResolvedValueOnce([qualifiedDownline])  // level 1 downline
-        .mockResolvedValueOnce([]);                  // level 2 downline (empty → stop)
+      // Soma de ganhos do downline = R$ 1.000.
+      earningRepo.createQueryBuilder.mockReturnValue(makeQueryBuilder({ total: '1000' }));
+
+      const created: Partial<Earning>[] = [];
+      earningRepo.create.mockImplementation((data: Partial<Earning>) => {
+        created.push(data);
+        return data;
+      });
+
+      await service.calculateTeamAndLeadershipBonuses('2025-03');
+
+      const team = created.filter((e) => e.bonusType === BonusType.TEAM);
+      expect(team).toHaveLength(1);
+      expect(team[0]).toMatchObject({ userId: 's', amount: 20 }); // 2% de 1000
+    });
+
+    it('should give leadership bonus only over qualified (Gold/Diamond) downline', async () => {
+      snapshotService.getSnapshot.mockResolvedValue([
+        makeSnapshot({ userId: 'g', title: UserTitle.GOLD, teamLevels: 4, leadershipPercent: 1 }),
+        makeSnapshot({ userId: 'gc', sponsorId: 'g', title: UserTitle.GOLD, teamLevels: 4, leadershipPercent: 1 }),
+      ]);
 
       earningRepo.createQueryBuilder.mockReturnValue(makeQueryBuilder({ total: '1000' }));
 
-      const amounts: number[] = [];
+      const created: Partial<Earning>[] = [];
       earningRepo.create.mockImplementation((data: Partial<Earning>) => {
-        amounts.push(data.amount as number);
+        created.push(data);
         return data;
       });
 
-      await service.calculateLeadershipBonus('2025-03');
+      await service.calculateTeamAndLeadershipBonuses('2025-03');
 
-      expect(earningRepo.create).toHaveBeenCalledWith(
-        expect.objectContaining({ bonusType: BonusType.LEADERSHIP }),
-      );
-      expect(amounts[0]).toBeCloseTo(10); // 1% of 1000
+      const leadership = created.filter((e) => e.bonusType === BonusType.LEADERSHIP);
+      expect(leadership).toHaveLength(1);
+      expect(leadership[0]).toMatchObject({ userId: 'g', amount: 10 }); // 1% de 1000
     });
 
-    it('should calculate 2% leadership bonus for DIAMOND title', async () => {
-      const diamondUser = makeUser({ id: 'diamond-1', title: UserTitle.DIAMOND });
-      const qualifiedDownline = makeUser({ id: 'diamond-child', title: UserTitle.DIAMOND, sponsorId: 'diamond-1' });
+    it('should not pay team/leadership to inactive users', async () => {
+      snapshotService.getSnapshot.mockResolvedValue([
+        makeSnapshot({ userId: 'u1', title: UserTitle.GOLD, teamLevels: 4, leadershipPercent: 1, isActive: false }),
+      ]);
 
-      userRepo.find
-        .mockResolvedValueOnce([diamondUser])        // allUsers
-        .mockResolvedValueOnce([qualifiedDownline])  // level 1 downline
-        .mockResolvedValueOnce([]);                  // stop
-
-      earningRepo.createQueryBuilder.mockReturnValue(makeQueryBuilder({ total: '500' }));
-
-      const amounts: number[] = [];
-      earningRepo.create.mockImplementation((data: Partial<Earning>) => {
-        amounts.push(data.amount as number);
-        return data;
-      });
-
-      await service.calculateLeadershipBonus('2025-03');
-
-      expect(earningRepo.create).toHaveBeenCalledWith(
-        expect.objectContaining({ bonusType: BonusType.LEADERSHIP }),
-      );
-      expect(amounts[0]).toBeCloseTo(10); // 2% of 500
-    });
-
-    it('should not give leadership bonus to users below GOLD', async () => {
-      const silverUser = makeUser({ id: 'silver-1', title: UserTitle.SILVER });
-      userRepo.find.mockResolvedValue([silverUser]);
-
-      await service.calculateLeadershipBonus('2025-03');
-
-      expect(earningRepo.save).not.toHaveBeenCalled();
-    });
-  });
-
-  // ─── calculateTeamBonus ──────────────────────────────────────────────────────
-
-  describe('calculateTeamBonus', () => {
-    it('should skip users with no team levels unlocked', async () => {
-      const user = makeUser({ id: 'u1', title: UserTitle.BRONZE });
-      userRepo.find.mockResolvedValue([user]);
-      titleReqRepo.findOne.mockResolvedValue({ title: UserTitle.BRONZE, teamLevels: 0 });
-
-      await service.calculateTeamBonus('2025-03');
+      await service.calculateTeamAndLeadershipBonuses('2025-03');
 
       expect(earningRepo.save).not.toHaveBeenCalled();
     });
 
-    it('should skip inactive users in team bonus calculation', async () => {
-      const inactiveUser = makeUser({
-        id: 'u1',
-        title: UserTitle.SILVER,
-        lastPurchaseDate: new Date('2020-01-01'),
-      });
-      userRepo.find.mockResolvedValue([inactiveUser]);
+    it('should be idempotent — skip when team/leadership already exist for the month', async () => {
+      earningRepo.count.mockResolvedValue(3);
+      userRepo.find.mockResolvedValue([makeUser({ id: 's', title: UserTitle.BRONZE })]);
 
-      await service.calculateTeamBonus('2025-03');
+      await service.calculateTeamAndLeadershipBonuses('2025-03');
 
       expect(earningRepo.save).not.toHaveBeenCalled();
     });

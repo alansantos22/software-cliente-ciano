@@ -86,7 +86,10 @@ export const adminService = {
     return api.post(`/admin/manager/users/${userId}/add-quotas`, payload);
   },
 
-  removeQuotas(userId: string, payload: { quantity: number; managerPassword: string }) {
+  removeQuotas(
+    userId: string,
+    payload: { quantity: number; managerPassword: string; source?: 'admin' | 'split' },
+  ) {
     return api.post(`/admin/manager/users/${userId}/remove-quotas`, payload);
   },
 

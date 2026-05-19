@@ -1,6 +1,6 @@
 import { Injectable, BadRequestException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { PayoutRequest } from './entities/payout-request.entity';
 import { MonthlyPayoutSummary } from './entities/monthly-payout-summary.entity';
 import { AdminPaymentCheck } from '../admin/entities/admin-payment-check.entity';
@@ -23,34 +23,34 @@ export class PayoutsService {
     @InjectRepository(GlobalFinancialSettings) private readonly settingsRepo: Repository<GlobalFinancialSettings>,
   ) {}
 
+  /**
+   * "A receber" do usuário.
+   *
+   * No modelo admin-driven o usuário não estima o próprio pagamento — o que
+   * ele tem a receber são os lotes gerados pelo admin ainda não pagos
+   * (status PENDING ou PROCESSING). Ao concluir (COMPLETED), o valor migra
+   * para os ganhos da vida.
+   *
+   * Observação: o filtro antigo usava `status = 'approved'`, valor que não
+   * existe no enum EarningStatus — por isso o endpoint sempre devolvia zero.
+   */
   async calculateDistribution(userId: string) {
-    const settings = await this.settingsRepo.findOne({ where: { id: 1 } });
-    const month = getCurrentPeriod();
-    const now = new Date();
-    const day = now.getDate();
-    const paymentDay = settings?.paymentDay || 5;
+    const receivables = await this.payoutRepo.find({
+      where: { userId, status: In([PayoutStatus.PENDING, PayoutStatus.PROCESSING]) },
+      order: { paymentMonth: 'ASC' },
+    });
 
-    // Payment window: 1st to paymentDay of the month
-    if (day > paymentDay) {
-      throw new BadRequestException('Janela de pagamento fechada');
-    }
-
-    const earnings = await this.earningRepo
-      .createQueryBuilder('e')
-      .select('SUM(e.amount)', 'total')
-      .where('e.user_id = :userId', { userId })
-      .andWhere('e.reference_month = :month', { month })
-      .andWhere('e.status = :status', { status: 'approved' })
-      .getRawOne();
-
-    const networkEarnings = parseFloat(earnings?.total || '0');
-    const user = await this.userRepo.findOne({ where: { id: userId } });
+    const networkEarnings = receivables.reduce((s, p) => s + Number(p.networkAmount || 0), 0);
+    const quotaEarnings = receivables.reduce((s, p) => s + Number(p.quotaAmount || 0), 0);
+    const estimatedPayout = receivables.reduce((s, p) => s + Number(p.amount || 0), 0);
 
     return {
+      month: getCurrentPeriod(),
       networkEarnings,
-      quotaValue: user ? user.quotaBalance : 0,
-      estimatedPayout: networkEarnings,
-      month,
+      quotaEarnings,
+      estimatedPayout,
+      nextPaymentMonth: receivables[0]?.paymentMonth ?? null,
+      pendingBatches: receivables.length,
     };
   }
 

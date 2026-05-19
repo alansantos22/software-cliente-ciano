@@ -152,25 +152,53 @@
     >
       <template #extra>
 
-        <!-- Adicionar / Retirar / Simular Cotas -->
+        <!-- Adicionar / Simular Cotas -->
         <div
-          v-if="pendingAction.type === 'add' || pendingAction.type === 'remove' || pendingAction.type === 'simulate'"
+          v-if="pendingAction.type === 'add' || pendingAction.type === 'simulate'"
           class="mgr-extra"
         >
-          <label class="mgr-extra__label">
-            Quantidade de Cotas
-            <span v-if="pendingAction.type === 'remove'" class="mgr-extra__hint">
-              (disponível: {{ pendingAction.user.purchasedQuotas }})
-            </span>
-          </label>
+          <label class="mgr-extra__label">Quantidade de Cotas</label>
           <input
             v-model.number="extraQty"
             type="number"
             min="1"
-            :max="pendingAction.type === 'remove' ? pendingAction.user.purchasedQuotas : undefined"
             class="mgr-extra__input"
           />
         </div>
+
+        <!-- Retirar Cotas — campos separados para cotas admin e cotas de split -->
+        <template v-if="pendingAction.type === 'remove'">
+          <div class="mgr-extra">
+            <label class="mgr-extra__label">
+              Cotas Admin a Retirar
+              <span class="mgr-extra__hint">
+                (disponível: {{ pendingAction.user.adminGrantedQuotas ?? 0 }})
+              </span>
+            </label>
+            <input
+              v-model.number="extraQty"
+              type="number"
+              min="0"
+              :max="pendingAction.user.adminGrantedQuotas ?? 0"
+              class="mgr-extra__input"
+            />
+          </div>
+          <div class="mgr-extra">
+            <label class="mgr-extra__label">
+              Cotas de Split a Retirar
+              <span class="mgr-extra__hint">
+                (disponível: {{ pendingAction.user.splitQuotas ?? 0 }})
+              </span>
+            </label>
+            <input
+              v-model.number="extraSplitQty"
+              type="number"
+              min="0"
+              :max="pendingAction.user.splitQuotas ?? 0"
+              class="mgr-extra__input"
+            />
+          </div>
+        </template>
 
         <!-- Alterar Patrocinador -->
         <div v-if="pendingAction.type === 'sponsor'" class="mgr-extra">
@@ -234,6 +262,7 @@ const successMessage = ref('');
 
 // Extra inputs
 const extraQty = ref(1);
+const extraSplitQty = ref(0);
 const extraSponsorId = ref('');
 
 // ── Computed ──────────────────────────────────────────────────
@@ -284,7 +313,8 @@ const sponsorOptions = computed(() => {
 function openAction(action: PendingAction) {
   pendingAction.value = action;
   actionError.value = '';
-  extraQty.value = 1;
+  extraQty.value = action.type === 'remove' ? 0 : 1;
+  extraSplitQty.value = 0;
   extraSponsorId.value = '';
   showConfirm.value = true;
 }
@@ -392,14 +422,23 @@ async function handleConfirm(password: string) {
       result = await store.addQuotas(user.id, extraQty.value, password);
       break;
 
-    case 'remove':
-      if (extraQty.value < 1) {
-        actionError.value = 'Informe uma quantidade válida (mínimo 1).';
+    case 'remove': {
+      const adminQty = extraQty.value || 0;
+      const splitQty = extraSplitQty.value || 0;
+      if (adminQty < 1 && splitQty < 1) {
+        actionError.value = 'Informe ao menos uma quantidade válida (cotas admin ou de split).';
         actionLoading.value = false;
         return;
       }
-      result = await store.removeQuotas(user.id, extraQty.value, password);
+      result = { ok: true };
+      if (adminQty >= 1) {
+        result = await store.removeQuotas(user.id, adminQty, password, 'admin');
+      }
+      if (result.ok && splitQty >= 1) {
+        result = await store.removeQuotas(user.id, splitQty, password, 'split');
+      }
       break;
+    }
 
     case 'simulate':
       if (extraQty.value < 1) {
@@ -433,7 +472,7 @@ async function handleConfirm(password: string) {
     closeAction();
     const successMessages: Record<ActionType, string> = {
       add: `${extraQty.value} cota(s) adicionada(s) com sucesso.`,
-      remove: `${extraQty.value} cota(s) retirada(s) com sucesso.`,
+      remove: `${(extraQty.value || 0) + (extraSplitQty.value || 0)} cota(s) retirada(s) com sucesso.`,
       simulate: `Compra simulada: ${extraQty.value} cota(s) para ${user.name} processada(s) com sucesso.`,
       activate: (pendingAction.value?.user as any)?.isActive
         ? `Conta de ${user.name} desativada com sucesso.`

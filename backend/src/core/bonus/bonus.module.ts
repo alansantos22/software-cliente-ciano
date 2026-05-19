@@ -5,10 +5,12 @@ import { User } from '../../modules/users/entities/user.entity';
 import { Earning } from '../../modules/earnings/entities/earning.entity';
 import { TitleRequirement } from '../../modules/admin/entities/title-requirement.entity';
 import { MonthlyFinancialConfig } from '../../modules/admin/entities/monthly-financial-config.entity';
+import { SnapshotModule } from '../snapshot/snapshot.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([User, Earning, TitleRequirement, MonthlyFinancialConfig]),
+    SnapshotModule,
   ],
   providers: [BonusCalculatorService],
   exports: [BonusCalculatorService],

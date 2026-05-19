@@ -1,4 +1,4 @@
-import { Controller, Get, Put, Post, Patch, Body, Param, Query } from '@nestjs/common';
+import { Controller, Get, Put, Post, Patch, Delete, Body, Param, Query } from '@nestjs/common';
 import { AdminService } from './admin.service';
 import { Roles, Role } from '../../common/decorators/roles.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
@@ -93,6 +93,15 @@ export class AdminController {
   @Post('payouts/bulk-action')
   bulkPayoutAction(@Body() dto: BulkPayoutActionDto) {
     return this.adminService.bulkPayoutAction(dto.payoutIds, dto.action, dto.transactionId);
+  }
+
+  /**
+   * Anula o lote de um mês de referência (somente se nenhum pagamento estiver
+   * em processamento/concluído). Reverte ganhos de lote e permite regerar.
+   */
+  @Delete('payouts/batch/:month')
+  voidBatch(@Param('month') month: string) {
+    return this.adminService.voidBatch(month);
   }
 
   // ─── Financial Config ──────────────────────────────────
