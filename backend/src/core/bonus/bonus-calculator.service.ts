@@ -331,6 +331,125 @@ export class BonusCalculatorService {
     );
   }
 
+  /**
+   * Calcula, em memória e sem persistir, os bônus que o `generateBatch`
+   * gravaria — dividendos, equipe e liderança. Usado pela tela do admin
+   * para mostrar o valor completo do lote antes de aprová-lo.
+   *
+   * Retorna mapas `userId → valor` para cada categoria.
+   */
+  async previewBatchAmounts(
+    referenceMonth: string,
+    dividendPool: number,
+  ): Promise<{
+    dividends: Map<string, number>;
+    team: Map<string, number>;
+    leadership: Map<string, number>;
+  }> {
+    const dividends = new Map<string, number>();
+    const team = new Map<string, number>();
+    const leadership = new Map<string, number>();
+
+    const snapshots = await this.ensureSnapshot(referenceMonth);
+    if (snapshots.length === 0) return { dividends, team, leadership };
+
+    // ── Dividendos (proporcional ao snapshot de cotas) ────────────────
+    const totalQuotas = snapshots.reduce((s, snap) => s + snap.quotaBalance, 0);
+    if (totalQuotas > 0 && dividendPool > 0) {
+      for (const snap of snapshots) {
+        if (snap.quotaBalance <= 0) continue;
+        dividends.set(
+          snap.userId,
+          (dividendPool / totalQuotas) * snap.quotaBalance,
+        );
+      }
+    }
+
+    // ── Ganhos imediatos já existentes (compra/recompra do mês) ────────
+    // São contabilizados como ganho dos downlines no cálculo da cascata.
+    const immediateRows = await this.earningRepo
+      .createQueryBuilder('e')
+      .select('e.user_id', 'userId')
+      .addSelect('SUM(e.amount)', 'total')
+      .where('e.reference_month = :month', { month: referenceMonth })
+      .andWhere('e.bonus_type IN (:...types)', {
+        types: [BonusType.FIRST_PURCHASE, BonusType.REPURCHASE],
+      })
+      .groupBy('e.user_id')
+      .getRawMany<{ userId: string; total: string }>();
+    const immediateByUser = new Map<string, number>(
+      immediateRows.map((r) => [r.userId, parseFloat(r.total) || 0]),
+    );
+
+    // ── Equipe + liderança (cascata leaf-up, in-memory) ────────────────
+    const snapById = new Map(snapshots.map((s) => [s.userId, s]));
+    const childrenOf = new Map<string, string[]>();
+    for (const s of snapshots) {
+      if (!s.sponsorId) continue;
+      const arr = childrenOf.get(s.sponsorId) ?? [];
+      arr.push(s.userId);
+      childrenOf.set(s.sponsorId, arr);
+    }
+
+    const heightCache = new Map<string, number>();
+    const heightOf = (id: string): number => {
+      const cached = heightCache.get(id);
+      if (cached !== undefined) return cached;
+      heightCache.set(id, 0);
+      const children = childrenOf.get(id) ?? [];
+      const h = children.length === 0
+        ? 0
+        : 1 + Math.max(...children.map((c) => heightOf(c)));
+      heightCache.set(id, h);
+      return h;
+    };
+    const ordered = [...snapshots].sort((a, b) => heightOf(a.userId) - heightOf(b.userId));
+
+    // Soma todos os ganhos do mês para um conjunto de usuários — incluindo
+    // os já computados no preview (dividendos/equipe/liderança em memória).
+    const sumFor = (ids: string[]): number => {
+      let total = 0;
+      for (const id of ids) {
+        total += immediateByUser.get(id) ?? 0;
+        total += dividends.get(id) ?? 0;
+        total += team.get(id) ?? 0;
+        total += leadership.get(id) ?? 0;
+      }
+      return total;
+    };
+
+    for (const snap of ordered) {
+      if (!snap.isActive) continue;
+
+      if (snap.teamLevels > 0) {
+        const ids = this.collectDownlineIds(snap.userId, snap.teamLevels, childrenOf);
+        const base = sumFor(ids);
+        if (base > 0) {
+          team.set(snap.userId, base * BonusCalculatorService.TEAM_BONUS_RATE);
+        }
+      }
+
+      const leadershipPercent = Number(snap.leadershipPercent);
+      if (leadershipPercent > 0) {
+        const ids = this.collectDownlineIds(
+          snap.userId,
+          BonusCalculatorService.LEADERSHIP_DEPTH,
+          childrenOf,
+        );
+        const qualifiedIds = ids.filter((id) => {
+          const t = snapById.get(id)?.title;
+          return t === UserTitle.GOLD || t === UserTitle.DIAMOND;
+        });
+        const base = sumFor(qualifiedIds);
+        if (base > 0) {
+          leadership.set(snap.userId, base * (leadershipPercent / 100));
+        }
+      }
+    }
+
+    return { dividends, team, leadership };
+  }
+
   /** Persiste um bônus de lote (equipe/liderança) e atualiza o totalEarnings. */
   private async saveBatchBonus(
     userId: string,

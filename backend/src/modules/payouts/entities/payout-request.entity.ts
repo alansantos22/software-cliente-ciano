@@ -85,6 +85,21 @@ export class PayoutRequest {
   @Column({ type: 'datetime', nullable: true, name: 'completed_at' })
   completedAt: Date | null;
 
+  /**
+   * Pagamento separado em dois trilhos (regra do cliente — 2026-05):
+   *   - bonusPaidAt     → quando o admin confirma o pagamento dos bônus
+   *                       (compra, recompra, equipe, liderança).
+   *   - dividendPaidAt  → quando confirma o pagamento dos dividendos (cotas).
+   * O status COMPLETED só é atingido quando AMBOS estão pagos. Permite que
+   * um lote tenha "metade paga" — o dashboard do usuário desconta apenas
+   * a parte já liquidada da Previsão a Receber.
+   */
+  @Column({ type: 'datetime', nullable: true, name: 'bonus_paid_at' })
+  bonusPaidAt: Date | null;
+
+  @Column({ type: 'datetime', nullable: true, name: 'dividend_paid_at' })
+  dividendPaidAt: Date | null;
+
   @Column({ type: 'varchar', length: 500, nullable: true, name: 'failure_reason' })
   failureReason: string | null;
 
