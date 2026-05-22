@@ -280,14 +280,24 @@
                   >
                     Processar
                   </DsButton>
-                  <DsButton
-                    v-if="row.status === 'processing'"
-                    variant="primary"
-                    size="sm"
-                    @click="confirmPayoutRow(row)"
-                  >
-                    Confirmar
-                  </DsButton>
+                  <template v-if="row.status === 'processing' || (row.status === 'pending' && row.processedAt)">
+                    <DsButton
+                      v-if="Number(row.networkAmount ?? 0) > 0 && !row.bonusPaidAt"
+                      variant="primary"
+                      size="sm"
+                      @click="payBonusRow(row)"
+                    >
+                      <font-awesome-icon icon="users" /> Pagar Bônus
+                    </DsButton>
+                    <DsButton
+                      v-if="Number(row.quotaAmount ?? 0) > 0 && !row.dividendPaidAt"
+                      variant="outline"
+                      size="sm"
+                      @click="payDividendRow(row)"
+                    >
+                      <font-awesome-icon icon="coins" /> Pagar Dividendos
+                    </DsButton>
+                  </template>
                 </div>
               </template>
             </DsTable>
@@ -443,6 +453,8 @@ interface PayoutRequest {
   requestedAt: string;
   processedAt: string | null;
   completedAt: string | null;
+  bonusPaidAt: string | null;
+  dividendPaidAt: string | null;
   failureReason: string | null;
   transactionId: string | null;
 }
@@ -686,6 +698,20 @@ async function confirmPayout(payout: PayoutRequest) {
   } catch { /* fail silently */ }
 }
 
+async function payBonus(payout: PayoutRequest) {
+  try {
+    await adminService.payBonus(payout.id);
+    await loadPayouts();
+  } catch { /* fail silently */ }
+}
+
+async function payDividend(payout: PayoutRequest) {
+  try {
+    await adminService.payDividend(payout.id);
+    await loadPayouts();
+  } catch { /* fail silently */ }
+}
+
 async function markAsPaid(payout: PayoutRequest) {
   try {
     await adminService.confirmPayout(payout.id, { action: 'completed', transactionId: `MANUAL-${Date.now()}` });
@@ -774,6 +800,8 @@ function recalcStats() {
 // ─── Wrappers para slots do DsTable (row tipado como Record) ──────
 function processPayoutRow(row: Record<string, unknown>)  { processPayout(row as unknown as PayoutRequest); }
 function confirmPayoutRow(row: Record<string, unknown>)  { confirmPayout(row as unknown as PayoutRequest); }
+function payBonusRow(row: Record<string, unknown>)       { payBonus(row as unknown as PayoutRequest); }
+function payDividendRow(row: Record<string, unknown>)    { payDividend(row as unknown as PayoutRequest); }
 function markAsPaidRow(row: Record<string, unknown>)     { markAsPaid(row as unknown as PayoutRequest); }
 function downloadReceiptRow(row: Record<string, unknown>) { downloadReceipt(row as unknown as PayoutRequest); }
 

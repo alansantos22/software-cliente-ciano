@@ -26,7 +26,7 @@ export class GlobalFinancialSettings {
   @Column({ type: 'int', nullable: true, default: 25, name: 'closing_day' })
   closingDay: number | null;
 
-  @Column({ type: 'int', default: 5, name: 'payment_day' })
+  @Column({ type: 'int', default: 15, name: 'payment_day' })
   paymentDay: number;
 
   @Column({ type: 'boolean', default: true, name: 'pix_enabled' })

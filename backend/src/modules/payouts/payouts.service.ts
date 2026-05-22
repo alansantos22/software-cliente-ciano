@@ -40,9 +40,16 @@ export class PayoutsService {
       order: { paymentMonth: 'ASC' },
     });
 
-    const networkEarnings = receivables.reduce((s, p) => s + Number(p.networkAmount || 0), 0);
-    const quotaEarnings = receivables.reduce((s, p) => s + Number(p.quotaAmount || 0), 0);
-    const estimatedPayout = receivables.reduce((s, p) => s + Number(p.amount || 0), 0);
+    // Desconta a parte já paga em cada lote (pagamento parcial bônus/dividendos).
+    const networkEarnings = receivables.reduce(
+      (s, p) => s + (p.bonusPaidAt ? 0 : Number(p.networkAmount || 0)),
+      0,
+    );
+    const quotaEarnings = receivables.reduce(
+      (s, p) => s + (p.dividendPaidAt ? 0 : Number(p.quotaAmount || 0)),
+      0,
+    );
+    const estimatedPayout = networkEarnings + quotaEarnings;
 
     return {
       month: getCurrentPeriod(),
@@ -64,7 +71,7 @@ export class PayoutsService {
     const settings = await this.settingsRepo.findOne({ where: { id: 1 } });
     const now = new Date();
     const day = now.getDate();
-    const paymentDay = settings?.paymentDay || 5;
+    const paymentDay = settings?.paymentDay || 15;
 
     if (day > paymentDay) {
       throw new BadRequestException('Janela de pagamento fechada');

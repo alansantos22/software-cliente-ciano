@@ -339,7 +339,7 @@ interface SplitTickerData {
   changePercent: number;
 }
 
-type LevelKey = 'bronze' | 'prata' | 'ouro' | 'diamante';
+type LevelKey = 'nenhum' | 'bronze' | 'prata' | 'ouro' | 'diamante';
 
 interface CareerProgressData {
   currentLevel: LevelKey;
@@ -455,14 +455,14 @@ const firstName = computed(() => {
 
 const titleLabel = computed(() => {
   const map: Record<string, string> = {
-    bronze: 'Bronze', prata: 'Prata', ouro: 'Ouro', diamante: 'Diamante',
+    nenhum: 'Sem título', bronze: 'Bronze', prata: 'Prata', ouro: 'Ouro', diamante: 'Diamante',
   };
   return map[career.value.currentLevel] ?? career.value.currentLevel;
 });
 
 const titleColor = computed((): 'default' | 'success' | 'warning' | 'info' | 'primary' => {
   const map: Record<string, 'default' | 'success' | 'warning' | 'info' | 'primary'> = {
-    bronze: 'warning', prata: 'default', ouro: 'success', diamante: 'primary',
+    nenhum: 'default', bronze: 'warning', prata: 'default', ouro: 'success', diamante: 'primary',
   };
   return map[career.value.currentLevel] ?? 'default';
 });
@@ -583,20 +583,26 @@ onMounted(async () => {
       // Map career progress from title
       // The KPI endpoint already recalculates the title server-side before returning,
       // so kpiRes.data.title is always the fresh, persisted value.
+      // Sem título (conta inativa ou ainda não qualificada) → 'nenhum';
+      // nunca defaultar para 'bronze' aqui, pois isso mostrava Bronze para
+      // usuários que sequer atingiram a qualificação.
       const titleToLevel: Record<string, LevelKey> = {
+        none: 'nenhum',
         bronze: 'bronze',
         silver: 'prata',
         gold: 'ouro',
         diamond: 'diamante',
       };
-      const currentLevel = titleToLevel[kpiRes.data.title || ''] || 'bronze';
+      const currentLevel = titleToLevel[kpiRes.data.title || ''] || 'nenhum';
       const levelProgression: Record<LevelKey, LevelKey | ''> = {
+        nenhum: 'bronze',
         bronze: 'prata',
         prata: 'ouro',
         ouro: 'diamante',
         diamante: '',
       };
       const levelTargets: Record<string, number> = {
+        bronze: 2,      // 2 pessoas ativas
         prata: 1,       // 1 indicado Bronze
         ouro: 2,        // 2 Bronzes em linhas diferentes
         diamante: 3,    // 3 Bronzes em linhas diferentes

@@ -41,7 +41,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 
-type LevelKey = 'bronze' | 'prata' | 'ouro' | 'diamante';
+type LevelKey = 'nenhum' | 'bronze' | 'prata' | 'ouro' | 'diamante';
 
 const props = withDefaults(
   defineProps<{
@@ -57,6 +57,7 @@ const props = withDefaults(
 );
 
 const LABELS: Record<LevelKey, string> = {
+  nenhum: 'Sem título',
   bronze: 'Bronze',
   prata: 'Prata',
   ouro: 'Ouro',
@@ -64,6 +65,7 @@ const LABELS: Record<LevelKey, string> = {
 };
 
 const REQUIREMENTS: Record<LevelKey, string> = {
+  nenhum: 'precisa estar ativo',
   bronze: '2 pessoas ativas na rede',
   prata: '1 indicado Bronze',
   ouro: '2 Bronzes em linhas diferentes',
@@ -71,6 +73,7 @@ const REQUIREMENTS: Record<LevelKey, string> = {
 };
 
 const ICONS: Record<LevelKey, string> = {
+  nenhum: 'circle',
   bronze: 'medal',
   prata: 'award',
   ouro: 'crown',

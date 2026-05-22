@@ -88,13 +88,55 @@ export class DashboardService {
         userId,
         status: In([PayoutStatus.PENDING, PayoutStatus.PROCESSING]),
       },
-      select: ['quotaAmount', 'networkAmount', 'amount', 'paymentMonth'],
+      select: [
+        'quotaAmount',
+        'networkAmount',
+        'amount',
+        'paymentMonth',
+        'referenceMonth',
+        'bonusPaidAt',
+        'dividendPaidAt',
+      ],
       order: { paymentMonth: 'ASC' },
     });
 
-    const quotaEarnings   = pendingPayouts.reduce((s, p) => s + Number(p.quotaAmount   || 0), 0);
-    const networkEarnings = pendingPayouts.reduce((s, p) => s + Number(p.networkAmount || 0), 0);
-    const totalReceivable = pendingPayouts.reduce((s, p) => s + Number(p.amount        || 0), 0);
+    // Para os lotes já gerados, descontamos a parte de bônus ou dividendos que
+    // já foi paga (estados parciais COMPLETED suportados pelos botões
+    // "Pagar bônus" / "Pagar dividendos").
+    const networkInBatches = pendingPayouts.reduce(
+      (s, p) => s + (p.bonusPaidAt ? 0 : Number(p.networkAmount || 0)),
+      0,
+    );
+    const quotaInBatches = pendingPayouts.reduce(
+      (s, p) => s + (p.dividendPaidAt ? 0 : Number(p.quotaAmount || 0)),
+      0,
+    );
+
+    // Compra/recompra que JÁ foram computadas mas ainda não entraram em
+    // nenhum lote (admin ainda não rodou o batch). O cliente pediu para
+    // mostrar esse valor — não depende do lucro líquido.
+    const monthsAlreadyInBatch = new Set(
+      pendingPayouts.map((p) => p.referenceMonth).filter(Boolean),
+    );
+    const purchaseEarningsQb = this.earningRepo
+      .createQueryBuilder('e')
+      .select('SUM(e.amount)', 'total')
+      .where('e.user_id = :userId', { userId })
+      .andWhere('e.bonus_type IN (:...types)', {
+        types: ['first_purchase', 'repurchase'],
+      })
+      .andWhere('e.status = :status', { status: 'pending' });
+    if (monthsAlreadyInBatch.size > 0) {
+      purchaseEarningsQb.andWhere('e.reference_month NOT IN (:...months)', {
+        months: [...monthsAlreadyInBatch],
+      });
+    }
+    const purchaseEarningsRow = await purchaseEarningsQb.getRawOne();
+    const purchaseEarningsPending = parseFloat(purchaseEarningsRow?.total || '0');
+
+    const networkEarnings = networkInBatches + purchaseEarningsPending;
+    const quotaEarnings = quotaInBatches;
+    const totalReceivable = networkEarnings + quotaEarnings;
 
     // ── Janela de pagamento ──
     const settings = await this.settingsRepo.findOne({ where: { id: 1 } });
@@ -103,7 +145,8 @@ export class DashboardService {
     const paymentWindowOpen = today.getDate() <= paymentDay;
 
     // Próximo pagamento: usa o mês do batch pendente mais antigo
-    // (regra ref+2). Caso não haja batch, usa o mês corrente.
+    // (regra ref+2). Caso não haja batch, usa o mês corrente — e se
+    // o dia de pagamento já passou, avança para o mês seguinte.
     let nextPayYear  = today.getFullYear();
     let nextPayMonth = today.getMonth();
     if (pendingPayouts.length > 0 && pendingPayouts[0].paymentMonth) {
@@ -112,6 +155,10 @@ export class DashboardService {
         nextPayYear  = py;
         nextPayMonth = pm - 1;
       }
+    } else if (today.getDate() > paymentDay) {
+      // Sem batch pendente e já passamos do dia de pagamento → o próximo
+      // pagamento previsto cai no mês seguinte (não no dia que já passou).
+      nextPayMonth += 1;
     }
     const nextPaymentDateObj = new Date(nextPayYear, nextPayMonth, paymentDay);
     const todayMid = new Date(today.getFullYear(), today.getMonth(), today.getDate());
@@ -121,6 +168,28 @@ export class DashboardService {
     // Envia como YYYY-MM-DD para evitar desvio de fuso horário no client
     const pd = nextPaymentDateObj;
     const nextPaymentDateStr = `${pd.getFullYear()}-${String(pd.getMonth() + 1).padStart(2, '0')}-${String(pd.getDate()).padStart(2, '0')}`;
+
+    // ── Ganhos da Vida (lifetime) ──
+    // Regra do cliente: só conta APÓS o admin confirmar o pagamento. Soma
+    // o que foi pago de bônus (bonus_paid_at) e o que foi pago de dividendos
+    // (dividend_paid_at) — payouts COMPLETED garantem que ambos os
+    // marcadores estão preenchidos. user.totalEarnings continua útil para
+    // métricas internas mas NÃO é a fonte aqui.
+    const paidPayouts = await this.payoutRepo.find({
+      where: { userId },
+      select: [
+        'amount',
+        'networkAmount',
+        'quotaAmount',
+        'bonusPaidAt',
+        'dividendPaidAt',
+      ],
+    });
+    const lifetimeEarnings = paidPayouts.reduce((s, p) => {
+      const bonus = p.bonusPaidAt ? Number(p.networkAmount || 0) : 0;
+      const dividend = p.dividendPaidAt ? Number(p.quotaAmount || 0) : 0;
+      return s + bonus + dividend;
+    }, 0);
 
     // ── Expiração da ativação (lastPurchaseDate + 6 meses) ──
     let daysUntilExpiry: number | null = null;
@@ -138,7 +207,7 @@ export class DashboardService {
       estimatedPatrimony: user.quotaBalance * Number(state?.currentQuotaPrice || 2000),
       currentPrice: Number(state?.currentQuotaPrice || 2000),
       totalEarnings: Number(user.totalEarnings),
-      lifetimeEarnings: Number(user.totalEarnings),
+      lifetimeEarnings,
       monthEarnings: parseFloat(monthEarnings?.total || '0'),
       // Previsão a receber
       networkEarnings,
@@ -174,7 +243,7 @@ export class DashboardService {
 
     const now = new Date();
     const day = now.getDate();
-    const isOpen = day <= (settings.paymentDay || 5);
+    const isOpen = day <= (settings.paymentDay || 15);
 
     return {
       isOpen,

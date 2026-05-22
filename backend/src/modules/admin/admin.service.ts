@@ -282,17 +282,33 @@ export class AdminService {
       .addGroupBy('e.bonus_type')
       .getRawMany<{ userId: string; bonusType: string; total: string }>();
 
-    const earningsMap = new Map<string, { firstPurchase: number; repurchase: number; team: number; leadership: number }>();
-    for (const row of monthlyEarnings) {
-      if (!earningsMap.has(row.userId)) {
-        earningsMap.set(row.userId, { firstPurchase: 0, repurchase: 0, team: 0, leadership: 0 });
+    const earningsMap = new Map<string, { firstPurchase: number; repurchase: number; team: number; leadership: number; dividend: number }>();
+    const ensure = (uid: string) => {
+      if (!earningsMap.has(uid)) {
+        earningsMap.set(uid, { firstPurchase: 0, repurchase: 0, team: 0, leadership: 0, dividend: 0 });
       }
-      const entry = earningsMap.get(row.userId)!;
+      return earningsMap.get(uid)!;
+    };
+    let hasPersistedBatchData = false;
+    for (const row of monthlyEarnings) {
+      const entry = ensure(row.userId);
       const val = parseFloat(row.total) || 0;
       if (row.bonusType === BonusType.FIRST_PURCHASE) entry.firstPurchase = val;
       else if (row.bonusType === BonusType.REPURCHASE) entry.repurchase = val;
-      else if (row.bonusType === BonusType.TEAM) entry.team = val;
-      else if (row.bonusType === BonusType.LEADERSHIP) entry.leadership = val;
+      else if (row.bonusType === BonusType.TEAM) { entry.team = val; hasPersistedBatchData = true; }
+      else if (row.bonusType === BonusType.LEADERSHIP) { entry.leadership = val; hasPersistedBatchData = true; }
+      else if (row.bonusType === BonusType.DIVIDEND) { entry.dividend = val; hasPersistedBatchData = true; }
+    }
+
+    // Preview pré-batch: se ainda não houve cálculo persistido para o mês,
+    // roda em memória dividendos + equipe + liderança para o admin já ver
+    // o quanto vai pagar antes de aprovar o lote.
+    if (!hasPersistedBatchData) {
+      const previewPool = netProfit * dividendPoolPercent / 100;
+      const preview = await this.bonusCalc.previewBatchAmounts(profitMonth, previewPool);
+      for (const [uid, amount] of preview.dividends) ensure(uid).dividend = amount;
+      for (const [uid, amount] of preview.team) ensure(uid).team = amount;
+      for (const [uid, amount] of preview.leadership) ensure(uid).leadership = amount;
     }
 
     // Universo de pagamento: quem tem cota OU ganho de rede no mês. Antes,
@@ -306,8 +322,10 @@ export class AdminService {
 
         const quotaBalance = quotaOf(userId);
         const share = totalQuotas > 0 ? quotaBalance / totalQuotas : 0;
-        const quotaAmount = dividendPool * share;
-        const breakdown = earningsMap.get(userId) || { firstPurchase: 0, repurchase: 0, team: 0, leadership: 0 };
+        const breakdown = earningsMap.get(userId) || { firstPurchase: 0, repurchase: 0, team: 0, leadership: 0, dividend: 0 };
+        // Dividendo já vem do preview/persistido; só recai na fórmula
+        // proporcional como rede de segurança.
+        const quotaAmount = breakdown.dividend > 0 ? breakdown.dividend : dividendPool * share;
         const networkAmount = breakdown.firstPurchase + breakdown.repurchase + breakdown.team + breakdown.leadership;
 
         return {
@@ -631,27 +649,35 @@ export class AdminService {
       payout.status = PayoutStatus.PROCESSING;
       payout.processedAt = new Date();
     } else if (action === 'completed') {
+      // Atalho legado: marca tudo (bônus + dividendos) como pago de uma vez.
+      const now = new Date();
+      if (!payout.bonusPaidAt) payout.bonusPaidAt = now;
+      if (!payout.dividendPaidAt) payout.dividendPaidAt = now;
       payout.status = PayoutStatus.COMPLETED;
-      payout.completedAt = new Date();
+      payout.completedAt = now;
 
-      // NÃO incrementa user.totalEarnings aqui. Esse acumulador já é
-      // atualizado pelo BonusCalculatorService a cada ganho criado
-      // (compra, recompra, equipe, liderança e dividendos). Incrementar de
-      // novo na conclusão do pagamento causava double-count — em especial
-      // para quem tem ganhos de rede sem cotas (sem linha de dividendo, o
-      // antigo heurístico `dividendAlreadyCounted === 0` disparava o
-      // incremento sobre valores já contabilizados).
-
-      // Fecha o ciclo de vida dos ganhos: ao pagar o lote, os ganhos do mês
-      // de referência daquele usuário passam de PENDING → PAID.
-      await this.earningRepo
-        .createQueryBuilder()
-        .update()
-        .set({ status: EarningStatus.PAID, paidAt: () => 'NOW()' })
-        .where('user_id = :userId', { userId: payout.userId })
-        .andWhere('reference_month = :month', { month: payout.referenceMonth })
-        .andWhere('status = :status', { status: EarningStatus.PENDING })
-        .execute();
+      await this.markEarningsPaid(payout.userId, payout.referenceMonth, [
+        BonusType.FIRST_PURCHASE,
+        BonusType.REPURCHASE,
+        BonusType.TEAM,
+        BonusType.LEADERSHIP,
+        BonusType.DIVIDEND,
+      ]);
+    } else if (action === 'pay-bonus') {
+      if (!payout.bonusPaidAt) payout.bonusPaidAt = new Date();
+      await this.markEarningsPaid(payout.userId, payout.referenceMonth, [
+        BonusType.FIRST_PURCHASE,
+        BonusType.REPURCHASE,
+        BonusType.TEAM,
+        BonusType.LEADERSHIP,
+      ]);
+      this.finalizePayoutIfBothPaid(payout);
+    } else if (action === 'pay-dividend') {
+      if (!payout.dividendPaidAt) payout.dividendPaidAt = new Date();
+      await this.markEarningsPaid(payout.userId, payout.referenceMonth, [
+        BonusType.DIVIDEND,
+      ]);
+      this.finalizePayoutIfBothPaid(payout);
     } else if (action === 'failed') {
       payout.status = PayoutStatus.FAILED;
       payout.failureReason = failureReason || '';
@@ -659,6 +685,41 @@ export class AdminService {
 
     await this.payoutRepo.save(payout);
     return payout;
+  }
+
+  /**
+   * Marca o lote como COMPLETED quando bônus e dividendos foram pagos.
+   * Se um dos lados for zerado (lote sem dividendos, p. ex.), considera-se
+   * pago automaticamente para não travar a finalização.
+   */
+  private finalizePayoutIfBothPaid(payout: PayoutRequest): void {
+    const noBonus = Number(payout.networkAmount || 0) <= 0;
+    const noDividend = Number(payout.quotaAmount || 0) <= 0;
+    const bonusDone = !!payout.bonusPaidAt || noBonus;
+    const dividendDone = !!payout.dividendPaidAt || noDividend;
+    if (bonusDone && dividendDone) {
+      payout.status = PayoutStatus.COMPLETED;
+      payout.completedAt = new Date();
+    } else if (payout.status === PayoutStatus.PENDING) {
+      payout.status = PayoutStatus.PROCESSING;
+      if (!payout.processedAt) payout.processedAt = new Date();
+    }
+  }
+
+  private async markEarningsPaid(
+    userId: string,
+    referenceMonth: string,
+    bonusTypes: BonusType[],
+  ): Promise<void> {
+    await this.earningRepo
+      .createQueryBuilder()
+      .update()
+      .set({ status: EarningStatus.PAID, paidAt: () => 'NOW()' })
+      .where('user_id = :userId', { userId })
+      .andWhere('reference_month = :month', { month: referenceMonth })
+      .andWhere('bonus_type IN (:...types)', { types: bonusTypes })
+      .andWhere('status = :status', { status: EarningStatus.PENDING })
+      .execute();
   }
 
   async bulkPayoutAction(payoutIds: string[], action: string, transactionId?: string) {

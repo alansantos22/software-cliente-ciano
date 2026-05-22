@@ -33,22 +33,23 @@ export class TitleCalculatorService {
     const user = await this.userRepo.findOne({ where: { id: userId } });
     if (!user) return UserTitle.NONE;
 
-    // NOTE: User inactivity affects bonus payments but NOT title assignment.
-    // Title is determined purely by network qualifications (spec: §2.1, §8).
-
     const dbRequirements = await this.titleReqRepo.find({ order: { id: 'DESC' } });
 
-    // Fall back to hardcoded defaults if table is empty (prevents all users getting NONE)
     const requirements = dbRequirements.length > 0 ? dbRequirements : DEFAULT_REQUIREMENTS;
 
     let newTitle = UserTitle.NONE;
 
-    // Check from highest to lowest
-    for (const req of requirements) {
-      if (req.title === UserTitle.NONE) continue;
-      if (await this.meetsRequirement(user, req)) {
-        newTitle = req.title ?? UserTitle.NONE;
-        break;
+    // Regra do cliente (2026-05): conta inativa não pode bater título.
+    // Sem ativação válida (lastPurchaseDate dentro dos últimos 6 meses), o
+    // título é forçado a NONE — o cálculo das qualificações sequer roda.
+    if (this.isActive(user)) {
+      // Check from highest to lowest
+      for (const req of requirements) {
+        if (req.title === UserTitle.NONE) continue;
+        if (await this.meetsRequirement(user, req)) {
+          newTitle = req.title ?? UserTitle.NONE;
+          break;
+        }
       }
     }
 
