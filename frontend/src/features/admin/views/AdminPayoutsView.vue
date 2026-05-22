@@ -691,13 +691,6 @@ async function processPayout(payout: PayoutRequest) {
   } catch { /* fail silently */ }
 }
 
-async function confirmPayout(payout: PayoutRequest) {
-  try {
-    await adminService.confirmPayout(payout.id, { action: 'completed' });
-    await loadPayouts();
-  } catch { /* fail silently */ }
-}
-
 async function payBonus(payout: PayoutRequest) {
   try {
     await adminService.payBonus(payout.id);
