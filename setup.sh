@@ -6,10 +6,10 @@
 # Faz, de uma vez só, toda a configuração:
 #   - atualiza o sistema e configura o firewall
 #   - cria o usuário do sistema (o app NUNCA roda como root)
-#   - instala Node 22, MySQL, Nginx, Git e Certbot
+#   - instala Node 22, PM2, MySQL, Nginx, Git e Certbot
 #   - cria o banco e o usuário do MySQL
 #   - clona o repositório e gera os arquivos .env
-#   - sobe o backend (NestJS) como serviço systemd
+#   - sobe o backend (NestJS) via PM2 e configura o boot automático
 #   - compila o frontend (Vue/Vite) e configura o Nginx
 #   - emite o certificado HTTPS (Let's Encrypt)
 #
@@ -128,15 +128,16 @@ cd "$APP_DIR/frontend"
 npm ci
 npm run build
 
-echo "==> [5/6] Reiniciando Backend (systemd)..."
-sudo systemctl restart "$SERVICE"
+echo "==> [5/6] Reiniciando Backend (pm2 reload — zero-downtime)..."
+pm2 reload "$SERVICE" --update-env
+pm2 save
 
 echo "==> [6/6] Recarregando Nginx..."
 sudo nginx -t && sudo systemctl reload nginx
 
 echo ""
 echo "Deploy concluido com sucesso!"
-sudo systemctl status "$SERVICE" --no-pager -l | head -n 15
+pm2 status "$SERVICE"
 DEPLOY
   chown "$OWNER:$OWNER" "${APP_DIR}/deploy.sh"
   chmod +x "${APP_DIR}/deploy.sh"
@@ -187,9 +188,143 @@ SQL
   done
   unset MYSQL_PWD
 
-  log "Reiniciando o backend (${SERVICE})"
-  systemctl restart "$SERVICE"
-  ok "Backend reiniciado. Veja status: systemctl status ${SERVICE}"
+  log "Reiniciando o backend (${SERVICE}) via pm2"
+  sudo -u "$(stat -c '%U' "$APP_DIR")" bash -lc "pm2 reload '$SERVICE' --update-env && pm2 save" \
+    || warn "pm2 não está rodando para esse usuário — verifique 'pm2 status' manualmente."
+  ok "Backend reiniciado. Veja status: pm2 status"
+}
+
+# Migração automática de uma VPS antiga (systemd → PM2). Idempotente: pode
+# rodar de novo numa VPS que já está em PM2 sem quebrar nada.
+migrate_to_pm2() {
+  [ -d "$APP_DIR" ] || die "Diretório $APP_DIR não existe — esta VPS ainda não tem o sistema instalado."
+
+  local OWNER
+  OWNER="$(stat -c '%U' "$APP_DIR")"
+  [ -n "$OWNER" ] && id "$OWNER" &>/dev/null \
+    || die "Não consegui detectar o usuário dono de $APP_DIR (ou ele não existe mais)."
+
+  log "Migrando o backend de systemd → PM2 (usuário do app: $OWNER)"
+
+  # helper local: executa um comando como o dono do app, com PATH de login
+  run_as_owner() { sudo -u "$OWNER" bash -lc "$*"; }
+
+  # 1. Para e remove o serviço systemd legado, se existir.
+  if systemctl list-unit-files 2>/dev/null | grep -q "^${SERVICE}.service"; then
+    log "[1/9] Desativando serviço systemd legado '${SERVICE}.service'"
+    systemctl stop "${SERVICE}" 2>/dev/null || true
+    systemctl disable "${SERVICE}" 2>/dev/null || true
+    rm -f "/etc/systemd/system/${SERVICE}.service"
+    systemctl daemon-reload
+    ok "Serviço systemd legado removido."
+  else
+    ok "[1/9] Nenhum serviço systemd legado encontrado — nada a remover."
+  fi
+
+  # 2. Instala PM2 globalmente, se necessário.
+  if command -v pm2 &>/dev/null; then
+    ok "[2/9] PM2 $(pm2 -v) já instalado."
+  else
+    log "[2/9] Instalando PM2 globalmente"
+    command -v npm &>/dev/null \
+      || die "npm não está instalado — rode primeiro a instalação completa (opção 1)."
+    npm install -g pm2
+    ok "PM2 $(pm2 -v) instalado."
+  fi
+
+  # 3. Atualiza o repo para garantir que tem o ecosystem.config.cjs versionado.
+  log "[3/9] Atualizando o repositório (git pull)"
+  run_as_owner "cd '$APP_DIR' && git pull --ff-only origin main" \
+    || warn "git pull falhou — talvez haja conflitos locais. Continuando, mas verifique manualmente."
+
+  # 4. Garante que o ecosystem.config.cjs existe (fallback se o pull não trouxe).
+  if [ ! -f "$APP_DIR/backend/ecosystem.config.cjs" ]; then
+    warn "ecosystem.config.cjs não encontrado — gerando um padrão."
+    cat > "$APP_DIR/backend/ecosystem.config.cjs" <<'ECO'
+module.exports = {
+  apps: [{
+    name: 'ciano',
+    script: 'dist/main.js',
+    cwd: __dirname,
+    instances: 1,
+    exec_mode: 'fork',
+    autorestart: true,
+    watch: false,
+    max_memory_restart: '500M',
+    max_restarts: 10,
+    min_uptime: '10s',
+    env: { NODE_ENV: 'production' },
+  }],
+};
+ECO
+    chown "$OWNER:$OWNER" "$APP_DIR/backend/ecosystem.config.cjs"
+    ok "ecosystem.config.cjs gerado."
+  else
+    ok "[4/9] ecosystem.config.cjs presente."
+  fi
+
+  # 5. Garante que existe um build do backend (sem dist/main.js o pm2 não tem
+  # o que rodar). Se faltar, compila.
+  if [ ! -f "$APP_DIR/backend/dist/main.js" ]; then
+    log "[5/9] Build do backend não encontrado — compilando (npm ci + npm run build)"
+    run_as_owner "cd '$APP_DIR/backend' && npm ci && npm run build"
+    ok "Backend compilado."
+  else
+    ok "[5/9] Build do backend já existe."
+  fi
+
+  # 6. Sobe o backend pelo PM2 a partir do ecosystem versionado.
+  log "[6/9] Subindo o backend via PM2"
+  run_as_owner "cd '$APP_DIR/backend' && pm2 startOrReload ecosystem.config.cjs --update-env"
+  run_as_owner "pm2 save"
+  ok "Backend rodando via PM2."
+
+  # 7. Instala e configura a rotação de logs (evita o disco encher).
+  log "[7/9] Configurando rotação automática de logs"
+  run_as_owner "pm2 install pm2-logrotate" >/dev/null
+  run_as_owner "pm2 set pm2-logrotate:max_size 10M" >/dev/null
+  run_as_owner "pm2 set pm2-logrotate:retain 14" >/dev/null
+  run_as_owner "pm2 set pm2-logrotate:compress true" >/dev/null
+  ok "pm2-logrotate ativo (10 MB por arquivo / 14 arquivos / gzip)."
+
+  # 8. Habilita auto-start no boot via o unit pm2-<user>.service.
+  log "[8/9] Habilitando auto-start no boot da VPS"
+  env PATH="$PATH:/usr/bin" pm2 startup systemd -u "$OWNER" --hp "/home/$OWNER" >/dev/null
+  systemctl enable "pm2-${OWNER}" >/dev/null 2>&1 || true
+  ok "pm2-${OWNER}.service ativo — backend sobe sozinho após reboot."
+
+  # 9. Atualiza sudoers: pm2 não precisa de sudo; só o reload do Nginx.
+  log "[9/9] Atualizando sudoers"
+  cat > /etc/sudoers.d/deploy-ciano <<SUDO
+${OWNER} ALL=(root) NOPASSWD: /usr/sbin/nginx, /usr/bin/systemctl reload nginx
+SUDO
+  chmod 440 /etc/sudoers.d/deploy-ciano
+  ok "Sudoers ajustado (pm2 dispensa privilégios)."
+
+  # Recria o deploy.sh para usar comandos pm2.
+  create_deploy_script
+
+  echo
+  echo "${C_OK}============================================================${C_OFF}"
+  echo "${C_OK}           MIGRAÇÃO PARA PM2 CONCLUÍDA                      ${C_OFF}"
+  echo "${C_OK}============================================================${C_OFF}"
+  echo
+  echo "Status do backend:"
+  run_as_owner "pm2 status" || true
+  echo
+  echo "Comandos úteis (logado como '$OWNER'):"
+  echo "  pm2 logs ciano                  Logs em tempo real"
+  echo "  pm2 status                      Lista apps (CPU, RAM, restarts)"
+  echo "  pm2 monit                       Monitor interativo"
+  echo "  pm2 reload ciano                Reiniciar sem downtime"
+  echo "  sudo systemctl status pm2-${OWNER}    Verificar auto-start de boot"
+  echo
+  echo "${C_WARN}IMPORTANTE — monitorar quedas:${C_OFF}"
+  echo "  PM2 reinicia o app em caso de crash, mas não te avisa. Cadastre"
+  echo "  um monitor de uptime grátis (UptimeRobot, Better Stack, etc.)"
+  echo "  apontando para https://SEU-DOMINIO/api — ele te avisa por e-mail"
+  echo "  em segundos se a API ficar fora do ar."
+  echo
 }
 
 # ======================================================================
@@ -204,7 +339,8 @@ echo "  O que você quer fazer?"
 echo "    ${C_OK}1${C_OFF}) Instalação completa (VPS nova / primeira vez)"
 echo "    ${C_OK}2${C_OFF}) Apenas aplicar migrations SQL pendentes (corrige tabela 'migrations')"
 echo "    ${C_OK}3${C_OFF}) Apenas (re)criar o script /var/www/ciano/deploy.sh"
-echo "    ${C_OK}4${C_OFF}) Sair"
+echo "    ${C_OK}4${C_OFF}) Migrar backend de systemd → PM2 (em VPS já instalada)"
+echo "    ${C_OK}5${C_OFF}) Sair"
 echo
 read -rp "Opção [1]: " MENU_OPT
 MENU_OPT="${MENU_OPT:-1}"
@@ -212,7 +348,8 @@ MENU_OPT="${MENU_OPT:-1}"
 case "$MENU_OPT" in
   2) run_migrations_only; exit 0 ;;
   3) create_deploy_script; exit 0 ;;
-  4) echo "Saindo."; exit 0 ;;
+  4) migrate_to_pm2; exit 0 ;;
+  5) echo "Saindo."; exit 0 ;;
   1) : ;;   # segue o fluxo de instalação completa abaixo
   *) die "Opção inválida: $MENU_OPT" ;;
 esac
@@ -373,6 +510,14 @@ else
   ok "Node $(node -v) instalado."
 fi
 
+# PM2 — gerenciador de processo do backend (substitui systemd para o app Node).
+if command -v pm2 &>/dev/null; then
+  ok "PM2 $(pm2 -v) já instalado."
+else
+  npm install -g pm2
+  ok "PM2 $(pm2 -v) instalado."
+fi
+
 # ======================================================================
 #  4. MYSQL — BANCO E USUÁRIO
 # ======================================================================
@@ -473,30 +618,37 @@ as_deploy "cd '$APP_DIR/backend' && npm ci && npm run build"
 ok "Backend instalado e compilado."
 
 # ======================================================================
-#  8. SERVIÇO SYSTEMD
+#  8. PM2 — gerenciador de processo do backend
 # ======================================================================
-log "9/12 — Criando o serviço systemd"
-cat > /etc/systemd/system/${SERVICE}.service <<UNIT
-[Unit]
-Description=Ciano Cotas API
-After=network.target mysql.service
+log "9/12 — Subindo o backend via PM2"
 
-[Service]
-Type=simple
-User=${DEPLOY_USER}
-WorkingDirectory=${APP_DIR}/backend
-ExecStart=/usr/bin/node dist/main.js
-Restart=on-failure
-RestartSec=5
-Environment=NODE_ENV=production
+# Se existir um serviço systemd legado de uma instalação anterior, desativa pra
+# não brigar pela porta 3000 com o pm2.
+if systemctl list-unit-files | grep -q "^${SERVICE}.service"; then
+  warn "Detectado serviço systemd legado '${SERVICE}.service' — desativando."
+  systemctl stop "${SERVICE}" 2>/dev/null || true
+  systemctl disable "${SERVICE}" 2>/dev/null || true
+  rm -f "/etc/systemd/system/${SERVICE}.service"
+  systemctl daemon-reload
+fi
 
-[Install]
-WantedBy=multi-user.target
-UNIT
-systemctl daemon-reload
-systemctl enable ${SERVICE}
-systemctl restart ${SERVICE}
-ok "Serviço '${SERVICE}' ativo (a API cria o schema e roda o seed na 1ª subida)."
+# Sobe o app pelo ecosystem.config.cjs (versionado no repo). Rodar como o
+# usuário do deploy — o pm2 escreve metadados em ~/.pm2.
+as_deploy "cd '$APP_DIR/backend' && pm2 startOrReload ecosystem.config.cjs --update-env"
+as_deploy "pm2 save"
+
+# Instala o módulo de rotação de logs (evita ~/.pm2/logs crescer indefinidamente).
+as_deploy "pm2 install pm2-logrotate"
+as_deploy "pm2 set pm2-logrotate:max_size 10M"
+as_deploy "pm2 set pm2-logrotate:retain 14"
+as_deploy "pm2 set pm2-logrotate:compress true"
+
+# Cria/habilita o unit do systemd que sobe o pm2 do usuário no boot da VPS.
+# Rodando como root com -u/--hp, o próprio pm2 instala o unit "pm2-<user>.service".
+log "Habilitando pm2 para iniciar no boot da VPS"
+env PATH="$PATH:/usr/bin" pm2 startup systemd -u "${DEPLOY_USER}" --hp "/home/${DEPLOY_USER}" >/dev/null
+systemctl enable "pm2-${DEPLOY_USER}" >/dev/null 2>&1 || true
+ok "Backend rodando via PM2 (start automático no boot)."
 
 # ======================================================================
 #  9. FRONTEND — build
@@ -544,9 +696,10 @@ nginx -t
 systemctl reload nginx
 ok "Nginx configurado e recarregado."
 
-# regra de sudo: o usuário pode reiniciar os serviços sem senha (pros deploys)
+# regra de sudo: o usuário pode recarregar/testar o Nginx sem senha (pros deploys).
+# O backend é gerenciado pelo pm2, que NÃO precisa de sudo.
 cat > /etc/sudoers.d/deploy-ciano <<SUDO
-${DEPLOY_USER} ALL=(root) NOPASSWD: /usr/bin/systemctl restart ${SERVICE}, /usr/bin/systemctl reload nginx
+${DEPLOY_USER} ALL=(root) NOPASSWD: /usr/sbin/nginx, /usr/bin/systemctl reload nginx
 SUDO
 chmod 440 /etc/sudoers.d/deploy-ciano
 
@@ -594,10 +747,17 @@ echo "  Senha do usuário .......: (a que você digitou)"
 echo "  Senha do MySQL .........: ${DB_PASSWORD}"
 echo "  JWT_SECRET .............: ${JWT_SECRET}"
 echo
-echo "  Comandos úteis:"
-echo "    Logs da API ..........: journalctl -u ${SERVICE} -f"
-echo "    Status ...............: systemctl status ${SERVICE}"
-echo "    Reiniciar ............: sudo systemctl restart ${SERVICE}"
+echo "  Comandos úteis (logado como '${DEPLOY_USER}'):"
+echo "    Logs da API ..........: pm2 logs ${SERVICE}"
+echo "    Logs (últimas 200) ...: pm2 logs ${SERVICE} --lines 200 --nostream"
+echo "    Status / CPU / RAM ...: pm2 status     (ou: pm2 monit)"
+echo "    Reiniciar ............: pm2 reload ${SERVICE}   (zero-downtime)"
+echo "    Parar ................: pm2 stop ${SERVICE}"
+echo
+echo "  Monitorar QUEDAS (recomendado):"
+echo "    Cadastre um monitor de uptime grátis (UptimeRobot, Better Stack, etc.)"
+echo "    apontando para https://${DOMAIN}/api — ele te avisa por e-mail/SMS"
+echo "    em segundos se a API ficar fora do ar."
 echo
 echo "  Próximos deploys (atualizações):"
 echo "    ${APP_DIR}/deploy.sh"

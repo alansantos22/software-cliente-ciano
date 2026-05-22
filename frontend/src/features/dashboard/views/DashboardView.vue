@@ -499,6 +499,18 @@ function formatDate(dateStr: string): string {
   }).format(new Date(safeDateStr));
 }
 
+const BONUS_TYPE_LABELS: Record<string, string> = {
+  firstPurchase: 'Primeira Compra',
+  repurchase: 'Bônus Recompra',
+  team: 'Bônus Equipe',
+  leadership: 'Bônus Liderança',
+  dividend: 'Dividendo',
+};
+
+function bonusTypeLabel(type: string): string {
+  return BONUS_TYPE_LABELS[type] ?? type;
+}
+
 function activityIcon(type: string): string {
   const map: Record<string, string> = {
     'Primeira Compra': 'handshake',
@@ -644,7 +656,7 @@ onMounted(async () => {
     if (activityRes.data) {
       recentActivity.value = (activityRes.data as any[]).map(e => ({
         id: e.id,
-        type: e.bonusType || e.description || '',
+        type: bonusTypeLabel(e.bonusType) || e.description || '',
         description: e.description || '',
         amount: e.amount || 0,
         date: e.createdAt || '',
