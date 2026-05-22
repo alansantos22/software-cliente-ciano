@@ -799,7 +799,6 @@ function recalcStats() {
 
 // ─── Wrappers para slots do DsTable (row tipado como Record) ──────
 function processPayoutRow(row: Record<string, unknown>)  { processPayout(row as unknown as PayoutRequest); }
-function confirmPayoutRow(row: Record<string, unknown>)  { confirmPayout(row as unknown as PayoutRequest); }
 function payBonusRow(row: Record<string, unknown>)       { payBonus(row as unknown as PayoutRequest); }
 function payDividendRow(row: Record<string, unknown>)    { payDividend(row as unknown as PayoutRequest); }
 function markAsPaidRow(row: Record<string, unknown>)     { markAsPaid(row as unknown as PayoutRequest); }
