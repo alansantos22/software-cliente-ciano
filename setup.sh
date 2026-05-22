@@ -128,8 +128,11 @@ cd "$APP_DIR/frontend"
 npm ci
 npm run build
 
-echo "==> [5/6] Reiniciando Backend (pm2 reload — zero-downtime)..."
-pm2 reload "$SERVICE" --update-env
+echo "==> [5/6] Reiniciando Backend (pm2 startOrReload — zero-downtime)..."
+# startOrReload: cria o processo se ainda não existir, ou recarrega se já estiver rodando.
+# (pm2 reload puro falha com "Process or Namespace ... not found" se o app nunca foi iniciado.)
+cd "$APP_DIR/backend"
+pm2 startOrReload ecosystem.config.cjs --update-env
 pm2 save
 
 echo "==> [6/6] Recarregando Nginx..."
@@ -189,7 +192,9 @@ SQL
   unset MYSQL_PWD
 
   log "Reiniciando o backend (${SERVICE}) via pm2"
-  sudo -u "$(stat -c '%U' "$APP_DIR")" bash -lc "pm2 reload '$SERVICE' --update-env && pm2 save" \
+  # startOrReload: cria o processo se ainda não existir, ou recarrega se já estiver rodando.
+  sudo -u "$(stat -c '%U' "$APP_DIR")" bash -lc \
+    "cd '$APP_DIR/backend' && pm2 startOrReload ecosystem.config.cjs --update-env && pm2 save" \
     || warn "pm2 não está rodando para esse usuário — verifique 'pm2 status' manualmente."
   ok "Backend reiniciado. Veja status: pm2 status"
 }
