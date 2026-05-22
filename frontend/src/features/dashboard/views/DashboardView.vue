@@ -94,30 +94,37 @@
           </div>
         </div>
 
-        <!-- Saldo a receber no próximo pagamento -->
+        <!-- Próximo pagamento + total pendente distribuído em N parcelas -->
         <div class="kpi-card kpi-card--wallet kpi-card--highlight">
           <div class="kpi-card__icon" style="color: #7c3aed">
             <font-awesome-icon icon="wallet" />
           </div>
           <div class="kpi-card__body">
-            <span class="kpi-card__label">Previsão a Receber</span>
+            <span class="kpi-card__label">Próximo Pagamento</span>
             <span class="kpi-card__value kpi-card__value--big">
-              {{ formatCurrency(totalReceivable) }}
+              {{ formatCurrency(nextPaymentAmount) }}
             </span>
-            <div class="kpi-card__breakdown">
-              <span>
-                <font-awesome-icon icon="sitemap" />
-                Rede: {{ formatCurrency(kpi.networkEarnings) }}
-              </span>
-              <span>
-                <font-awesome-icon icon="coins" />
-                Cotas: {{ formatCurrency(kpi.quotaEarnings) }}
-              </span>
-            </div>
             <span class="kpi-card__sub">
               <font-awesome-icon icon="calendar-check" />
-              Pagamento em {{ kpi.nextPaymentDate ? formatDate(kpi.nextPaymentDate) : 'breve' }}
+              {{ kpi.nextPaymentDate ? formatDate(kpi.nextPaymentDate) : 'Aguardando lote' }}
             </span>
+            <div v-if="hasMoreThanOnePayment" class="kpi-card__upcoming">
+              <span class="kpi-card__upcoming-total">
+                Total pendente: <strong>{{ formatCurrency(totalReceivable) }}</strong>
+                em {{ pendingPaymentsCount }} pagamento{{ pendingPaymentsCount > 1 ? 's' : '' }}
+              </span>
+              <ul v-if="upcomingPayments.length > 1" class="kpi-card__upcoming-list">
+                <li v-for="p in upcomingPayments" :key="p.month">
+                  {{ formatDate(p.date) }} —
+                  <strong>{{ formatCurrency(p.total) }}</strong>
+                  <span class="kpi-card__upcoming-detail">
+                    <template v-if="p.bonus > 0">rede {{ formatCurrency(p.bonus) }}</template>
+                    <template v-if="p.bonus > 0 && p.dividend > 0"> · </template>
+                    <template v-if="p.dividend > 0">cotas {{ formatCurrency(p.dividend) }}</template>
+                  </span>
+                </li>
+              </ul>
+            </div>
           </div>
         </div>
 
@@ -190,7 +197,7 @@
             <font-awesome-icon icon="users" />
           </div>
           <div class="sales-card__body">
-            <span class="sales-card__label">Compras da Rede</span>
+            <span class="sales-card__label">Compras dos Diretos</span>
             <span class="sales-card__value">{{ kpi.networkSalesCount ?? 0 }} cotas</span>
             <span class="sales-card__sub">{{ formatCurrency(kpi.networkSalesValue ?? 0) }} este mês</span>
           </div>
@@ -355,6 +362,14 @@ interface AccountHealthData {
   daysRemaining: number;
 }
 
+interface UpcomingPayment {
+  month: string;
+  date: string;
+  bonus: number;
+  dividend: number;
+  total: number;
+}
+
 interface DashboardKpiData {
   estimatedPatrimony: number;
   availableWithdraw: number;
@@ -366,6 +381,9 @@ interface DashboardKpiData {
   paymentWindowOpen: boolean;
   daysUntilPayment: number;
   nextPaymentDate: string;
+  nextPaymentAmount?: number;
+  upcomingPayments?: UpcomingPayment[];
+  pendingPaymentsCount?: number;
   networkEarnings: number;
   quotaEarnings: number;
   lifetimeEarnings: number;
@@ -497,6 +515,28 @@ const totalReceivable = computed(() => {
   const network = Number(kpi.value.networkEarnings) || 0;
   const quota = Number(kpi.value.quotaEarnings) || 0;
   return network + quota;
+});
+
+const upcomingPayments = computed<UpcomingPayment[]>(
+  () => kpi.value.upcomingPayments ?? [],
+);
+
+const pendingPaymentsCount = computed(
+  () => kpi.value.pendingPaymentsCount ?? upcomingPayments.value.length,
+);
+
+// O backend já calcula nextPaymentAmount = primeiro bucket; se vier vazio
+// (sem nada a receber), caímos no totalReceivable.
+const nextPaymentAmount = computed(() => {
+  const fromBackend = Number(kpi.value.nextPaymentAmount);
+  if (!isNaN(fromBackend) && fromBackend > 0) return fromBackend;
+  return totalReceivable.value;
+});
+
+const hasMoreThanOnePayment = computed(() => {
+  const next = nextPaymentAmount.value;
+  const total = totalReceivable.value;
+  return total > 0 && (pendingPaymentsCount.value > 1 || total - next > 0.01);
 });
 
 // ─── Methods ─────────────────────────────────────────────────
@@ -931,6 +971,43 @@ onMounted(async () => {
       gap: 3px;
       svg { opacity: 0.7; }
     }
+  }
+
+  &__upcoming {
+    margin-top: $spacing-2;
+    padding-top: $spacing-2;
+    border-top: 1px dashed rgba(var(--success-rgb), 0.25);
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-1;
+    font-size: 0.73rem;
+    color: var(--text-secondary);
+  }
+
+  &__upcoming-total {
+    strong { color: var(--text-primary); font-weight: 700; }
+  }
+
+  &__upcoming-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+
+    li {
+      display: flex;
+      gap: 4px;
+      align-items: baseline;
+      flex-wrap: wrap;
+      strong { color: var(--text-primary); font-weight: 600; }
+    }
+  }
+
+  &__upcoming-detail {
+    color: var(--text-tertiary);
+    font-size: 0.68rem;
   }
 
   &__payment-badge {

@@ -79,10 +79,11 @@ export class DashboardService {
     ).length;
     const inactiveDirects = totalDirects - activeDirects;
 
-    // ── Previsão a Receber (payouts pendentes/processando) ──
-    // Conforme regra do cliente: tudo que está como pendente OU em
-    // processamento conta para o usuário receber, independentemente do
-    // mês de referência ou pagamento.
+    // ── Previsão a Receber ─────────────────────────────────────────
+    // Agrupa o que está a receber por (paymentMonth × tipo). Cada lote
+    // virou DOIS pagamentos distintos: bônus de rede em ref+1 e dividendos
+    // em ref+2 (regra do cliente, 2026-05). Antes os dois iam juntos em ref+2,
+    // o que adiava em 1 mês os bônus de rede.
     const pendingPayouts = await this.payoutRepo.find({
       where: {
         userId,
@@ -93,50 +94,66 @@ export class DashboardService {
         'networkAmount',
         'amount',
         'paymentMonth',
+        'bonusPaymentMonth',
+        'dividendPaymentMonth',
         'referenceMonth',
         'bonusPaidAt',
         'dividendPaidAt',
       ],
-      order: { paymentMonth: 'ASC' },
     });
 
-    // Para os lotes já gerados, descontamos a parte de bônus ou dividendos que
-    // já foi paga (estados parciais COMPLETED suportados pelos botões
-    // "Pagar bônus" / "Pagar dividendos").
-    const networkInBatches = pendingPayouts.reduce(
-      (s, p) => s + (p.bonusPaidAt ? 0 : Number(p.networkAmount || 0)),
-      0,
-    );
-    const quotaInBatches = pendingPayouts.reduce(
-      (s, p) => s + (p.dividendPaidAt ? 0 : Number(p.quotaAmount || 0)),
-      0,
-    );
+    const buckets = new Map<string, { bonus: number; dividend: number }>();
+    const bumpBucket = (month: string, kind: 'bonus' | 'dividend', amount: number) => {
+      if (!month || amount <= 0) return;
+      const b = buckets.get(month) ?? { bonus: 0, dividend: 0 };
+      b[kind] += amount;
+      buckets.set(month, b);
+    };
 
-    // Compra/recompra que JÁ foram computadas mas ainda não entraram em
-    // nenhum lote (admin ainda não rodou o batch). O cliente pediu para
-    // mostrar esse valor — não depende do lucro líquido.
+    for (const p of pendingPayouts) {
+      // bonusPaymentMonth pode ser null em lotes legados gerados antes da
+      // migration 010 — nesses casos retombamos para o paymentMonth velho.
+      const bonusMonth = p.bonusPaymentMonth || p.paymentMonth;
+      const dividendMonth = p.dividendPaymentMonth || p.paymentMonth;
+      if (!p.bonusPaidAt) bumpBucket(bonusMonth, 'bonus', Number(p.networkAmount || 0));
+      if (!p.dividendPaidAt) bumpBucket(dividendMonth, 'dividend', Number(p.quotaAmount || 0));
+    }
+
+    // Bônus de compra/recompra já lançados mas ainda fora de qualquer lote.
+    // Ainda não têm payment_month, então projetamos como ref+1 (mesma regra
+    // que o lote vai aplicar quando for gerado).
     const monthsAlreadyInBatch = new Set(
       pendingPayouts.map((p) => p.referenceMonth).filter(Boolean),
     );
     const purchaseEarningsQb = this.earningRepo
       .createQueryBuilder('e')
-      .select('SUM(e.amount)', 'total')
+      .select('e.reference_month', 'refMonth')
+      .addSelect('SUM(e.amount)', 'total')
       .where('e.user_id = :userId', { userId })
       .andWhere('e.bonus_type IN (:...types)', {
         types: [BonusType.FIRST_PURCHASE, BonusType.REPURCHASE],
       })
-      .andWhere('e.status = :status', { status: EarningStatus.PENDING });
+      .andWhere('e.status = :status', { status: EarningStatus.PENDING })
+      .groupBy('e.reference_month');
     if (monthsAlreadyInBatch.size > 0) {
       purchaseEarningsQb.andWhere('e.reference_month NOT IN (:...months)', {
         months: [...monthsAlreadyInBatch],
       });
     }
-    const purchaseEarningsRow = await purchaseEarningsQb.getRawOne();
-    const purchaseEarningsPending = parseFloat(purchaseEarningsRow?.total || '0');
-
-    const networkEarnings = networkInBatches + purchaseEarningsPending;
-    const quotaEarnings = quotaInBatches;
-    const totalReceivable = networkEarnings + quotaEarnings;
+    const purchaseEarningsRows = await purchaseEarningsQb.getRawMany<{
+      refMonth: string;
+      total: string;
+    }>();
+    const addOneMonth = (ym: string): string => {
+      const [y, m] = ym.split('-').map(Number);
+      const d = new Date(y!, m!, 1); // m é 1-12; new Date(y, m, 1) = mês seguinte
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    };
+    for (const row of purchaseEarningsRows) {
+      const amount = parseFloat(row.total || '0');
+      if (amount <= 0 || !row.refMonth) continue;
+      bumpBucket(addOneMonth(row.refMonth), 'bonus', amount);
+    }
 
     // ── Janela de pagamento ──
     const settings = await this.settingsRepo.findOne({ where: { id: 1 } });
@@ -144,30 +161,46 @@ export class DashboardService {
     const today = new Date();
     const paymentWindowOpen = today.getDate() <= paymentDay;
 
-    // Próximo pagamento: usa o mês do batch pendente mais antigo
-    // (regra ref+2). Caso não haja batch, usa o mês corrente — e se
-    // o dia de pagamento já passou, avança para o mês seguinte.
-    let nextPayYear  = today.getFullYear();
-    let nextPayMonth = today.getMonth();
-    if (pendingPayouts.length > 0 && pendingPayouts[0].paymentMonth) {
-      const [py, pm] = pendingPayouts[0].paymentMonth.split('-').map(Number);
-      if (!Number.isNaN(py) && !Number.isNaN(pm)) {
-        nextPayYear  = py;
-        nextPayMonth = pm - 1;
-      }
-    } else if (today.getDate() > paymentDay) {
-      // Sem batch pendente e já passamos do dia de pagamento → o próximo
-      // pagamento previsto cai no mês seguinte (não no dia que já passou).
-      nextPayMonth += 1;
+    const ymToDateStr = (ym: string, day: number) => {
+      const [y, m] = ym.split('-').map(Number);
+      const dt = new Date(y!, m! - 1, day);
+      return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
+    };
+
+    // Lista ordenada de pagamentos pendentes (por mês cronológico)
+    const upcomingPayments = [...buckets.entries()]
+      .filter(([, v]) => v.bonus > 0 || v.dividend > 0)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([month, v]) => ({
+        month,
+        date: ymToDateStr(month, paymentDay),
+        bonus: Math.round(v.bonus * 100) / 100,
+        dividend: Math.round(v.dividend * 100) / 100,
+        total: Math.round((v.bonus + v.dividend) * 100) / 100,
+      }));
+
+    const networkEarnings = upcomingPayments.reduce((s, p) => s + p.bonus, 0);
+    const quotaEarnings   = upcomingPayments.reduce((s, p) => s + p.dividend, 0);
+    const totalReceivable = networkEarnings + quotaEarnings;
+
+    // Próximo pagamento: primeiro bucket com valor; fallback = mês corrente
+    // (avança para o mês seguinte se já passamos do dia de pagamento).
+    let nextPaymentDateStr: string;
+    let nextPaymentAmount = 0;
+    if (upcomingPayments.length > 0) {
+      nextPaymentDateStr = upcomingPayments[0].date;
+      nextPaymentAmount  = upcomingPayments[0].total;
+    } else {
+      let nextPayMonth = today.getMonth();
+      if (today.getDate() > paymentDay) nextPayMonth += 1;
+      const dt = new Date(today.getFullYear(), nextPayMonth, paymentDay);
+      nextPaymentDateStr = `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
     }
-    const nextPaymentDateObj = new Date(nextPayYear, nextPayMonth, paymentDay);
     const todayMid = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    const nextDateObj = new Date(nextPaymentDateStr + 'T12:00:00');
     const daysUntilPayment = Math.round(
-      (nextPaymentDateObj.getTime() - todayMid.getTime()) / 86_400_000,
+      (nextDateObj.getTime() - todayMid.getTime()) / 86_400_000,
     );
-    // Envia como YYYY-MM-DD para evitar desvio de fuso horário no client
-    const pd = nextPaymentDateObj;
-    const nextPaymentDateStr = `${pd.getFullYear()}-${String(pd.getMonth() + 1).padStart(2, '0')}-${String(pd.getDate()).padStart(2, '0')}`;
 
     // ── Ganhos da Vida (lifetime) ──
     // Regra do cliente: só conta APÓS o admin confirmar o pagamento. Soma
@@ -213,6 +246,9 @@ export class DashboardService {
       networkEarnings,
       quotaEarnings,
       totalReceivable,
+      nextPaymentAmount,
+      upcomingPayments,
+      pendingPaymentsCount: upcomingPayments.length,
       // Janela de pagamento
       paymentDay,
       paymentWindowOpen,

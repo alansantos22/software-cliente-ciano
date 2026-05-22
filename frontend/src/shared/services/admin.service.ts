@@ -75,6 +75,15 @@ export const adminService = {
     return api.post('/admin/payouts/bulk-action', payload);
   },
 
+  /**
+   * Cancela o lote de um mês de competência: apaga payout_requests +
+   * bônus derivados (dividendo/equipe/liderança) e limpa processed_at dos
+   * bônus persistentes (primeira compra/recompra). Permite re-gerar o lote.
+   */
+  voidBatch(profitMonth: string) {
+    return api.delete(`/admin/payouts/batch/${profitMonth}`);
+  },
+
   // ── Manager ──
   hasManagerPassword() {
     return api.get('/admin/manager/has-password');
