@@ -48,6 +48,175 @@ die()  { echo "${C_ERR}✗ $*${C_OFF}" >&2; exit 1; }
 # helper: roda um comando como o usuário do deploy
 as_deploy() { sudo -u "$DEPLOY_USER" bash -lc "$*"; }
 
+# helper: extrai um valor do .env (sem 'source' — evita erro com '<' '>' em valores)
+get_env_var() {
+  # $1 = arquivo, $2 = nome da variável
+  grep -E "^$2=" "$1" | head -n1 | cut -d'=' -f2- | sed -e 's/^"//' -e 's/"$//'
+}
+
+# ======================================================================
+#  FUNÇÕES DE TAREFAS INDIVIDUAIS (rodadas pelo menu)
+# ======================================================================
+
+# Cria/atualiza o /var/www/ciano/deploy.sh
+create_deploy_script() {
+  [ -d "$APP_DIR" ] || die "Diretório $APP_DIR não existe — rode a instalação completa primeiro."
+  local OWNER
+  OWNER="$(stat -c '%U' "$APP_DIR")"
+  log "Criando script de deploy em ${APP_DIR}/deploy.sh"
+  cat > "${APP_DIR}/deploy.sh" <<'DEPLOY'
+#!/bin/bash
+# deploy.sh — Atualiza o sistema Ciano Cotas na VPS (puxa código, builda, reinicia).
+# Gerado automaticamente pelo setup.sh.
+set -e
+
+APP_DIR="/var/www/ciano"
+SERVICE="ciano"
+ENV_FILE="$APP_DIR/backend/.env.production"
+MIGRATIONS_DIR="$APP_DIR/backend/database/migrations"
+
+# Extrai só as variáveis do MySQL (sem 'source' — evita erro com '<' '>' em valores)
+get_env() {
+  grep -E "^$1=" "$ENV_FILE" | head -n1 | cut -d'=' -f2- | sed -e 's/^"//' -e 's/"$//'
+}
+DB_USERNAME="$(get_env DB_USERNAME)"
+DB_PASSWORD="$(get_env DB_PASSWORD)"
+DB_DATABASE="$(get_env DB_DATABASE)"
+
+echo "==> [1/6] Puxando atualizacoes do Git..."
+cd "$APP_DIR"
+git pull origin main
+
+echo "==> [2/6] Aplicando migrations SQL pendentes..."
+# Senha via env var (evita warning de senha na linha de comando)
+export MYSQL_PWD="$DB_PASSWORD"
+# Garante que a tabela de controle existe
+mysql -u"$DB_USERNAME" "$DB_DATABASE" <<'SQL'
+CREATE TABLE IF NOT EXISTS migrations (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  filename VARCHAR(255) NOT NULL UNIQUE,
+  status VARCHAR(32) NOT NULL DEFAULT 'applied',
+  applied_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+SQL
+
+if [ -d "$MIGRATIONS_DIR" ]; then
+  for SQL_FILE in $(ls "$MIGRATIONS_DIR"/*.sql 2>/dev/null | sort); do
+    FILENAME=$(basename "$SQL_FILE")
+    ALREADY=$(mysql -u"$DB_USERNAME" "$DB_DATABASE" -Nse \
+      "SELECT COUNT(*) FROM migrations WHERE filename='$FILENAME';")
+    if [ "$ALREADY" = "0" ]; then
+      echo "   -> Aplicando $FILENAME..."
+      mysql -u"$DB_USERNAME" "$DB_DATABASE" < "$SQL_FILE"
+      mysql -u"$DB_USERNAME" "$DB_DATABASE" -e \
+        "INSERT IGNORE INTO migrations (filename, status) VALUES ('$FILENAME', 'applied');"
+      echo "   OK $FILENAME aplicado"
+    else
+      echo "   -- $FILENAME ja aplicado, pulando"
+    fi
+  done
+fi
+unset MYSQL_PWD
+
+echo "==> [3/6] Build do Backend..."
+cd "$APP_DIR/backend"
+npm ci
+npm run build
+
+echo "==> [4/6] Build do Frontend..."
+cd "$APP_DIR/frontend"
+npm ci
+npm run build
+
+echo "==> [5/6] Reiniciando Backend (systemd)..."
+sudo systemctl restart "$SERVICE"
+
+echo "==> [6/6] Recarregando Nginx..."
+sudo nginx -t && sudo systemctl reload nginx
+
+echo ""
+echo "Deploy concluido com sucesso!"
+sudo systemctl status "$SERVICE" --no-pager -l | head -n 15
+DEPLOY
+  chown "$OWNER:$OWNER" "${APP_DIR}/deploy.sh"
+  chmod +x "${APP_DIR}/deploy.sh"
+  ok "Script pronto: ${APP_DIR}/deploy.sh"
+}
+
+# Aplica migrations SQL pendentes (cria tabela de controle se não existir)
+run_migrations_only() {
+  local ENV_FILE="$APP_DIR/backend/.env.production"
+  local MIGRATIONS_DIR="$APP_DIR/backend/database/migrations"
+  [ -f "$ENV_FILE" ]        || die "Arquivo $ENV_FILE não encontrado — a VPS já foi configurada?"
+  [ -d "$MIGRATIONS_DIR" ]  || die "Pasta $MIGRATIONS_DIR não encontrada — o repositório está clonado?"
+
+  local DB_USERNAME DB_PASSWORD DB_DATABASE
+  DB_USERNAME="$(get_env_var "$ENV_FILE" DB_USERNAME)"
+  DB_PASSWORD="$(get_env_var "$ENV_FILE" DB_PASSWORD)"
+  DB_DATABASE="$(get_env_var "$ENV_FILE" DB_DATABASE)"
+  [ -n "$DB_USERNAME" ] && [ -n "$DB_PASSWORD" ] && [ -n "$DB_DATABASE" ] \
+    || die "Não consegui ler DB_USERNAME/DB_PASSWORD/DB_DATABASE de $ENV_FILE"
+
+  export MYSQL_PWD="$DB_PASSWORD"
+  log "Garantindo tabela de controle 'migrations'"
+  mysql -u"$DB_USERNAME" "$DB_DATABASE" <<'SQL'
+CREATE TABLE IF NOT EXISTS migrations (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  filename VARCHAR(255) NOT NULL UNIQUE,
+  status VARCHAR(32) NOT NULL DEFAULT 'applied',
+  applied_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+SQL
+  ok "Tabela 'migrations' pronta."
+
+  log "Aplicando migrations pendentes"
+  local SQL_FILE FILENAME ALREADY
+  for SQL_FILE in $(ls "$MIGRATIONS_DIR"/*.sql 2>/dev/null | sort); do
+    FILENAME=$(basename "$SQL_FILE")
+    ALREADY=$(mysql -u"$DB_USERNAME" "$DB_DATABASE" -Nse \
+      "SELECT COUNT(*) FROM migrations WHERE filename='$FILENAME';")
+    if [ "$ALREADY" = "0" ]; then
+      echo "   -> Aplicando $FILENAME..."
+      mysql -u"$DB_USERNAME" "$DB_DATABASE" < "$SQL_FILE"
+      mysql -u"$DB_USERNAME" "$DB_DATABASE" -e \
+        "INSERT IGNORE INTO migrations (filename, status) VALUES ('$FILENAME', 'applied');"
+      ok "$FILENAME aplicado"
+    else
+      echo "   -- $FILENAME já aplicado, pulando"
+    fi
+  done
+  unset MYSQL_PWD
+
+  log "Reiniciando o backend (${SERVICE})"
+  systemctl restart "$SERVICE"
+  ok "Backend reiniciado. Veja status: systemctl status ${SERVICE}"
+}
+
+# ======================================================================
+#  MENU INICIAL — escolha o que rodar
+# ======================================================================
+echo
+echo "${C_INFO}========================================================${C_OFF}"
+echo "${C_INFO}     Ciano Cotas — Setup / Manutenção da VPS           ${C_OFF}"
+echo "${C_INFO}========================================================${C_OFF}"
+echo
+echo "  O que você quer fazer?"
+echo "    ${C_OK}1${C_OFF}) Instalação completa (VPS nova / primeira vez)"
+echo "    ${C_OK}2${C_OFF}) Apenas aplicar migrations SQL pendentes (corrige tabela 'migrations')"
+echo "    ${C_OK}3${C_OFF}) Apenas (re)criar o script /var/www/ciano/deploy.sh"
+echo "    ${C_OK}4${C_OFF}) Sair"
+echo
+read -rp "Opção [1]: " MENU_OPT
+MENU_OPT="${MENU_OPT:-1}"
+
+case "$MENU_OPT" in
+  2) run_migrations_only; exit 0 ;;
+  3) create_deploy_script; exit 0 ;;
+  4) echo "Saindo."; exit 0 ;;
+  1) : ;;   # segue o fluxo de instalação completa abaixo
+  *) die "Opção inválida: $MENU_OPT" ;;
+esac
+
 # ======================================================================
 #  PERGUNTAS
 # ======================================================================
@@ -291,7 +460,8 @@ MAIL_PORT=${MAIL_PORT}
 MAIL_SECURE=${MAIL_SECURE}
 MAIL_USER=${MAIL_USER}
 MAIL_PASSWORD=${MAIL_PASSWORD}
-MAIL_FROM=${MAIL_FROM}
+# Aspas obrigatórias — o valor contém '<' e '>' que quebram 'source' em shell
+MAIL_FROM="${MAIL_FROM}"
 
 # Frontend URL (usado nos links de e-mail)
 FRONTEND_URL=https://${DOMAIN}
@@ -402,6 +572,11 @@ systemctl enable --now fail2ban
 ok "fail2ban ativo — protege o SSH contra força bruta."
 
 # ======================================================================
+#  13. SCRIPT DE DEPLOY — para atualizações futuras
+# ======================================================================
+create_deploy_script
+
+# ======================================================================
 #  FIM
 # ======================================================================
 echo
@@ -425,10 +600,7 @@ echo "    Status ...............: systemctl status ${SERVICE}"
 echo "    Reiniciar ............: sudo systemctl restart ${SERVICE}"
 echo
 echo "  Próximos deploys (atualizações):"
-echo "    cd ${APP_DIR} && git pull \\"
-echo "      && (cd backend  && npm ci && npm run build) \\"
-echo "      && (cd frontend && npm ci && npm run build) \\"
-echo "      && sudo systemctl restart ${SERVICE}"
+echo "    ${APP_DIR}/deploy.sh"
 echo
 [ "${HTTPS_OK}" -eq 0 ] && echo "${C_WARN}  ! Configure o HTTPS quando o DNS propagar (veja acima).${C_OFF}"
 if [ "$MAIL_MODE" = "1" ]; then
