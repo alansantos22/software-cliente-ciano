@@ -7,7 +7,7 @@ import { Earning } from '../earnings/entities/earning.entity';
 import { QuotaTransaction } from '../quotas/entities/quota-transaction.entity';
 import { PayoutRequest } from '../payouts/entities/payout-request.entity';
 import { GlobalFinancialSettings } from '../admin/entities/global-financial-settings.entity';
-import { TransactionType, TransactionStatus, PayoutStatus } from '../../shared/interfaces/enums';
+import { TransactionType, TransactionStatus, PayoutStatus, BonusType, EarningStatus } from '../../shared/interfaces/enums';
 import { getCurrentPeriod } from '../../shared/utils/helpers';
 import { TitleCalculatorService } from '../../core/title/title-calculator.service';
 
@@ -123,9 +123,9 @@ export class DashboardService {
       .select('SUM(e.amount)', 'total')
       .where('e.user_id = :userId', { userId })
       .andWhere('e.bonus_type IN (:...types)', {
-        types: ['first_purchase', 'repurchase'],
+        types: [BonusType.FIRST_PURCHASE, BonusType.REPURCHASE],
       })
-      .andWhere('e.status = :status', { status: 'pending' });
+      .andWhere('e.status = :status', { status: EarningStatus.PENDING });
     if (monthsAlreadyInBatch.size > 0) {
       purchaseEarningsQb.andWhere('e.reference_month NOT IN (:...months)', {
         months: [...monthsAlreadyInBatch],
