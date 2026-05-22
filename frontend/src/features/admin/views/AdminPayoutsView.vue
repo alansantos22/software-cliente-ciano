@@ -29,10 +29,25 @@
           </div>
         </template>
 
+        <!-- Alerta: mês ainda não fechou (mês corrente ou futuro) -->
+        <DsAlert v-if="isMonthNotClosed && !isMonthAlreadyProcessed" type="warning" class="trigger-card__lock-alert">
+          <font-awesome-icon icon="triangle-exclamation" />
+          <strong>{{ formatMonthLabel(profitMonth) }}</strong> ainda não fechou — o lucro do
+          mês ainda está em movimento. Selecione um mês anterior para gerar o lote.
+        </DsAlert>
+
         <!-- Alerta: mês já processado -->
         <DsAlert v-if="isMonthAlreadyProcessed" type="warning" class="trigger-card__lock-alert">
-          <font-awesome-icon icon="triangle-exclamation" /> A distribuição de <strong>{{ formatMonthLabel(profitMonth) }}</strong> já foi
-          processada. Apenas operações de pagamento na lista abaixo estão liberadas.
+          <div class="trigger-card__lock-alert-row">
+            <div>
+              <font-awesome-icon icon="triangle-exclamation" />
+              A distribuição de <strong>{{ formatMonthLabel(profitMonth) }}</strong> já foi
+              processada. Apenas operações de pagamento na lista abaixo estão liberadas.
+            </div>
+            <DsButton variant="ghost" size="sm" @click="cancelBatch">
+              <font-awesome-icon icon="ban" /> Cancelar lote (testes)
+            </DsButton>
+          </div>
         </DsAlert>
 
         <div class="profit-entry-form">
@@ -50,22 +65,29 @@
                 min="0"
                 step="100"
                 placeholder="Ex: 150.000,00"
-                :disabled="isMonthAlreadyProcessed"
+                :disabled="isMonthAlreadyProcessed || isMonthNotClosed"
               />
             </div>
 
             <div class="profit-entry-form__field profit-entry-form__field--payment-month">
-              <label>Mês de Pagamento</label>
-              <div class="payment-month-display">
-                <span class="payment-month-display__ref">{{ formatMonthLabel(profitMonth) }}</span>
-                <font-awesome-icon icon="arrow-right" class="payment-month-display__arrow" />
-                <span class="payment-month-display__pay">{{ formatMonthLabel(paymentMonth) }}</span>
+              <label>Datas de Pagamento</label>
+              <div class="payment-month-display payment-month-display--split">
+                <div class="payment-month-display__row">
+                  <span class="payment-month-display__type">Bônus de rede</span>
+                  <font-awesome-icon icon="arrow-right" class="payment-month-display__arrow" />
+                  <span class="payment-month-display__pay">{{ formatMonthLabel(bonusPaymentMonth) }}</span>
+                </div>
+                <div class="payment-month-display__row">
+                  <span class="payment-month-display__type">Dividendos</span>
+                  <font-awesome-icon icon="arrow-right" class="payment-month-display__arrow" />
+                  <span class="payment-month-display__pay">{{ formatMonthLabel(dividendPaymentMonth) }}</span>
+                </div>
               </div>
-              <span class="payment-month-display__note">Dividendos pagos 2 meses após a competência</span>
+              <span class="payment-month-display__note">Bônus pagam mês seguinte · Dividendos pagam 2 meses depois</span>
             </div>
           </div>
 
-          <div v-if="!isMonthAlreadyProcessed" class="profit-entry-form__preview">
+          <div v-if="!isMonthAlreadyProcessed && !isMonthNotClosed" class="profit-entry-form__preview">
             <span class="profit-preview__item">
               Pool de dividendos: <strong>{{ dividendPoolPercent }}%</strong>
             </span>
@@ -79,7 +101,7 @@
           </div>
 
           <DsButton
-            v-if="!isMonthAlreadyProcessed"
+            v-if="!isMonthAlreadyProcessed && !isMonthNotClosed"
             variant="primary"
             size="lg"
             :disabled="!netProfit || netProfit <= 0"
@@ -101,7 +123,7 @@
         <DsCard>
           <template #header>
             <div>
-              <h2><font-awesome-icon icon="dollar-sign" /> Etapa 2 — Prévia da Distribuição &mdash; {{ formatMonthLabel(profitMonth) }} <span class="distribution-payment-arrow">→ Pagamento em {{ formatMonthLabel(paymentMonth) }}</span></h2>
+              <h2><font-awesome-icon icon="dollar-sign" /> Etapa 2 — Prévia da Distribuição &mdash; {{ formatMonthLabel(profitMonth) }} <span class="distribution-payment-arrow">→ Bônus: {{ formatMonthLabel(bonusPaymentMonth) }} · Dividendos: {{ formatMonthLabel(dividendPaymentMonth) }}</span></h2>
               <span class="distribution-meta">
                 Dividendos: {{ formatCurrency(dividendPool) }}
                 &nbsp;+&nbsp; Rede: {{ formatCurrency(totalNetworkEarnings) }}
@@ -247,7 +269,10 @@
                 <span class="competencia-cell">{{ formatMonthLabel(String(row.referenceMonth ?? '')) }}</span>
               </template>
               <template #cell-paymentMonth="{ row }">
-                <span class="payment-month-cell">{{ formatMonthLabel(String(row.paymentMonth ?? '')) }}</span>
+                <div class="payment-month-cell payment-month-cell--split">
+                  <span><small>Bônus:</small> {{ formatMonthLabel(String(row.bonusPaymentMonth ?? row.paymentMonth ?? '')) }}</span>
+                  <span><small>Dividendos:</small> {{ formatMonthLabel(String(row.dividendPaymentMonth ?? row.paymentMonth ?? '')) }}</span>
+                </div>
               </template>
               <template #cell-status="{ row }">
                 <DsBadge :variant="getStatusVariant(String(row.status ?? ''))">
@@ -327,9 +352,13 @@
           <span>Competência:</span>
           <strong>{{ formatMonthLabel(selectedPayout.referenceMonth) }}</strong>
         </div>
-        <div v-if="selectedPayout.paymentMonth" class="detail-row">
-          <span>Pagamento em:</span>
-          <strong>{{ formatMonthLabel(selectedPayout.paymentMonth) }}</strong>
+        <div v-if="selectedPayout.bonusPaymentMonth || selectedPayout.paymentMonth" class="detail-row">
+          <span>Bônus em:</span>
+          <strong>{{ formatMonthLabel(selectedPayout.bonusPaymentMonth || selectedPayout.paymentMonth) }}</strong>
+        </div>
+        <div v-if="selectedPayout.dividendPaymentMonth || selectedPayout.paymentMonth" class="detail-row">
+          <span>Dividendos em:</span>
+          <strong>{{ formatMonthLabel(selectedPayout.dividendPaymentMonth || selectedPayout.paymentMonth) }}</strong>
         </div>
 
         <!-- Breakdown de Valores -->
@@ -450,6 +479,8 @@ interface PayoutRequest {
   status: 'pending' | 'processing' | 'completed' | 'failed' | 'cancelled';
   referenceMonth: string;
   paymentMonth: string;
+  bonusPaymentMonth: string | null;
+  dividendPaymentMonth: string | null;
   requestedAt: string;
   processedAt: string | null;
   completedAt: string | null;
@@ -477,8 +508,19 @@ function addMonths(ym: string, months: number): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
 }
 
-/** Dividendos de hotéis são pagos 2 meses após a competência */
-const paymentMonth = computed(() => addMonths(profitMonth.value, 2));
+/**
+ * Regra do cliente (2026-05): cada lote rende DOIS pagamentos.
+ *   • bonusPaymentMonth   → bônus de rede (ref+1)
+ *   • dividendPaymentMonth → dividendos (ref+2)
+ * `paymentMonth` segue como atalho legado = dividendPaymentMonth.
+ */
+const bonusPaymentMonth    = computed(() => addMonths(profitMonth.value, 1));
+const dividendPaymentMonth = computed(() => addMonths(profitMonth.value, 2));
+const paymentMonth         = computed(() => dividendPaymentMonth.value);
+
+/** Mês corrente em YYYY-MM — usado para bloquear processamento de mês não fechado. */
+const currentMonthYM = computed(() => new Date().toISOString().slice(0, 7));
+const isMonthNotClosed = computed(() => profitMonth.value >= currentMonthYM.value);
 
 // ─── Etapa 2: Distribuição ────────────────────────────────────
 const showDistribution = ref(false);
@@ -518,7 +560,7 @@ const columns = [
   { key: 'user',           label: 'Cotista' },
   { key: 'amount',         label: 'Valor',        align: 'right' as const, width: '140px' },
   { key: 'referenceMonth', label: 'Competência',  width: '120px' },
-  { key: 'paymentMonth',   label: 'Pagamento em', width: '130px' },
+  { key: 'paymentMonth',   label: 'Pagamento em', width: '180px' },
   { key: 'status',         label: 'Status',       width: '130px' },
   { key: 'actions',        label: 'Ações',        width: '200px' },
 ];
@@ -649,8 +691,9 @@ function exportPayouts() {
     'Cotista':         p.userName ?? '',
     'Chave PIX':       p.pixKey ?? '',
     'Tipo PIX':        pixTypeLabel[String(p.pixKeyType ?? '').toLowerCase()] ?? (p.pixKeyType ?? ''),
-    'Competência':     formatMonthLabel(p.referenceMonth),
-    'Pagamento em':    formatMonthLabel(p.paymentMonth),
+    'Competência':         formatMonthLabel(p.referenceMonth),
+    'Bônus pagam em':      formatMonthLabel(p.bonusPaymentMonth ?? p.paymentMonth),
+    'Dividendos pagam em': formatMonthLabel(p.dividendPaymentMonth ?? p.paymentMonth),
     'Dividendos (R$)': Number(p.quotaAmount ?? 0),
     'Rede (R$)':       Number(p.networkAmount ?? 0),
     'Total (R$)':      Number(p.amount ?? 0),
@@ -742,6 +785,38 @@ async function calculateDistribution() {
     showDistribution.value = true;
   } catch {
     showDistribution.value = true;
+  }
+}
+
+/**
+ * Cancela o lote do mês selecionado: apaga payout_requests + bônus
+ * derivados e limpa processed_at dos bônus persistentes. Usado primariamente
+ * em testes para "voltar a foto" e poder regenerar o lote.
+ */
+async function cancelBatch() {
+  const monthLabel = formatMonthLabel(profitMonth.value);
+  const confirmed = window.confirm(
+    `Cancelar o lote de ${monthLabel}?\n\n` +
+      `Isso apaga os pagamentos gerados e os bônus derivados (dividendo, equipe, liderança).\n` +
+      `Os bônus de primeira compra e recompra do mês ficam disponíveis para um novo lote.\n\n` +
+      `⚠ ATENÇÃO: se algum pagamento já foi enviado por PIX, o estorno NÃO é feito automaticamente.`,
+  );
+  if (!confirmed) return;
+  try {
+    const res = await adminService.voidBatch(profitMonth.value);
+    if (res.data?.error) {
+      window.alert(`Não foi possível cancelar o lote: ${res.data.error}`);
+      return;
+    }
+    showDistribution.value = false;
+    distributionPreview.value = [];
+    netProfit.value = 0;
+    generationSuccess.value = false;
+    batchApproved.value = false;
+    await loadPayouts();
+  } catch (e: any) {
+    const msg = e?.response?.data?.message || e?.message || 'erro desconhecido';
+    window.alert(`Falha ao cancelar o lote: ${msg}`);
   }
 }
 
@@ -978,6 +1053,28 @@ onMounted(async () => {
   border-radius: $radius-md;
   min-height: 40px;
 
+  &--split {
+    flex-direction: column;
+    align-items: stretch;
+    gap: $spacing-1;
+    padding: $spacing-2 $spacing-3;
+  }
+
+  &__row {
+    display: flex;
+    align-items: center;
+    gap: $spacing-2;
+    justify-content: space-between;
+  }
+
+  &__type {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text-tertiary);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
   &__ref {
     font-size: 0.95rem;
     font-weight: 600;
@@ -990,7 +1087,7 @@ onMounted(async () => {
   }
 
   &__pay {
-    font-size: 1rem;
+    font-size: 0.95rem;
     font-weight: 700;
     color: var(--primary-700);
   }
@@ -1016,6 +1113,32 @@ onMounted(async () => {
   font-weight: 600;
   color: var(--primary-700);
   font-size: 0.875rem;
+
+  &--split {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    font-size: 0.78rem;
+    line-height: 1.2;
+
+    small {
+      color: var(--text-tertiary);
+      font-weight: 600;
+      text-transform: uppercase;
+      font-size: 0.65rem;
+      letter-spacing: 0.04em;
+      margin-right: 4px;
+    }
+  }
+}
+
+// ─── Linha do alerta de "lote já processado" com botão à direita ──
+.trigger-card__lock-alert-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $spacing-3;
+  flex-wrap: wrap;
 }
 
 // ─── Etapa 2: Distribuição ────────────────────────────────────

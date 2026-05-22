@@ -2,7 +2,7 @@
   <div class="hero-card">
     <div class="hero-card__glow" />
     <div class="hero-card__header">
-      <span class="hero-card__label">Ganhos da Rede</span>
+      <span class="hero-card__label">Ganhos da Vida</span>
       <span class="hero-card__icon">
         <font-awesome-icon icon="money-bill-wave" />
       </span>

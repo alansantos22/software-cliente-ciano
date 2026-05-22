@@ -63,9 +63,30 @@ export class PayoutRequest {
   @Column({ type: 'varchar', length: 7, name: 'reference_month' })
   referenceMonth: string;
 
+  /**
+   * Legado: mês em que o lote inteiro era pago (ref+2). Mantido para não
+   * quebrar leituras antigas, mas equivale ao MAX entre bonusPaymentMonth e
+   * dividendPaymentMonth nos lotes novos.
+   */
   @Index('idx_payout_pay_month')
   @Column({ type: 'varchar', length: 7, name: 'payment_month' })
   paymentMonth: string;
+
+  /**
+   * Mês em que a parte de BÔNUS deve ser paga (regra: ref+1 nos lotes novos;
+   * igual ao paymentMonth nos lotes legados via backfill da migration 010).
+   */
+  @Index('idx_payout_bonus_pay_month')
+  @Column({ type: 'varchar', length: 7, nullable: true, name: 'bonus_payment_month' })
+  bonusPaymentMonth: string | null;
+
+  /**
+   * Mês em que a parte de DIVIDENDOS deve ser paga (regra: ref+2; igual ao
+   * paymentMonth nos lotes legados via backfill da migration 010).
+   */
+  @Index('idx_payout_dividend_pay_month')
+  @Column({ type: 'varchar', length: 7, nullable: true, name: 'dividend_payment_month' })
+  dividendPaymentMonth: string | null;
 
   @Column({ type: 'decimal', precision: 15, scale: 2, name: 'net_profit_ref' })
   netProfitRef: number;

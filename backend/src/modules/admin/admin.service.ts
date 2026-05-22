@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, IsNull, Not, MoreThan, In } from 'typeorm';
 import { User } from '../users/entities/user.entity';
@@ -14,6 +14,26 @@ import { BonusCalculatorService } from '../../core/bonus/bonus-calculator.servic
 import { SnapshotService } from '../../core/snapshot/snapshot.service';
 import { BonusType, EarningStatus, PayoutStatus, TransactionType, TransactionStatus } from '../../shared/interfaces/enums';
 import { getCurrentPeriod } from '../../shared/utils/helpers';
+
+/**
+ * Calcula as datas de pagamento (YYYY-MM) de um mês de competência:
+ *   • bônus de rede → ref+1 (mês seguinte)
+ *   • dividendos    → ref+2 (dois meses depois)
+ */
+function computePaymentMonths(profitMonth: string): {
+  bonusPaymentMonth: string;
+  dividendPaymentMonth: string;
+} {
+  const [y, m] = profitMonth.split('-').map(Number);
+  const bonusDate = new Date(y!, m! - 1 + 1, 1);    // m é 1-12, JS é 0-11; ref+1
+  const divDate   = new Date(y!, m! - 1 + 2, 1);    // ref+2
+  const fmt = (d: Date) =>
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+  return {
+    bonusPaymentMonth: fmt(bonusDate),
+    dividendPaymentMonth: fmt(divDate),
+  };
+}
 
 @Injectable()
 export class AdminService {
@@ -249,10 +269,12 @@ export class AdminService {
     const dividendPoolPercent = settings?.profitPayoutPercentage || 20;
     const dividendPool = netProfit * dividendPoolPercent / 100;
 
-    // paymentMonth = profitMonth + 2
-    const [y, m] = profitMonth.split('-').map(Number);
-    const paymentDate = new Date(y, m + 1, 1); // +2 months from profitMonth
-    const paymentMonth = `${paymentDate.getFullYear()}-${String(paymentDate.getMonth() + 1).padStart(2, '0')}`;
+    // ── Datas de pagamento ────────────────────────────────────────
+    // Regra do cliente (2026-05): bônus de rede pagam ref+1 e dividendos
+    // pagam ref+2. Mantemos `paymentMonth` legado = ref+2 (data do MAIOR
+    // pagamento) para retrocompatibilidade com consumidores antigos.
+    const { bonusPaymentMonth, dividendPaymentMonth } = computePaymentMonths(profitMonth);
+    const paymentMonth = dividendPaymentMonth;
 
     // Usuários vivos — fonte de PIX (atual) e ganhos da vida (acumulador).
     const users = await this.userRepo.find({ where: { deletedAt: IsNull() } });
@@ -350,6 +372,8 @@ export class AdminService {
     return {
       profitMonth,
       paymentMonth,
+      bonusPaymentMonth,
+      dividendPaymentMonth,
       netProfit,
       dividendPoolPercent,
       dividendPool,
@@ -360,6 +384,16 @@ export class AdminService {
   }
 
   async generateBatch(profitMonth: string, netProfit: number, adminId: string) {
+    // ── Bloqueio: não permitir processar mês corrente ou futuro ─────
+    // Regra do cliente: o mês de competência só pode ser fechado quando já
+    // tiver acabado, do contrário o lucro do mês ainda está em movimento.
+    if (profitMonth >= getCurrentPeriod()) {
+      throw new BadRequestException(
+        `Não é possível processar o pagamento de ${profitMonth}: o mês ainda não fechou. ` +
+          `Aguarde o primeiro dia do mês seguinte para gerar este lote.`,
+      );
+    }
+
     // Check for existing batch FIRST (antes de qualquer cálculo)
     const existing = await this.payoutRepo.findOne({ where: { referenceMonth: profitMonth } });
     if (existing) {
@@ -419,6 +453,8 @@ export class AdminService {
         userName: dist.userName,
         referenceMonth: profitMonth,
         paymentMonth: preview.paymentMonth,
+        bonusPaymentMonth: preview.bonusPaymentMonth,
+        dividendPaymentMonth: preview.dividendPaymentMonth,
         quotaAmount: dist.quotaAmount,
         networkAmount: dist.networkAmount,
         firstPurchaseAmount: dist.firstPurchaseAmount,
@@ -451,6 +487,8 @@ export class AdminService {
     return {
       profitMonth,
       paymentMonth: preview.paymentMonth,
+      bonusPaymentMonth: preview.bonusPaymentMonth,
+      dividendPaymentMonth: preview.dividendPaymentMonth,
       totalPayouts: payouts.length,
       missingPixKey: missingPixKey.length,
       totalAmount: payouts.reduce((s, p) => s + Number(p.amount), 0),
@@ -549,15 +587,18 @@ export class AdminService {
       return { error: 'Nenhum lote encontrado para este mês de referência.' };
     }
 
+    // Cliente pediu liberação do cancelamento em qualquer status (uso primário
+    // em testes / reset de cenário). Importante: status COMPLETED significa
+    // que o dinheiro já foi enviado ao usuário — cancelar não estorna o PIX,
+    // apenas zera o registro contábil interno. Use com cuidado em produção.
     const travados = payouts.filter(
       (p) => p.status === PayoutStatus.PROCESSING || p.status === PayoutStatus.COMPLETED,
     );
     if (travados.length > 0) {
-      return {
-        error:
-          `Lote não pode ser anulado: ${travados.length} pagamento(s) ` +
-          `em processamento ou já concluído(s).`,
-      };
+      this.logger.warn(
+        `⚠️ Lote ${profitMonth} sendo anulado COM ${travados.length} pagamento(s) ` +
+          `em processamento/concluído — registro contábil será revertido (PIX já enviado não é estornado).`,
+      );
     }
 
     // 1. Reverter os ganhos calculados no lote.
@@ -581,12 +622,19 @@ export class AdminService {
       bonusType: In([BonusType.DIVIDEND, BonusType.TEAM, BonusType.LEADERSHIP]),
     });
 
-    // 2. Limpar o processed_at dos ganhos imediatos (compra/recompra) do mês,
-    //    para que a regeração volte a marcá-los.
+    // 2. Restaurar os ganhos imediatos (compra/recompra) do mês ao estado
+    //    pré-lote: processed_at = NULL, status = PENDING, paid_at = NULL.
+    //    Sem reverter o status, lotes que estavam COMPLETED deixavam os
+    //    earnings com status PAID e a regeração começava "como se já tivessem
+    //    sido pagos" — confunde testes.
     await this.earningRepo
       .createQueryBuilder()
       .update()
-      .set({ processedAt: null })
+      .set({
+        processedAt: null,
+        status: EarningStatus.PENDING,
+        paidAt: null,
+      })
       .where('reference_month = :month', { month: profitMonth })
       .execute();
 
