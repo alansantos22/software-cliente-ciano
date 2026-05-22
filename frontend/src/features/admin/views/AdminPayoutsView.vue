@@ -510,13 +510,11 @@ function addMonths(ym: string, months: number): string {
 
 /**
  * Regra do cliente (2026-05): cada lote rende DOIS pagamentos.
- *   • bonusPaymentMonth   → bônus de rede (ref+1)
+ *   • bonusPaymentMonth    → bônus de rede (ref+1)
  *   • dividendPaymentMonth → dividendos (ref+2)
- * `paymentMonth` segue como atalho legado = dividendPaymentMonth.
  */
 const bonusPaymentMonth    = computed(() => addMonths(profitMonth.value, 1));
 const dividendPaymentMonth = computed(() => addMonths(profitMonth.value, 2));
-const paymentMonth         = computed(() => dividendPaymentMonth.value);
 
 /** Mês corrente em YYYY-MM — usado para bloquear processamento de mês não fechado. */
 const currentMonthYM = computed(() => new Date().toISOString().slice(0, 7));
