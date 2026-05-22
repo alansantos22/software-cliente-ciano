@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { IsNull, Repository } from 'typeorm';
 import { User } from '../users/entities/user.entity';
 import { Earning } from '../earnings/entities/earning.entity';
+import { PayoutRequest } from '../payouts/entities/payout-request.entity';
 import { UserRole } from '../../shared/interfaces/enums';
 
 export interface NetworkNode {
@@ -27,6 +28,7 @@ export class NetworkService {
   constructor(
     @InjectRepository(User) private readonly userRepo: Repository<User>,
     @InjectRepository(Earning) private readonly earningRepo: Repository<Earning>,
+    @InjectRepository(PayoutRequest) private readonly payoutRepo: Repository<PayoutRequest>,
   ) {}
 
   private isActive(user: User): boolean {
@@ -126,10 +128,26 @@ export class NetworkService {
       if (child.isActive) activeDirects++;
     }
 
+    // Ganhos da Vida do usuário requisitante (mesma fonte do dashboard):
+    // soma o que foi efetivamente PAGO em payouts — networkAmount quando
+    // bonusPaidAt está preenchido, quotaAmount quando dividendPaidAt está.
+    // Importante NÃO usar totalVolume da rede (= soma de totalEarnings de
+    // todos os nós), pois confunde o usuário e infla o valor.
+    const userPayouts = await this.payoutRepo.find({
+      where: { userId },
+      select: ['networkAmount', 'quotaAmount', 'bonusPaidAt', 'dividendPaidAt'],
+    });
+    const lifetimeEarnings = userPayouts.reduce((s, p) => {
+      const bonus = p.bonusPaidAt ? Number(p.networkAmount || 0) : 0;
+      const dividend = p.dividendPaidAt ? Number(p.quotaAmount || 0) : 0;
+      return s + bonus + dividend;
+    }, 0);
+
     return {
       totalDirect: directChildren.length,
       totalTeam: flatList.length,
       totalVolume,
+      lifetimeEarnings,
       activeMembers,
       activeDirects,
       inactiveMembers,

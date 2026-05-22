@@ -18,7 +18,7 @@
     <!-- KPI grid: hero + 3 cards -->
     <section class="network-view__kpis">
       <NetworkHeroCard
-        :value="networkStats.totalVolume"
+        :value="networkStats.lifetimeEarnings"
         :trend="networkStats.volumeTrend || ''"
       />
       <NetworkKpiCard
@@ -206,6 +206,9 @@ const networkStats = computed(() => {
     totalDirect: s.totalDirect ?? flatNodes.value.filter((n: NetworkNode) => n.level === 1).length,
     totalTeam: s.totalTeam ?? flatNodes.value.length,
     totalVolume: s.totalVolume ?? 0,
+    // Fonte única dos "Ganhos da Vida" — mesma lógica do dashboard
+    // (soma só do que foi efetivamente pago ao usuário em payouts).
+    lifetimeEarnings: s.lifetimeEarnings ?? 0,
     volumeTrend: s.volumeTrend ?? '',
     directTrend: s.directTrend ?? '',
     teamTrend: s.teamTrend ?? '',
