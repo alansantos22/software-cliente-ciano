@@ -46,12 +46,12 @@
         </div>
 
         <div class="dashboard-view__career-col">
-          <LevelProgressBar
-            :current-level="career.currentLevel"
-            :next-level="career.nextLevel || 'diamante'"
-            :current-value="career.currentValue"
-            :target-value="career.targetValue"
-            :bonus-percent="career.bonusPercentUnlock"
+          <NetworkProgressBar
+            :current-title="progressTitle"
+            :active-members="networkProgress.activeMembers"
+            :active-directs="networkProgress.activeDirects"
+            :qualified-bronzes="networkProgress.qualifiedBronzes"
+            :qualified-lines="networkProgress.qualifiedLines"
           />
         </div>
 
@@ -322,8 +322,9 @@ import {
 } from '@/design-system';
 import { dashboardService } from '@/shared/services/dashboard.service';
 import { earningsService } from '@/shared/services/earnings.service';
+import { networkService } from '@/shared/services/network.service';
 import SplitTicker from '../components/SplitTicker.vue';
-import LevelProgressBar from '../components/LevelProgressBar.vue';
+import NetworkProgressBar from '@/features/network/components/NetworkProgressBar.vue';
 import StatusWidget from '../components/StatusWidget.vue';
 import DonutChart from '../components/DonutChart.vue';
 
@@ -446,6 +447,27 @@ const kpi = ref<DashboardKpiData>({
 
 const recentActivity = ref<RecentActivityItem[]>([]);
 const earningsSources = ref<EarningSourceData[]>([]);
+
+type ProgressTitleKey = 'none' | 'bronze' | 'silver' | 'gold' | 'diamond';
+
+const networkProgress = ref({
+  activeMembers: 0,
+  activeDirects: 0,
+  qualifiedBronzes: 0,
+  qualifiedLines: 0,
+});
+
+const TITLE_TO_PROGRESS: Record<string, ProgressTitleKey> = {
+  none: 'none',
+  bronze: 'bronze',
+  silver: 'silver',
+  gold: 'gold',
+  diamond: 'diamond',
+};
+
+const progressTitle = computed<ProgressTitleKey>(
+  () => TITLE_TO_PROGRESS[kpi.value.title ?? 'none'] ?? 'none',
+);
 
 // ─── Computed ────────────────────────────────────────────────
 const firstName = computed(() => {
@@ -582,12 +604,23 @@ watch(selectedMonth, loadEarnings);
 
 onMounted(async () => {
   try {
-    // Load KPIs, chart data, and recent activity in parallel
-    const [kpiRes, chartRes, activityRes] = await Promise.all([
+    // Load KPIs, chart data, recent activity and network stats in parallel
+    const [kpiRes, chartRes, activityRes, statsRes] = await Promise.all([
       dashboardService.getKpis(),
       dashboardService.getQuotaChart(),
       dashboardService.getRecentActivity(),
+      networkService.getStats(),
     ]);
+
+    if (statsRes?.data) {
+      const s: any = statsRes.data;
+      networkProgress.value = {
+        activeMembers: s.activeMembers ?? 0,
+        activeDirects: s.activeDirects ?? 0,
+        qualifiedBronzes: s.qualifiedBronzes ?? 0,
+        qualifiedLines: s.qualifiedLines ?? 0,
+      };
+    }
 
     if (kpiRes.data) {
       kpi.value = kpiRes.data;
@@ -726,6 +759,13 @@ onMounted(async () => {
   &__career-col {
     flex: 1;
     min-width: 0;
+
+    // Use the shared NetworkProgressBar inline (no card styling)
+    :deep(.progress-bar) {
+      background: transparent;
+      box-shadow: none;
+      padding: 0;
+    }
   }
 
   &__header-right {
