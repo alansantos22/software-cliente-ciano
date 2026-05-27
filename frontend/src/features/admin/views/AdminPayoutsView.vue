@@ -278,7 +278,19 @@
                 </div>
               </template>
               <template #cell-amount="{ row }">
-                <strong class="amount-cell amount-cell--right">{{ formatCurrency(Number(row.amount)) }}</strong>
+                <div class="amount-breakdown-cell amount-breakdown-cell--right">
+                  <strong class="amount-cell">{{ formatCurrency(Number(row.amount)) }}</strong>
+                  <div class="amount-breakdown-cell__detail">
+                    <span :class="{ 'amount-breakdown-cell__paid': row.bonusPaidAt }">
+                      <font-awesome-icon icon="sitemap" />
+                      Rede: {{ formatCurrency(Number(row.networkAmount ?? 0)) }}
+                    </span>
+                    <span :class="{ 'amount-breakdown-cell__paid': row.dividendPaidAt }">
+                      <font-awesome-icon icon="coins" />
+                      Div: {{ formatCurrency(Number(row.quotaAmount ?? 0)) }}
+                    </span>
+                  </div>
+                </div>
               </template>
               <template #cell-referenceMonth="{ row }">
                 <span class="competencia-cell">{{ formatMonthLabel(String(row.referenceMonth ?? '')) }}</span>
@@ -587,11 +599,11 @@ const statusOptions = [
 /** Tabela de execução: "Competência" + "Pagamento em" */
 const columns = [
   { key: 'user',           label: 'Cotista' },
-  { key: 'amount',         label: 'Valor',        align: 'right' as const, width: '140px' },
+  { key: 'amount',         label: 'Valor',        align: 'right' as const, width: '200px' },
   { key: 'referenceMonth', label: 'Competência',  width: '120px' },
   { key: 'paymentMonth',   label: 'Pagamento em', width: '180px' },
   { key: 'status',         label: 'Status',       width: '130px' },
-  { key: 'actions',        label: 'Ações',        width: '200px' },
+  { key: 'actions',        label: 'Ações',        width: '320px' },
 ];
 
 const distributionColumns = [
@@ -1348,6 +1360,10 @@ onMounted(async () => {
   align-items: flex-end;
   gap: 2px;
 
+  &--right {
+    width: 100%;
+  }
+
   .amount-cell {
     font-size: 1rem;
   }
@@ -1359,15 +1375,26 @@ onMounted(async () => {
     gap: 1px;
 
     span {
-      font-size: 0.7rem;
-      color: var(--text-tertiary);
+      font-size: 0.75rem;
+      color: var(--text-secondary);
       font-weight: 500;
       display: flex;
       align-items: center;
-      gap: 3px;
+      gap: 4px;
+      white-space: nowrap;
+      font-variant-numeric: tabular-nums;
 
-      svg { opacity: 0.6; font-size: 0.65rem; }
+      svg { opacity: 0.6; font-size: 0.7rem; }
     }
+  }
+
+  // Estilo aplicado quando a parcela já foi paga (bonusPaidAt/dividendPaidAt
+  // tem data) — risca o valor e dá um tom verde discreto, sinalizando que
+  // aquela metade do lote não entra mais nas ações pendentes.
+  &__paid {
+    color: var(--color-success-dark, #15803d) !important;
+    text-decoration: line-through;
+    text-decoration-color: rgba(21, 128, 61, 0.5);
   }
 }
 
@@ -1381,6 +1408,13 @@ onMounted(async () => {
   display: flex;
   gap: $spacing-2;
   flex-wrap: wrap;
+
+  // Nenhum botão da célula pode quebrar o rótulo no meio — preferimos que
+  // estourem o `width` (que já foi ajustado) a virar duas linhas com tipografia
+  // confusa.
+  :deep(button) {
+    white-space: nowrap;
+  }
 }
 
 // ─── Célula PIX (tabela de distribuição) ─────────────────────
