@@ -247,7 +247,7 @@ export class AdminManagerService {
 
     // 2. Atualizar cotas e nível do usuário
     user.purchasedQuotas += quantity;
-    user.quotaBalance = user.purchasedQuotas + user.splitQuotas;
+    user.quotaBalance = user.purchasedQuotas + (user.adminGrantedQuotas ?? 0) + user.splitQuotas;
     user.lastPurchaseDate = new Date();
     user.isActive = true;
 

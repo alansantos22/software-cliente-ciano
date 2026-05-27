@@ -1,9 +1,12 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { IsNull, Repository } from 'typeorm';
+import { IsNull, LessThan, Repository } from 'typeorm';
 import { User } from '../../modules/users/entities/user.entity';
 import { MonthlyUserSnapshot } from '../../modules/users/entities/monthly-user-snapshot.entity';
 import { TitleRequirement } from '../../modules/admin/entities/title-requirement.entity';
+import { QuotaTransaction } from '../../modules/quotas/entities/quota-transaction.entity';
+import { SplitEvent } from '../../modules/quotas/entities/split-event.entity';
+import { SplitEventType, TransactionStatus } from '../../shared/interfaces/enums';
 
 /**
  * Captura e leitura das fotos mensais de usuários (`monthly_user_snapshots`).
@@ -22,7 +25,61 @@ export class SnapshotService {
     @InjectRepository(User) private readonly userRepo: Repository<User>,
     @InjectRepository(TitleRequirement)
     private readonly titleReqRepo: Repository<TitleRequirement>,
+    @InjectRepository(QuotaTransaction)
+    private readonly txnRepo: Repository<QuotaTransaction>,
+    @InjectRepository(SplitEvent)
+    private readonly splitEventRepo: Repository<SplitEvent>,
   ) {}
+
+  /**
+   * Saldo de cotas que cada usuário tinha NO FIM do mês informado.
+   *
+   * Reconstrói a posição replaying `quota_transactions` (compra/admin grant)
+   * e `split_events` em ordem cronológica até a data de corte. Independe de
+   * snapshots e de `user.quotaBalance` atual — é a única fonte fiel quando o
+   * lote é gerado meses depois da competência. Devolve `Map<userId, balance>`.
+   */
+  async getHistoricalQuotaBalances(month: string): Promise<Map<string, number>> {
+    const [y, m] = month.split('-').map(Number);
+    // Corte = primeiro instante do mês seguinte (exclusivo). Inclui tudo até
+    // o último segundo do mês de referência.
+    const cutoff = new Date(y, m, 1);
+
+    const txns = await this.txnRepo.find({
+      where: { status: TransactionStatus.COMPLETED, completedAt: LessThan(cutoff) },
+      order: { completedAt: 'ASC' },
+    });
+
+    const splits = await this.splitEventRepo.find({
+      where: { eventType: SplitEventType.SPLIT, triggeredAt: LessThan(cutoff) },
+      order: { triggeredAt: 'ASC' },
+    });
+
+    const balances = new Map<string, number>();
+    let ti = 0;
+    let si = 0;
+
+    while (ti < txns.length || si < splits.length) {
+      const t = txns[ti];
+      const s = splits[si];
+
+      // Em empate de timestamp processamos a transação antes do split — o
+      // split deve incidir sobre tudo que já estava em saldo.
+      const takeSplit =
+        !t || (!!s && s.triggeredAt.getTime() < (t.completedAt?.getTime() ?? 0));
+
+      if (takeSplit) {
+        for (const [uid, bal] of balances) balances.set(uid, bal * 2);
+        si++;
+      } else {
+        const current = balances.get(t!.userId) ?? 0;
+        balances.set(t!.userId, current + (t!.quotasAffected ?? 0));
+        ti++;
+      }
+    }
+
+    return balances;
+  }
 
   private isActive(user: User): boolean {
     if (!user.lastPurchaseDate) return false;
@@ -46,8 +103,14 @@ export class SnapshotService {
     const titleReqs = await this.titleReqRepo.find();
     const reqByTitle = new Map(titleReqs.map((r) => [r.title, r]));
 
+    // Saldo de cota de cada usuário NO FIM do mês de referência — reconstruído
+    // a partir das transações + splits. Não depende de `user.quotaBalance`
+    // atual, que pode estar à frente se a captura aconteceu meses depois.
+    const balancesAtMonthEnd = await this.getHistoricalQuotaBalances(month);
+
     const snapshots = users.map((u) => {
       const req = reqByTitle.get(u.title);
+      const balance = balancesAtMonthEnd.get(u.id) ?? 0;
       return this.snapshotRepo.create({
         userId: u.id,
         month,
@@ -61,7 +124,7 @@ export class SnapshotService {
         purchasedQuotas: u.purchasedQuotas,
         adminGrantedQuotas: u.adminGrantedQuotas ?? 0,
         splitQuotas: u.splitQuotas,
-        quotaBalance: u.quotaBalance,
+        quotaBalance: balance,
         isActive: this.isActive(u),
         lastPurchaseDate: u.lastPurchaseDate,
         pixKey: u.pixKey ?? null,

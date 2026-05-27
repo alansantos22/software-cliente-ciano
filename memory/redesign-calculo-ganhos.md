@@ -28,3 +28,18 @@ SeedService auto-corretivo, snapshot mensal (`monthly_user_snapshots` + migratio
 `BonusCalculatorService` em cascata leaf-up lendo do snapshot, `voidBatch` + validações.
 Pendente: tela "a receber" no frontend; spec obsoleto `earnings.service.spec.ts`.
 Detalhes e checklist na seção 6 do documento.
+
+**Correção (2026-05-27):** o `snapshot.quotaBalance` estava sendo gravado a partir
+do `user.quotaBalance` ATUAL no momento da captura — não refletia o saldo de fim
+do mês. Resultado: meses cujo snapshot foi criado tarde (via fallback em
+`ensureSnapshot`) inflavam cotas com compras futuras; meses cujo snapshot
+rodou cedo perdiam compras posteriores. Mesmo cotista aparecia com cotas
+diferentes em meses diferentes.
+Fix: `SnapshotService.getHistoricalQuotaBalances(month)` reconstrói o saldo a
+partir de `quota_transactions` + `split_events` em ordem cronológica até o fim
+do mês. `calculateDistribution`, `calculateDividends` e `previewBatchAmounts`
+agora leem desse método (não mais de `snap.quotaBalance`); `captureMonth` grava
+o saldo correto. Snapshots antigos com `quotaBalance` errado deixaram de
+afetar o cálculo. Bug colateral fixado: `simulatePurchase` em
+`AdminManagerService` não somava `adminGrantedQuotas` ao recalcular o
+`quotaBalance` do usuário (zerava cotas concedidas pelo admin).

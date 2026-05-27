@@ -68,6 +68,7 @@ describe('BonusCalculatorService', () => {
     getSnapshot: jest.Mock;
     captureMonth: jest.Mock;
     hasSnapshot: jest.Mock;
+    getHistoricalQuotaBalances: jest.Mock;
   };
 
   beforeEach(async () => {
@@ -89,6 +90,7 @@ describe('BonusCalculatorService', () => {
       getSnapshot: jest.fn().mockResolvedValue([]),
       captureMonth: jest.fn().mockResolvedValue({ created: 0, skipped: true }),
       hasSnapshot: jest.fn().mockResolvedValue(true),
+      getHistoricalQuotaBalances: jest.fn().mockResolvedValue(new Map()),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -209,11 +211,17 @@ describe('BonusCalculatorService', () => {
   // ─── calculateDividends ──────────────────────────────────────────────────────
 
   describe('calculateDividends', () => {
-    it('should distribute dividends proportionally to quota holders (from snapshot)', async () => {
+    it('should distribute dividends proportionally to quota holders (from historical balances)', async () => {
       snapshotService.getSnapshot.mockResolvedValue([
-        makeSnapshot({ userId: 'u1', quotaBalance: 10 }),
-        makeSnapshot({ userId: 'u2', quotaBalance: 10 }),
+        makeSnapshot({ userId: 'u1' }),
+        makeSnapshot({ userId: 'u2' }),
       ]);
+      snapshotService.getHistoricalQuotaBalances.mockResolvedValue(
+        new Map<string, number>([
+          ['u1', 10],
+          ['u2', 10],
+        ]),
+      );
 
       const amounts: number[] = [];
       earningRepo.create.mockImplementation((data: Partial<Earning>) => {
@@ -228,11 +236,17 @@ describe('BonusCalculatorService', () => {
       expect(amounts[1]).toBeCloseTo(500);
     });
 
-    it('should skip snapshot users with no quotas', async () => {
+    it('should skip users with no quotas in the historical balance', async () => {
       snapshotService.getSnapshot.mockResolvedValue([
-        makeSnapshot({ userId: 'u1', quotaBalance: 10 }),
-        makeSnapshot({ userId: 'u2', quotaBalance: 0 }),
+        makeSnapshot({ userId: 'u1' }),
+        makeSnapshot({ userId: 'u2' }),
       ]);
+      snapshotService.getHistoricalQuotaBalances.mockResolvedValue(
+        new Map<string, number>([
+          ['u1', 10],
+          ['u2', 0],
+        ]),
+      );
 
       earningRepo.create.mockImplementation((data: Partial<Earning>) => data);
 
@@ -243,8 +257,11 @@ describe('BonusCalculatorService', () => {
 
     it('should do nothing when total quotas is zero', async () => {
       snapshotService.getSnapshot.mockResolvedValue([
-        makeSnapshot({ userId: 'u1', quotaBalance: 0 }),
+        makeSnapshot({ userId: 'u1' }),
       ]);
+      snapshotService.getHistoricalQuotaBalances.mockResolvedValue(
+        new Map<string, number>([['u1', 0]]),
+      );
 
       await service.calculateDividends('2025-03', 1000);
 
