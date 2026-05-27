@@ -29,11 +29,25 @@
           </div>
         </template>
 
+        <!-- Modo de testes — destrava meses não fechados -->
+        <div class="trigger-card__test-mode">
+          <label class="test-mode-toggle">
+            <input type="checkbox" v-model="testMode" />
+            <span class="test-mode-toggle__slider"></span>
+            <span class="test-mode-toggle__label">
+              <font-awesome-icon icon="flask" />
+              Modo de testes — permite gerar lote de meses ainda não fechados
+            </span>
+          </label>
+        </div>
+
         <!-- Alerta: mês ainda não fechou (mês corrente ou futuro) -->
-        <DsAlert v-if="isMonthNotClosed && !isMonthAlreadyProcessed" type="warning" class="trigger-card__lock-alert">
+        <DsAlert v-if="isMonthInFuture && !isMonthAlreadyProcessed" :type="testMode ? 'info' : 'warning'" class="trigger-card__lock-alert">
           <font-awesome-icon icon="triangle-exclamation" />
           <strong>{{ formatMonthLabel(profitMonth) }}</strong> ainda não fechou — o lucro do
-          mês ainda está em movimento. Selecione um mês anterior para gerar o lote.
+          mês ainda está em movimento.
+          <template v-if="!testMode">Selecione um mês anterior para gerar o lote.</template>
+          <template v-else>Modo de testes ativo: o lote será gerado mesmo assim.</template>
         </DsAlert>
 
         <!-- Alerta: mês já processado -->
@@ -68,6 +82,7 @@
                 :disabled="isMonthAlreadyProcessed || isMonthNotClosed"
               />
             </div>
+
 
             <div class="profit-entry-form__field profit-entry-form__field--payment-month">
               <label>Datas de Pagamento</label>
@@ -444,7 +459,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import * as XLSX from 'xlsx';
 import {
   DsCard,
@@ -518,7 +533,23 @@ const dividendPaymentMonth = computed(() => addMonths(profitMonth.value, 2));
 
 /** Mês corrente em YYYY-MM — usado para bloquear processamento de mês não fechado. */
 const currentMonthYM = computed(() => new Date().toISOString().slice(0, 7));
-const isMonthNotClosed = computed(() => profitMonth.value >= currentMonthYM.value);
+
+/**
+ * Modo de testes: quando ligado, o seletor de mês aceita o mês corrente e
+ * futuros, e o backend recebe `allowFutureMonth: true` para gerar o lote
+ * mesmo assim. Persistido em localStorage para não atrapalhar o uso normal
+ * em sessões seguintes — o admin liga só quando vai testar.
+ */
+const testMode = ref<boolean>(localStorage.getItem('payouts:testMode') === '1');
+watch(testMode, (on: boolean) => {
+  localStorage.setItem('payouts:testMode', on ? '1' : '0');
+});
+
+/** Cheque puro: o mês selecionado é corrente ou futuro (ignora `testMode`). */
+const isMonthInFuture = computed(() => profitMonth.value >= currentMonthYM.value);
+
+/** Bloqueio efetivo: o mês está fechado OU o modo de testes destrava. */
+const isMonthNotClosed = computed(() => isMonthInFuture.value && !testMode.value);
 
 // ─── Etapa 2: Distribuição ────────────────────────────────────
 const showDistribution = ref(false);
@@ -823,6 +854,7 @@ async function generatePayoutsFromProfit() {
     const res = await adminService.generateBatch({
       profitMonth: profitMonth.value,
       netProfit: netProfit.value,
+      allowFutureMonth: testMode.value,
     });
     if (res.data) {
       // generateBatch returns batch metadata; reload full payout list
@@ -950,6 +982,66 @@ onMounted(async () => {
 
 }
 
+
+// ─── Modo de testes (toggle) ──────────────────────────────────
+.trigger-card__test-mode {
+  margin-bottom: $spacing-3;
+  padding: $spacing-2 $spacing-3;
+  border-radius: $radius-md;
+  background: rgba(217, 119, 6, 0.06);
+  border: 1px dashed rgba(217, 119, 6, 0.35);
+}
+
+.test-mode-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: $spacing-2;
+  cursor: pointer;
+  user-select: none;
+
+  input[type='checkbox'] {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  &__slider {
+    position: relative;
+    width: 36px;
+    height: 20px;
+    border-radius: 999px;
+    background: var(--neutral-300, #d1d5db);
+    transition: background 0.15s;
+    flex-shrink: 0;
+
+    &::after {
+      content: '';
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: #fff;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+      transition: transform 0.15s;
+    }
+  }
+
+  input:checked + &__slider {
+    background: #d97706;
+    &::after { transform: translateX(16px); }
+  }
+
+  &__label {
+    font-size: 0.8125rem;
+    color: #92400e;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+}
 
 // ─── Etapa 1: Trigger Card ────────────────────────────────────
 .trigger-card {

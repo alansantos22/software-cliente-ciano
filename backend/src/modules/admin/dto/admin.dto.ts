@@ -48,6 +48,13 @@ export class GenerateBatchDto {
   @IsString() profitMonth: string;
   @IsNumber() @Min(0) netProfit: number;
   // dividendPool is computed server-side from GlobalFinancialSettings
+
+  /**
+   * Bypass do bloqueio "mês ainda não fechou". Para testes em
+   * homologação — permite gerar o lote do mês corrente ou de meses
+   * futuros, ignorando a checagem de competência fechada.
+   */
+  @IsOptional() @IsBoolean() allowFutureMonth?: boolean;
 }
 
 export class ProcessPayoutActionDto {

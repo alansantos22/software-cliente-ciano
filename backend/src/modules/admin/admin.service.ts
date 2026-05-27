@@ -384,15 +384,24 @@ export class AdminService {
     };
   }
 
-  async generateBatch(profitMonth: string, netProfit: number, adminId: string) {
+  async generateBatch(
+    profitMonth: string,
+    netProfit: number,
+    adminId: string,
+    options: { allowFutureMonth?: boolean } = {},
+  ) {
     // ── Bloqueio: não permitir processar mês corrente ou futuro ─────
     // Regra do cliente: o mês de competência só pode ser fechado quando já
     // tiver acabado, do contrário o lucro do mês ainda está em movimento.
-    if (profitMonth >= getCurrentPeriod()) {
+    // `allowFutureMonth` é um bypass para o "Modo de testes" do frontend.
+    if (!options.allowFutureMonth && profitMonth >= getCurrentPeriod()) {
       throw new BadRequestException(
         `Não é possível processar o pagamento de ${profitMonth}: o mês ainda não fechou. ` +
           `Aguarde o primeiro dia do mês seguinte para gerar este lote.`,
       );
+    }
+    if (options.allowFutureMonth && profitMonth >= getCurrentPeriod()) {
+      this.logger.warn(`⚠️  Modo de testes: gerando lote do mês ${profitMonth} (mês não fechou).`);
     }
 
     // Check for existing batch FIRST (antes de qualquer cálculo)

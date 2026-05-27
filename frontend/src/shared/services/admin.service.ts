@@ -41,7 +41,7 @@ export const adminService = {
     return api.post('/admin/payouts/calculate-distribution', payload);
   },
 
-  generateBatch(payload: { profitMonth: string; netProfit: number }) {
+  generateBatch(payload: { profitMonth: string; netProfit: number; allowFutureMonth?: boolean }) {
     return api.post('/admin/payouts/generate-batch', payload);
   },
 
