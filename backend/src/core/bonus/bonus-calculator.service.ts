@@ -188,28 +188,32 @@ export class BonusCalculatorService {
 
     this.logger.log(`💎 Calculating dividends for ${referenceMonth} — pool: R$${dividendPool}`);
 
-    const snapshots = await this.ensureSnapshot(referenceMonth);
+    await this.ensureSnapshot(referenceMonth);
+    // Cotas: reconstrução determinística (independe do snapshot.quotaBalance,
+    // que em snapshots antigos pode refletir o estado de quando a captura foi
+    // feita — não o fim do mês de referência).
+    const balances = await this.snapshotService.getHistoricalQuotaBalances(referenceMonth);
 
-    const totalQuotas = snapshots.reduce((sum, s) => sum + s.quotaBalance, 0);
+    const totalQuotas = [...balances.values()].reduce((sum, b) => sum + b, 0);
     if (totalQuotas === 0) return;
 
-    for (const snap of snapshots) {
-      if (snap.quotaBalance <= 0) continue;
+    for (const [userId, balance] of balances) {
+      if (balance <= 0) continue;
 
-      const amount = (dividendPool / totalQuotas) * snap.quotaBalance;
+      const amount = (dividendPool / totalQuotas) * balance;
 
       const earning = this.earningRepo.create({
-        userId: snap.userId,
+        userId,
         bonusType: BonusType.DIVIDEND,
         amount,
-        description: `Dividendos (${snap.quotaBalance} cotas)`,
+        description: `Dividendos (${balance} cotas)`,
         level: 0,
         referenceMonth,
         cutoffEligible: true,
       });
 
       await this.earningRepo.save(earning);
-      await this.userRepo.increment({ id: snap.userId }, 'totalEarnings', amount);
+      await this.userRepo.increment({ id: userId }, 'totalEarnings', amount);
     }
   }
 
@@ -353,15 +357,15 @@ export class BonusCalculatorService {
     const snapshots = await this.ensureSnapshot(referenceMonth);
     if (snapshots.length === 0) return { dividends, team, leadership };
 
-    // ── Dividendos (proporcional ao snapshot de cotas) ────────────────
-    const totalQuotas = snapshots.reduce((s, snap) => s + snap.quotaBalance, 0);
+    // ── Dividendos (proporcional à reconstrução de cotas) ──────────────
+    // O snapshot.quotaBalance pode estar errado em registros antigos; sempre
+    // recomputamos a partir das transações + splits até o fim do mês.
+    const balances = await this.snapshotService.getHistoricalQuotaBalances(referenceMonth);
+    const totalQuotas = [...balances.values()].reduce((s, b) => s + b, 0);
     if (totalQuotas > 0 && dividendPool > 0) {
-      for (const snap of snapshots) {
-        if (snap.quotaBalance <= 0) continue;
-        dividends.set(
-          snap.userId,
-          (dividendPool / totalQuotas) * snap.quotaBalance,
-        );
+      for (const [userId, balance] of balances) {
+        if (balance <= 0) continue;
+        dividends.set(userId, (dividendPool / totalQuotas) * balance);
       }
     }
 

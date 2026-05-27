@@ -280,15 +280,16 @@ export class AdminService {
     const users = await this.userRepo.find({ where: { deletedAt: IsNull() } });
     const userById = new Map(users.map((u) => [u.id, u]));
 
-    // Cotas vêm do SNAPSHOT do mês de referência (determinístico). Se o
-    // snapshot ainda não existir (preview antes do fechamento), cai para o
-    // saldo atual como aproximação.
+    // Cotas: reconstruídas a partir das transações + splits até o fim do mês
+    // de referência. É a fonte fiel mesmo se o snapshot foi capturado tarde
+    // (com saldo já inflado por compras futuras) ou cedo (com saldo a menos).
+    // O snapshot continua sendo lido para manter compatibilidade com quem
+    // ainda não foi processado pela reconstrução.
     const snapshots = await this.snapshotService.getSnapshot(profitMonth);
     const usingSnapshot = snapshots.length > 0;
+    const historicalBalances = await this.snapshotService.getHistoricalQuotaBalances(profitMonth);
     const quotaById = new Map<string, number>(
-      usingSnapshot
-        ? snapshots.map((s) => [s.userId, s.quotaBalance])
-        : users.map((u) => [u.id, u.quotaBalance]),
+      [...historicalBalances].filter(([, bal]) => bal > 0),
     );
     const quotaOf = (userId: string) => quotaById.get(userId) ?? 0;
     const totalQuotas = [...quotaById.values()].reduce((s, q) => s + q, 0);
