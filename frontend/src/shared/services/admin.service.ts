@@ -57,18 +57,18 @@ export const adminService = {
     return api.patch(`/admin/payouts/${payoutId}/process`);
   },
 
-  confirmPayout(payoutId: string, payload: { transactionId?: string; action: string; failureReason?: string }) {
+  confirmPayout(payoutId: string, payload: { transactionId?: string; action: string; failureReason?: string; allowEarly?: boolean }) {
     return api.patch(`/admin/payouts/${payoutId}/confirm`, payload);
   },
 
-  /** Marca apenas a parte de bônus do lote como paga. */
-  payBonus(payoutId: string) {
-    return api.patch(`/admin/payouts/${payoutId}/pay-bonus`);
+  /** Marca apenas a parte de bônus do lote como paga. `allowEarly` libera o pagamento antes do mês de vencimento (modo de testes). */
+  payBonus(payoutId: string, allowEarly = false) {
+    return api.patch(`/admin/payouts/${payoutId}/pay-bonus`, { allowEarly });
   },
 
-  /** Marca apenas a parte de dividendos do lote como paga. */
-  payDividend(payoutId: string) {
-    return api.patch(`/admin/payouts/${payoutId}/pay-dividend`);
+  /** Marca apenas a parte de dividendos do lote como paga. `allowEarly` libera o pagamento antes do mês de vencimento (modo de testes). */
+  payDividend(payoutId: string, allowEarly = false) {
+    return api.patch(`/admin/payouts/${payoutId}/pay-dividend`, { allowEarly });
   },
 
   bulkPayoutAction(payload: { payoutIds: string[]; action: string }) {

@@ -49,10 +49,10 @@ Esta é a **etapa que efetivamente registra os pagamentos** no sistema. Ao clica
 
 1. **Bloqueia duplicatas**: se já existe um lote daquele mês, o sistema avisa e impede gerar de novo (evita pagar duas vezes).
 
-2. **Calcula e grava os bônus na ordem correta** (a ordem importa porque um depende do outro):
+2. **Calcula e grava os bônus na ordem correta**:
    - Primeiro os **dividendos** (proporcional às cotas).
-   - Depois o **bônus de equipe** (2% do que toda a rede ganhou).
-   - Por último o **bônus de liderança** (percentual sobre os ganhos dos qualificados).
+   - Depois o **bônus de equipe** (2% do que a rede vai receber naquele mês de pagamento).
+   - Por último o **bônus de liderança** (percentual sobre o que os qualificados recebem naquele mês).
 
 3. **Aplica validações automáticas de segurança** — o sistema só deixa avançar se:
    - O lucro líquido informado não é negativo.
@@ -142,16 +142,17 @@ O sistema tem **5 tipos de bônus**, cada um com uma regra clara. Dois deles sã
 
 - **Quando**: junto com o fechamento da folha, depois dos dividendos.
 - **Quem recebe**: cotistas **ativos** com pelo menos 1 nível de equipe desbloqueado pelo título.
-- **Quanto**: **2% de TUDO** que a rede abaixo dele ganhou no mês, em todos os tipos de bônus — compra, recompra, dividendos, e até os próprios bônus de equipe/liderança dos cotistas abaixo (efeito cascata).
+- **Quanto**: **2% de TUDO** que a rede abaixo dele **vai receber no mesmo mês** em que esse bônus é pago, em todos os tipos de bônus — compra, recompra, dividendos, e até os próprios bônus de equipe/liderança dos cotistas abaixo (efeito cascata). Como bônus pagam ref+1 e dividendos ref+2, a base do bônus de competência M (pago em M+1) = bônus de **M** + dividendos de **M-1** (os dividendos do próprio M só pagam em M+2 e entram na base do mês seguinte).
 - **Profundidade**: depende do título (definido na tabela de carreira). Ouro vê N níveis, Diamante vê mais, e assim por diante.
 
-> A regra de cascata é o que faz esse bônus crescer: a equipe ganha 2% do que TODOS os de baixo ganharam, somando os bônus que eles próprios já receberam.
+> A regra de cascata é o que faz esse bônus crescer: a equipe ganha 2% do que TODOS os de baixo vão receber naquele mês, somando os bônus que eles próprios já receberam.
+> Importante: o bônus incide sobre o que o cotista **recebe** no mês (regra do cliente, 2026-05), não sobre o que foi calculado no mês de competência — por isso os dividendos da base são os do mês anterior.
 
 #### 4.5 — Bônus de Liderança (no fechamento do mês)
 
 - **Quando**: junto com o bônus de equipe.
 - **Quem recebe**: cotistas **ativos** que têm um percentual de liderança no título (geralmente Ouro e Diamante).
-- **Quanto**: `percentualDeLiderança × ganhos dos qualificados na rede`.
+- **Quanto**: `percentualDeLiderança × o que os qualificados da rede recebem naquele mês` (mesma base de mês de pagamento da equipe: bônus de M + dividendos de M-1).
 - **Quem entra na base**: **apenas downlines qualificados** (com título **Ouro** ou **Diamante**) até **5 níveis** de profundidade. Cotistas Bronze e Prata da rede não contam para essa conta.
 
 #### Tabela-resumo
@@ -161,14 +162,14 @@ O sistema tem **5 tipos de bônus**, cada um com uma regra clara. Dois deles sã
 | Primeira Compra | Imediato | Patrocinador direto | 10% ou 5% da compra |
 | Recompra | Imediato | Até 6 níveis acima | 5% (N1) ou 2% (N2-N6) |
 | Dividendos | Fechamento | Todos com cota | Proporcional ao número de cotas |
-| Equipe | Fechamento | Ativos com título | 2% dos ganhos totais da rede |
-| Liderança | Fechamento | Ativos Ouro/Diamante | % dos ganhos dos qualificados |
+| Equipe | Fechamento | Ativos com título | 2% do que a rede recebe no mês (bônus de M + dividendos de M-1) |
+| Liderança | Fechamento | Ativos Ouro/Diamante | % do que os qualificados recebem no mês |
 
 #### Regras gerais importantes (resumo)
 
 - **Conta inativa** = não comprou nos últimos 6 meses. Esses cotistas perdem o título, **não recebem** Recompra, Equipe nem Liderança. Continuam recebendo apenas Dividendos (se ainda tiverem cotas).
 - **Os bônus de Compra e Recompra são gerados na hora da compra** — você consegue ver no extrato do cotista no momento em que ele compra. Os outros três (Dividendos, Equipe, Liderança) **dependem do administrador fechar a folha**.
-- **A ordem do cálculo é fixa e não pode ser invertida**: Dividendos → Equipe → Liderança. Isso porque o bônus de Equipe usa os Dividendos como base.
+- **A ordem do cálculo é fixa**: Dividendos → Equipe → Liderança. A base de Equipe/Liderança usa os dividendos do **mês anterior** (M-1, já fechados) — não os de M — porque o bônus incide sobre o que a rede recebe no mês de pagamento. O cálculo dos dividendos de M antes da equipe é mantido apenas por organização do fechamento; a equipe não depende deles.
 
 ---
 
@@ -200,6 +201,8 @@ Cálculo dos bônus: [bonus-calculator.service.ts](../backend/src/core/bonus/bon
 6. `calculateDistribution(...)` (agora com dados persistidos).
 7. `validateBatch(...)` — erros bloqueiam, warnings liberam.
 8. Cria os `PayoutRequest` em massa.
+
+> Nota (2026-05-30): no passo 4, a base de equipe/liderança são os recebíveis que caem no mês de pagamento do bônus (M+1) — bônus de M + dividendos de **M-1** (já persistidos). Os dividendos de M calculados no passo 3 servem para o trilho de dividendos (pagam M+2), **não** para a base da equipe. Ver `BonusCalculatorService.sumEarnings`.
 
 ### 2.3 — Modelo de dados crítico
 
