@@ -1103,7 +1103,7 @@ Nível 2-6: purchaseValue * 0.02
 
 - **Quando:** Cálculo mensal
 - **Quem recebe:** Usuário ativo
-- **Base:** Soma dos ganhos de todos os patrocinados abaixo dele nos N níveis
+- **Base:** Soma do que todos os patrocinados nos N níveis abaixo **vão receber no mesmo mês** em que esse bônus é pago. Como bônus de rede pagam ref+1 e dividendos ref+2, a base do bônus de competência M (pago em M+1) = bônus de **M** (compra/recompra/equipe/liderança) + dividendos de **M-1**. Os dividendos do próprio M (pagam M+2) entram só na base do mês seguinte.
 - **Percentual:** 2% desse total
 - **Profundidade por título:**
   - Bronze: 2 níveis
@@ -1113,21 +1113,23 @@ Nível 2-6: purchaseValue * 0.02
 - **Regra:** Só recebe se estiver **ativo**
 
 ```
-teamBonusBase = soma de ganhos dos N níveis abaixo
+// recebíveis do mês de pagamento do bônus (M+1): bônus de M + dividendos de M-1
+teamBonusBase = soma dos recebíveis dos N níveis abaixo nesse mês de pagamento
 bonusAmount = teamBonusBase * 0.02
 ```
 
 ### 7.4 — Bônus de Liderança
 
 - **Quem:** Apenas títulos Ouro e Diamante (chamados "qualificados")
-- **Base:** Soma dos ganhos dos 5 níveis de **qualificados** abaixo
+- **Base:** Soma do que os 5 níveis de **qualificados** abaixo vão receber no mesmo mês de pagamento (mesma regra da equipe: bônus de M + dividendos de M-1)
 - **Percentuais:**
   - Ouro: 1%
   - Diamante: 2%
 - **Regra:** Só recebe se estiver **ativo**
 
 ```
-leadershipBase = soma dos ganhos dos 5 níveis de qualificados abaixo
+// recebíveis do mês de pagamento (M+1): bônus de M + dividendos de M-1
+leadershipBase = soma dos recebíveis dos 5 níveis de qualificados nesse mês
 Ouro: leadershipBase * 0.01
 Diamante: leadershipBase * 0.02
 ```
@@ -1152,6 +1154,8 @@ userDividend = (dividendPool / totalQuotasInSystem) * user.quota_balance
 > "O bônus de compra e recompra também entra nos ganhos dos bônus de liderança e bônus de equipe"
 
 Ou seja, quando se calcula a base para equipe/liderança, inclui-se os bônus de primeira compra e recompra gerados por aquele nível.
+
+> **Refinamento (2026-05-30):** a base é o que cada nível **recebe naquele mês de pagamento**, não o que foi calculado no mês de competência. Como bônus pagam ref+1 e dividendos ref+2, a base do bônus de competência M (pago em M+1) usa os bônus de M + os dividendos de M-1. Implementado em `BonusCalculatorService.sumEarnings` / `previewBatchAmounts`.
 
 ---
 

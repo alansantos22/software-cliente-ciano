@@ -700,7 +700,13 @@ export class AdminService {
     };
   }
 
-  async processPayoutAction(payoutId: string, action: string, transactionId?: string, failureReason?: string) {
+  async processPayoutAction(
+    payoutId: string,
+    action: string,
+    transactionId?: string,
+    failureReason?: string,
+    allowEarly = false,
+  ) {
     const payout = await this.payoutRepo.findOne({ where: { id: payoutId } });
     if (!payout) return null;
 
@@ -709,6 +715,21 @@ export class AdminService {
       payout.processedAt = new Date();
     } else if (action === 'completed') {
       // Atalho legado: marca tudo (bônus + dividendos) como pago de uma vez.
+      // Trava: como paga as duas parcelas, só libera quando a MAIS TARDIA já
+      // venceu (em geral os dividendos, ref+2). Evita quitar o lote inteiro
+      // — e antecipar os dividendos — antes da hora.
+      if (!allowEarly) {
+        const dueMonths = [
+          Number(payout.networkAmount || 0) > 0 ? (payout.bonusPaymentMonth ?? payout.paymentMonth) : null,
+          Number(payout.quotaAmount || 0) > 0 ? (payout.dividendPaymentMonth ?? payout.paymentMonth) : null,
+        ].filter((m): m is string => !!m);
+        const latestDue = dueMonths.sort().pop();
+        if (latestDue && getCurrentPeriod() < latestDue) {
+          throw new BadRequestException(
+            `Este lote (competência ${payout.referenceMonth}) só pode ser marcado como pago a partir de ${latestDue}.`,
+          );
+        }
+      }
       const now = new Date();
       if (!payout.bonusPaidAt) payout.bonusPaidAt = now;
       if (!payout.dividendPaidAt) payout.dividendPaidAt = now;
@@ -723,6 +744,15 @@ export class AdminService {
         BonusType.DIVIDEND,
       ]);
     } else if (action === 'pay-bonus') {
+      // Trava: bônus só podem ser pagos a partir do seu mês de vencimento
+      // (ref+1). Impede pagamento antecipado acidental. Comparação de strings
+      // YYYY-MM é cronológica.
+      const dueMonth = payout.bonusPaymentMonth ?? payout.paymentMonth;
+      if (!allowEarly && dueMonth && getCurrentPeriod() < dueMonth) {
+        throw new BadRequestException(
+          `Os bônus deste lote (competência ${payout.referenceMonth}) só podem ser pagos a partir de ${dueMonth}.`,
+        );
+      }
       if (!payout.bonusPaidAt) payout.bonusPaidAt = new Date();
       await this.markEarningsPaid(payout.userId, payout.referenceMonth, [
         BonusType.FIRST_PURCHASE,
@@ -732,6 +762,15 @@ export class AdminService {
       ]);
       this.finalizePayoutIfBothPaid(payout);
     } else if (action === 'pay-dividend') {
+      // Trava: dividendos só podem ser pagos a partir do seu mês de vencimento
+      // (ref+2). É a parcela mais sujeita a clique antecipado, pois aparece no
+      // lote da competência dois meses antes de vencer.
+      const dueMonth = payout.dividendPaymentMonth ?? payout.paymentMonth;
+      if (!allowEarly && dueMonth && getCurrentPeriod() < dueMonth) {
+        throw new BadRequestException(
+          `Os dividendos deste lote (competência ${payout.referenceMonth}) só podem ser pagos a partir de ${dueMonth}.`,
+        );
+      }
       if (!payout.dividendPaidAt) payout.dividendPaidAt = new Date();
       await this.markEarningsPaid(payout.userId, payout.referenceMonth, [
         BonusType.DIVIDEND,

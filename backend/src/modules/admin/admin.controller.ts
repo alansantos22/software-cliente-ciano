@@ -12,6 +12,7 @@ import {
   CalculateDistributionDto,
   GenerateBatchDto,
   ProcessPayoutActionDto,
+  PayInstallmentDto,
   BulkPayoutActionDto,
   UpdatePriceEngineDto,
 } from './dto/admin.dto';
@@ -92,19 +93,19 @@ export class AdminController {
 
   @Patch('payouts/:payoutId/confirm')
   processPayoutConfirm(@Param('payoutId') payoutId: string, @Body() dto: ProcessPayoutActionDto) {
-    return this.adminService.processPayoutAction(payoutId, dto.action, dto.transactionId, dto.failureReason);
+    return this.adminService.processPayoutAction(payoutId, dto.action, dto.transactionId, dto.failureReason, dto.allowEarly);
   }
 
   /** Marca apenas a parte de BÔNUS do lote como paga. */
   @Patch('payouts/:payoutId/pay-bonus')
-  payBonus(@Param('payoutId') payoutId: string) {
-    return this.adminService.processPayoutAction(payoutId, 'pay-bonus');
+  payBonus(@Param('payoutId') payoutId: string, @Body() dto: PayInstallmentDto) {
+    return this.adminService.processPayoutAction(payoutId, 'pay-bonus', undefined, undefined, dto?.allowEarly);
   }
 
   /** Marca apenas a parte de DIVIDENDOS do lote como paga. */
   @Patch('payouts/:payoutId/pay-dividend')
-  payDividend(@Param('payoutId') payoutId: string) {
-    return this.adminService.processPayoutAction(payoutId, 'pay-dividend');
+  payDividend(@Param('payoutId') payoutId: string, @Body() dto: PayInstallmentDto) {
+    return this.adminService.processPayoutAction(payoutId, 'pay-dividend', undefined, undefined, dto?.allowEarly);
   }
 
   @Post('payouts/bulk-action')

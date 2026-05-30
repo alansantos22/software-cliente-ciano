@@ -61,6 +61,17 @@ export class ProcessPayoutActionDto {
   @IsString() action: 'processing' | 'completed' | 'failed';
   @IsOptional() @IsString() transactionId?: string;
   @IsOptional() @IsString() failureReason?: string;
+  /** Bypass da trava de mês de vencimento (Modo de testes). */
+  @IsOptional() @IsBoolean() allowEarly?: boolean;
+}
+
+export class PayInstallmentDto {
+  /**
+   * Bypass da trava "só pode pagar a partir do mês de vencimento". Ligado pelo
+   * "Modo de testes" do frontend para permitir pagar bônus/dividendos de meses
+   * que ainda não venceram em homologação.
+   */
+  @IsOptional() @IsBoolean() allowEarly?: boolean;
 }
 
 export class BulkPayoutActionDto {
