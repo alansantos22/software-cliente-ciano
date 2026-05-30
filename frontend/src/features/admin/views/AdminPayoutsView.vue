@@ -322,7 +322,7 @@
               </template>
               <template #cell-status="{ row }">
                 <DsBadge v-if="row.paid" variant="success">Pago</DsBadge>
-                <DsBadge v-else-if="canPay(row, row.kind)" variant="info">A pagar</DsBadge>
+                <DsBadge v-else-if="canPayRow(row)" variant="info">A pagar</DsBadge>
                 <DsBadge v-else variant="warning">Aguardando mês</DsBadge>
               </template>
               <template #cell-actions="{ row }">
@@ -336,7 +336,7 @@
                     <font-awesome-icon icon="file-lines" /> Comprovante
                   </DsButton>
                   <DsButton
-                    v-else-if="canPay(row, row.kind)"
+                    v-else-if="canPayRow(row)"
                     :variant="row.kind === 'bonus' ? 'primary' : 'outline'"
                     size="sm"
                     @click="payInstallmentRow(row)"
@@ -1238,6 +1238,8 @@ function payBonusRow(row: Record<string, unknown>)       { openPayConfirm(row, '
 function payDividendRow(row: Record<string, unknown>)    { openPayConfirm(row, 'dividend'); }
 /** Aba "A pagar": a linha já sabe se é bônus ou dividendo (campo `kind`). */
 function payInstallmentRow(row: Record<string, unknown>) { openPayConfirm(row, row.kind as Installment); }
+/** Versão de `canPay` para a linha de parcela (lê o `kind` da própria linha). */
+function canPayRow(row: Record<string, unknown>): boolean { return canPay(row, row.kind as Installment); }
 function markAsPaidRow(row: Record<string, unknown>)     { markAsPaid(row as unknown as PayoutRequest); }
 function downloadReceiptRow(row: Record<string, unknown>) { downloadReceipt(row as unknown as PayoutRequest); }
 
