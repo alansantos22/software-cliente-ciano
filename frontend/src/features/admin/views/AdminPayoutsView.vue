@@ -216,22 +216,6 @@
             <DsButton variant="outline" @click="exportPayouts">
               <font-awesome-icon icon="download" /> Exportar Lista
             </DsButton>
-            <DsButton
-              v-if="paymentTab === 'closing'"
-              variant="primary"
-              :disabled="selectedPayouts.length === 0"
-              @click="processSelected"
-            >
-              Processar Selecionados ({{ selectedPayouts.length }})
-            </DsButton>
-            <DsButton
-              v-if="paymentTab === 'closing'"
-              variant="outline"
-              :disabled="processingPayoutsCount === 0"
-              @click="confirmAllProcessing"
-            >
-              <font-awesome-icon icon="circle-check" /> Confirmar todos ({{ processingPayoutsCount }})
-            </DsButton>
           </div>
         </section>
 
@@ -292,7 +276,7 @@
           <DsCard>
             <DsTable
               :columns="dueColumns"
-              :data="installmentRows"
+              :data="dueRows"
               :loading="isLoading"
               row-key="rowKey"
             >
@@ -301,48 +285,38 @@
                   <div class="user-cell__avatar">{{ getInitials(String(row.userName ?? '')) }}</div>
                   <div class="user-cell__info">
                     <strong>{{ row.userName }}</strong>
-                    <span v-if="row.pixKey" class="user-cell__pix">{{ row.pixKey }}</span>
-                    <span v-else class="user-cell__pix user-cell__pix--missing">
-                      <font-awesome-icon icon="triangle-exclamation" /> Sem chave PIX
-                    </span>
                   </div>
                 </div>
               </template>
-              <template #cell-kind="{ row }">
-                <DsBadge :variant="row.kind === 'bonus' ? 'info' : 'primary'">
-                  <font-awesome-icon :icon="row.kind === 'bonus' ? 'sitemap' : 'coins'" />
-                  {{ row.kind === 'bonus' ? 'Bônus' : 'Dividendos' }}
-                </DsBadge>
+              <template #cell-pix="{ row }">
+                <div v-if="row.pixKey" class="pix-cell">
+                  <span class="pix-cell__key">{{ row.pixKey }}</span>
+                  <DsCopyButton :text="String(row.pixKey ?? '')" />
+                </div>
+                <span v-else class="user-cell__pix user-cell__pix--missing">
+                  <font-awesome-icon icon="triangle-exclamation" /> Sem chave PIX
+                </span>
               </template>
               <template #cell-amount="{ row }">
-                <strong class="amount-cell">{{ formatCurrency(Number(row.amount)) }}</strong>
-              </template>
-              <template #cell-referenceMonth="{ row }">
-                <span class="competencia-cell">{{ formatMonthLabel(String(row.referenceMonth ?? '')) }}</span>
+                <strong class="amount-cell">{{ formatCurrency(Number(row.allPaid ? row.total : row.toPay)) }}</strong>
               </template>
               <template #cell-status="{ row }">
-                <DsBadge v-if="row.paid" variant="success">Pago</DsBadge>
-                <DsBadge v-else-if="canPayRow(row)" variant="info">A pagar</DsBadge>
+                <DsBadge v-if="row.allPaid" variant="success">Pago</DsBadge>
+                <DsBadge v-else-if="isDueRowPayable(row)" variant="info">A pagar</DsBadge>
                 <DsBadge v-else variant="warning">Aguardando mês</DsBadge>
               </template>
               <template #cell-actions="{ row }">
                 <div class="actions-cell">
+                  <span v-if="row.allPaid" class="actions-cell__readonly">
+                    <font-awesome-icon icon="circle-check" /> Pago
+                  </span>
                   <DsButton
-                    v-if="row.paid"
-                    variant="ghost"
+                    v-else-if="isDueRowPayable(row)"
+                    variant="primary"
                     size="sm"
-                    @click="downloadReceiptRow(row)"
+                    @click="payDueRow(row)"
                   >
-                    <font-awesome-icon icon="file-lines" /> Comprovante
-                  </DsButton>
-                  <DsButton
-                    v-else-if="canPayRow(row)"
-                    :variant="row.kind === 'bonus' ? 'primary' : 'outline'"
-                    size="sm"
-                    @click="payInstallmentRow(row)"
-                  >
-                    <font-awesome-icon :icon="row.kind === 'bonus' ? 'users' : 'coins'" />
-                    {{ row.kind === 'bonus' ? 'Pagar Bônus' : 'Pagar Dividendos' }}
+                    <font-awesome-icon icon="money-bill-wave" /> Pagar
                   </DsButton>
                   <DsButton
                     v-else
@@ -358,10 +332,10 @@
             </DsTable>
 
             <DsEmptyState
-              v-if="installmentRows.length === 0 && !isLoading"
+              v-if="dueRows.length === 0 && !isLoading"
               icon="money-bill-wave"
               :title="`Nada a pagar em ${formatMonthLabel(dueMonth)}`"
-              description="Nenhuma parcela de bônus ou dividendos vence neste mês."
+              description="Nenhum pagamento vence neste mês."
             />
           </DsCard>
         </section>
@@ -373,8 +347,6 @@
               :columns="columns"
               :data="filteredPayouts"
               :loading="isLoading"
-              selectable
-              @selection-change="onSelectionChange"
             >
               <template #cell-user="{ row }">
                 <div class="user-cell">
@@ -417,6 +389,8 @@
                   {{ getStatusLabel(String(row.status ?? '')) }}
                 </DsBadge>
               </template>
+              <!-- Aba histórico: somente leitura. O comprovante é a única ação
+                   (ver recibo); todo pagamento acontece na aba "A pagar". -->
               <template #cell-actions="{ row }">
                 <div class="actions-cell">
                   <DsButton
@@ -427,64 +401,7 @@
                   >
                     <font-awesome-icon icon="file-lines" /> Comprovante
                   </DsButton>
-                  <DsButton
-                    v-if="row.status === 'failed'"
-                    variant="outline"
-                    size="sm"
-                    @click="markAsPaidRow(row)"
-                  >
-                    <font-awesome-icon icon="check" /> Marcar como Pago
-                  </DsButton>
-                  <DsButton
-                    v-if="row.status === 'pending'"
-                    variant="primary"
-                    size="sm"
-                    @click="processPayoutRow(row)"
-                  >
-                    Processar
-                  </DsButton>
-                  <template v-if="row.status === 'processing' || (row.status === 'pending' && row.processedAt)">
-                    <!-- Bônus: libera só a partir do mês de vencimento (ref+1) -->
-                    <template v-if="Number(row.networkAmount ?? 0) > 0 && !row.bonusPaidAt">
-                      <DsButton
-                        v-if="canPay(row, 'bonus')"
-                        variant="primary"
-                        size="sm"
-                        @click="payBonusRow(row)"
-                      >
-                        <font-awesome-icon icon="users" /> Pagar Bônus
-                      </DsButton>
-                      <DsButton
-                        v-else
-                        variant="ghost"
-                        size="sm"
-                        :disabled="true"
-                        :title="`Disponível a partir de ${formatMonthLabel(dueMonthFor(row, 'bonus'))}`"
-                      >
-                        <font-awesome-icon icon="lock" /> Bônus libera {{ formatMonthLabel(dueMonthFor(row, 'bonus')) }}
-                      </DsButton>
-                    </template>
-                    <!-- Dividendos: libera só a partir do mês de vencimento (ref+2) -->
-                    <template v-if="Number(row.quotaAmount ?? 0) > 0 && !row.dividendPaidAt">
-                      <DsButton
-                        v-if="canPay(row, 'dividend')"
-                        variant="outline"
-                        size="sm"
-                        @click="payDividendRow(row)"
-                      >
-                        <font-awesome-icon icon="coins" /> Pagar Dividendos
-                      </DsButton>
-                      <DsButton
-                        v-else
-                        variant="ghost"
-                        size="sm"
-                        :disabled="true"
-                        :title="`Disponível a partir de ${formatMonthLabel(dueMonthFor(row, 'dividend'))}`"
-                      >
-                        <font-awesome-icon icon="lock" /> Dividendos libera {{ formatMonthLabel(dueMonthFor(row, 'dividend')) }}
-                      </DsButton>
-                    </template>
-                  </template>
+                  <span v-else class="actions-cell__readonly">—</span>
                 </div>
               </template>
             </DsTable>
@@ -603,17 +520,14 @@
     </DsModal>
 
     <!-- ══════════════════════════════════════════════════════════
-         MODAL DE CONFIRMAÇÃO DE PAGAMENTO (bônus / dividendos)
+         MODAL DE CONFIRMAÇÃO DE PAGAMENTO (total do cotista no mês)
     ══════════════════════════════════════════════════════════ -->
-    <DsModal
-      v-model="showPayConfirm"
-      :title="payConfirmKind === 'bonus' ? 'Confirmar pagamento de Bônus' : 'Confirmar pagamento de Dividendos'"
-    >
+    <DsModal v-model="showPayConfirm" title="Confirmar pagamento">
       <div v-if="payConfirmRow" class="payout-details">
         <DsAlert v-if="payConfirmEarly" type="warning" style="margin-bottom: 1rem;">
           <strong>Pagamento adiantado.</strong>
-          Esta parcela só vence em
-          <strong>{{ formatMonthLabel(dueMonthFor(payConfirmRow, payConfirmKind)) }}</strong>
+          Este pagamento só vence em
+          <strong>{{ formatMonthLabel(payConfirmRow.dueMonth) }}</strong>
           e hoje é <strong>{{ formatMonthLabel(currentMonthYM) }}</strong>.
           Você está pagando antes do previsto (Modo de testes).
         </DsAlert>
@@ -623,33 +537,38 @@
           <strong>{{ payConfirmRow.userName }}</strong>
         </div>
         <div class="detail-row">
-          <span>Parcela:</span>
-          <strong>{{ payConfirmKind === 'bonus' ? 'Bônus de rede' : 'Dividendos (cotas)' }}</strong>
-        </div>
-        <div class="detail-row">
-          <span>Competência:</span>
-          <strong>{{ formatMonthLabel(payConfirmRow.referenceMonth) }}</strong>
-        </div>
-        <div class="detail-row">
-          <span>Previsto para:</span>
-          <strong>{{ formatMonthLabel(dueMonthFor(payConfirmRow, payConfirmKind)) }}</strong>
-        </div>
-        <div class="detail-row detail-row--highlight">
-          <span>Valor a pagar:</span>
-          <strong class="amount-cell">
-            {{ formatCurrency(Number(payConfirmKind === 'bonus' ? payConfirmRow.networkAmount ?? 0 : payConfirmRow.quotaAmount ?? 0)) }}
-          </strong>
-        </div>
-        <div class="detail-row">
           <span>Chave PIX:</span>
           <strong>{{ payConfirmRow.pixKey || '—' }}</strong>
+        </div>
+        <div class="detail-row">
+          <span>Vence em:</span>
+          <strong>{{ formatMonthLabel(payConfirmRow.dueMonth) }}</strong>
+        </div>
+
+        <!-- Composição (informativa): o admin faz UM PIX com o total. -->
+        <div
+          v-for="inst in payConfirmRow.installments"
+          :key="inst.payoutId + ':' + inst.kind"
+          class="detail-row detail-row--sub"
+        >
+          <span>
+            <font-awesome-icon :icon="inst.kind === 'bonus' ? 'sitemap' : 'coins'" />
+            {{ inst.kind === 'bonus' ? 'Bônus de rede' : 'Dividendos (cotas)' }}
+            <em v-if="inst.paid"> (já pago)</em>
+          </span>
+          <strong>{{ formatCurrency(inst.amount) }}</strong>
+        </div>
+
+        <div class="detail-row detail-row--highlight">
+          <span>Total do PIX:</span>
+          <strong class="amount-cell">{{ formatCurrency(Number(payConfirmRow.toPay)) }}</strong>
         </div>
       </div>
       <template #footer>
         <DsButton variant="ghost" @click="showPayConfirm = false">Cancelar</DsButton>
         <DsButton
           :variant="payConfirmEarly ? 'danger' : 'primary'"
-          @click="confirmPay()"
+          @click="confirmPayDue()"
         >
           {{ payConfirmEarly ? 'Pagar mesmo assim' : 'Confirmar pagamento' }}
         </DsButton>
@@ -709,7 +628,6 @@ interface PayoutRequest {
 // ─── State ────────────────────────────────────────────────────
 const isLoading    = ref(false);
 const payouts      = ref<PayoutRequest[]>([]);
-const selectedPayouts = ref<string[]>([]);
 const selectedPayout  = ref<PayoutRequest | null>(null);
 const showDetailsModal = ref(false);
 
@@ -850,11 +768,6 @@ const totalNetworkEarnings = computed(() =>
   distributionPreview.value.reduce((s: number, r: any) => s + (r.networkAmount || 0), 0)
 );
 
-/** Quantidade de pagamentos atualmente em status 'processing' */
-const processingPayoutsCount = computed(
-  () => payouts.value.filter(p => p.status === 'processing').length
-);
-
 // ─── Helpers ──────────────────────────────────────────────────
 
 function formatCurrency(value: number): string {
@@ -896,10 +809,6 @@ function getStatusLabel(status: string): string {
 
 // ─── Ações Etapa 3 ────────────────────────────────────────────
 
-function onSelectionChange(rows: Record<string, unknown>[]) {
-  selectedPayouts.value = rows.map(r => String(r.id ?? ''));
-}
-
 function clearFilters() {
   filters.value = { search: '', status: '', month: '' };
 }
@@ -937,54 +846,9 @@ function exportPayouts() {
   XLSX.writeFile(book, `pagamentos-${stamp}.xlsx`);
 }
 
-async function processSelected() {
-  if (selectedPayouts.value.length === 0) return;
-  try {
-    await adminService.bulkPayoutAction({ payoutIds: selectedPayouts.value, action: 'processing' });
-    await loadPayouts();
-  } catch { /* fail silently */ }
-}
-
-/** Confirma TODOS os pagamentos com status 'processing' de uma vez */
-async function confirmAllProcessing() {
-  const processingIds = payouts.value
-    .filter(p => p.status === 'processing')
-    .map(p => p.id);
-  if (processingIds.length === 0) return;
-  try {
-    await adminService.bulkPayoutAction({ payoutIds: processingIds, action: 'completed' });
-    await loadPayouts();
-  } catch { /* fail silently */ }
-}
-
 async function processPayout(payout: PayoutRequest) {
   try {
     await adminService.processPayout(payout.id);
-    await loadPayouts();
-  } catch { /* fail silently */ }
-}
-
-async function payBonus(payout: PayoutRequest, allowEarly = false) {
-  try {
-    await adminService.payBonus(payout.id, allowEarly);
-    await loadPayouts();
-  } catch { /* fail silently */ }
-}
-
-async function payDividend(payout: PayoutRequest, allowEarly = false) {
-  try {
-    await adminService.payDividend(payout.id, allowEarly);
-    await loadPayouts();
-  } catch { /* fail silently */ }
-}
-
-async function markAsPaid(payout: PayoutRequest) {
-  try {
-    await adminService.confirmPayout(payout.id, {
-      action: 'completed',
-      transactionId: `MANUAL-${Date.now()}`,
-      allowEarly: testMode.value, // modo de testes destrava marcação antecipada
-    });
     await loadPayouts();
   } catch { /* fail silently */ }
 }
@@ -1102,79 +966,58 @@ function recalcStats() {
   };
 }
 
-// ─── Trava de pagamento por mês de vencimento ────────────────────
-// Cada parcela só pode ser paga a partir do seu mês de vencimento (bônus
-// ref+1, dividendos ref+2), evitando o clique antecipado acidental. O backend
-// faz a mesma validação (fonte da verdade); aqui é só a camada visual.
-
-type Installment = 'bonus' | 'dividend';
-
-/** Mês de vencimento (YYYY-MM) da parcela, com fallback no paymentMonth legado. */
-function dueMonthFor(row: Record<string, unknown>, kind: Installment): string {
-  const split = kind === 'bonus' ? row.bonusPaymentMonth : row.dividendPaymentMonth;
-  return String(split ?? row.paymentMonth ?? '');
-}
-
-/** A parcela já venceu (chegou seu mês de pagamento)? Sem mês definido, não trava. */
-function isInstallmentDue(row: Record<string, unknown>, kind: Installment): boolean {
-  const due = dueMonthFor(row, kind);
-  return !due || currentMonthYM.value >= due;
-}
-
-/** Pode pagar agora? Vencida OU modo de testes (que destrava pagamento antecipado). */
-function canPay(row: Record<string, unknown>, kind: Installment): boolean {
-  return testMode.value || isInstallmentDue(row, kind);
-}
-
 // ─── Abas da execução: "A pagar no mês" × "Fechamento do mês" ─────
-// "due"     → parcelas (bônus/dividendos) que VENCEM no mês selecionado, item
-//             a item, para o admin pagar exatamente o que deve naquele mês.
-// "closing" → o lote completo por competência (bônus + dividendos somados),
-//             como histórico do fechamento.
+// "due"     → o que cada cotista RECEBE no mês selecionado, agrupado por pessoa
+//             (bônus + dividendos somados num único valor) — um pagamento, um
+//             PIX. O detalhe do que é bônus/dividendo fica na aba de histórico.
+// "closing" → o lote completo por competência, como histórico do fechamento.
 const paymentTab = ref<'due' | 'closing'>('due');
 
 /** Mês de vencimento em foco na aba "A pagar". Default = mês atual. */
 const dueMonth = computed(() => filters.value.month || currentMonthYM.value);
 
+type Installment = 'bonus' | 'dividend';
+
 const dueColumns = [
-  { key: 'user',           label: 'Cotista' },
-  { key: 'kind',           label: 'Tipo',        width: '150px' },
-  { key: 'amount',         label: 'A pagar',     align: 'right' as const, width: '160px' },
-  { key: 'referenceMonth', label: 'Competência', width: '120px' },
-  { key: 'status',         label: 'Status',      width: '140px' },
-  { key: 'actions',        label: 'Ações',       width: '200px' },
+  { key: 'user',    label: 'Cotista' },
+  { key: 'pix',     label: 'Chave PIX', width: '240px' },
+  { key: 'amount',  label: 'A pagar',   align: 'right' as const, width: '160px' },
+  { key: 'status',  label: 'Status',    width: '140px' },
+  { key: 'actions', label: 'Ações',     width: '200px' },
 ];
 
-interface InstallmentRow extends Record<string, unknown> {
-  rowKey: string;
-  id: string;
-  userName: string;
-  pixKey: string;
+/** Uma parcela (bônus/dividendo) que vence no mês, com o lote de origem. */
+interface DueInstallment {
+  payoutId: string;
   kind: Installment;
   amount: number;
-  referenceMonth: string;
-  dueMonth: string;
   paid: boolean;
-  // Campos originais necessários para canPay()/openPayConfirm().
-  bonusPaymentMonth: string | null;
-  dividendPaymentMonth: string | null;
-  paymentMonth: string;
-  networkAmount: number;
-  quotaAmount: number;
-  bonusPaidAt: string | null;
-  dividendPaidAt: string | null;
-  status: string;
+}
+
+/** Uma linha por cotista: o total que ele recebe no mês (um único PIX). */
+interface DueRow extends Record<string, unknown> {
+  rowKey: string;
+  userId: string;
+  userName: string;
+  pixKey: string;
+  pixKeyType: string;
+  dueMonth: string;
+  total: number;   // soma de tudo que vence no mês (pago + a pagar)
+  toPay: number;   // soma do que ainda falta pagar
+  allPaid: boolean;
+  installments: DueInstallment[];
 }
 
 /**
- * Achata os PayoutRequest em parcelas (bônus e/ou dividendos) que vencem no
- * mês em foco (`dueMonth`). Cada cotista pode render até duas linhas — uma por
- * parcela — cada qual com seu valor, mês de vencimento e botão de pagamento.
+ * Agrupa, por cotista, tudo que vence no mês em foco (`dueMonth`): bônus (ref+1)
+ * e dividendos (ref+2) caem no mesmo mês de pagamento e são somados num único
+ * valor — o admin faz UM PIX por pessoa. O detalhamento (o que é bônus, o que é
+ * dividendo, de qual competência) fica na aba de histórico.
  */
-const installmentRows = computed<InstallmentRow[]>(() => {
+const dueRows = computed<DueRow[]>(() => {
   const month = dueMonth.value;
   const q = filters.value.search.trim().toLowerCase();
-  const out: InstallmentRow[] = [];
+  const byUser = new Map<string, DueRow>();
 
   for (const p of payouts.value) {
     if (q && !(p.userName.toLowerCase().includes(q) || (p.pixKey ?? '').toLowerCase().includes(q))) {
@@ -1183,64 +1026,83 @@ const installmentRows = computed<InstallmentRow[]>(() => {
 
     const bonusDue = String(p.bonusPaymentMonth ?? p.paymentMonth ?? '');
     const divDue   = String(p.dividendPaymentMonth ?? p.paymentMonth ?? '');
-    const base = {
-      id: p.id,
-      userName: p.userName,
-      pixKey: p.pixKey,
-      referenceMonth: p.referenceMonth,
-      bonusPaymentMonth: p.bonusPaymentMonth,
-      dividendPaymentMonth: p.dividendPaymentMonth,
-      paymentMonth: p.paymentMonth,
-      networkAmount: Number(p.networkAmount ?? 0),
-      quotaAmount: Number(p.quotaAmount ?? 0),
-      bonusPaidAt: p.bonusPaidAt,
-      dividendPaidAt: p.dividendPaidAt,
-      status: p.status,
-    };
-
+    const dues: DueInstallment[] = [];
     if (Number(p.networkAmount ?? 0) > 0 && bonusDue === month) {
-      out.push({ ...base, rowKey: `${p.id}:bonus`, kind: 'bonus', amount: Number(p.networkAmount ?? 0), dueMonth: bonusDue, paid: !!p.bonusPaidAt });
+      dues.push({ payoutId: p.id, kind: 'bonus', amount: Number(p.networkAmount ?? 0), paid: !!p.bonusPaidAt });
     }
     if (Number(p.quotaAmount ?? 0) > 0 && divDue === month) {
-      out.push({ ...base, rowKey: `${p.id}:dividend`, kind: 'dividend', amount: Number(p.quotaAmount ?? 0), dueMonth: divDue, paid: !!p.dividendPaidAt });
+      dues.push({ payoutId: p.id, kind: 'dividend', amount: Number(p.quotaAmount ?? 0), paid: !!p.dividendPaidAt });
+    }
+    if (dues.length === 0) continue;
+
+    let row = byUser.get(p.userId);
+    if (!row) {
+      row = {
+        rowKey: p.userId,
+        userId: p.userId,
+        userName: p.userName,
+        pixKey: p.pixKey,
+        pixKeyType: p.pixKeyType,
+        dueMonth: month,
+        total: 0,
+        toPay: 0,
+        allPaid: true,
+        installments: [],
+      };
+      byUser.set(p.userId, row);
+    }
+    for (const d of dues) {
+      row.installments.push(d);
+      row.total += d.amount;
+      if (!d.paid) { row.toPay += d.amount; row.allPaid = false; }
     }
   }
 
-  return out;
+  return [...byUser.values()];
 });
+
+/** Pode pagar agora? O mês de vencimento já chegou OU modo de testes. */
+function isDueRowPayable(row: Record<string, unknown>): boolean {
+  const due = String(row.dueMonth ?? '');
+  return testMode.value || !due || currentMonthYM.value >= due;
+}
 
 // ─── Modal de confirmação de pagamento ───────────────────────────
 const showPayConfirm  = ref(false);
-const payConfirmKind  = ref<Installment>('bonus');
-const payConfirmRow   = ref<PayoutRequest | null>(null);
+const payConfirmRow   = ref<DueRow | null>(null);
 const payConfirmEarly = ref(false);
 
-function openPayConfirm(row: Record<string, unknown>, kind: Installment) {
-  payConfirmRow.value   = row as unknown as PayoutRequest;
-  payConfirmKind.value  = kind;
-  payConfirmEarly.value = !isInstallmentDue(row, kind); // só ocorre em modo de testes
+function payDueRow(row: Record<string, unknown>) {
+  const r = row as DueRow;
+  payConfirmRow.value   = r;
+  // "Adiantado" = o mês de vencimento ainda não chegou (só possível em testes).
+  payConfirmEarly.value = !!r.dueMonth && currentMonthYM.value < r.dueMonth;
   showPayConfirm.value  = true;
 }
 
-async function confirmPay() {
+/**
+ * Confirma o pagamento de TUDO que o cotista recebe no mês — um clique paga
+ * tanto a parte de bônus quanto a de dividendos (em lotes diferentes, se for o
+ * caso), refletindo o PIX único feito na prática. Recarrega a lista uma vez no
+ * fim.
+ */
+async function confirmPayDue() {
   const row = payConfirmRow.value;
   if (!row) return;
-  // allowEarly só é necessário quando se está pagando adiantado (modo de testes).
-  if (payConfirmKind.value === 'bonus') await payBonus(row, payConfirmEarly.value);
-  else await payDividend(row, payConfirmEarly.value);
+  const early = payConfirmEarly.value;
+  try {
+    for (const inst of row.installments) {
+      if (inst.paid) continue;
+      if (inst.kind === 'bonus') await adminService.payBonus(inst.payoutId, early);
+      else await adminService.payDividend(inst.payoutId, early);
+    }
+    await loadPayouts();
+  } catch { /* fail silently */ }
   showPayConfirm.value = false;
   payConfirmRow.value = null;
 }
 
 // ─── Wrappers para slots do DsTable (row tipado como Record) ──────
-function processPayoutRow(row: Record<string, unknown>)  { processPayout(row as unknown as PayoutRequest); }
-function payBonusRow(row: Record<string, unknown>)       { openPayConfirm(row, 'bonus'); }
-function payDividendRow(row: Record<string, unknown>)    { openPayConfirm(row, 'dividend'); }
-/** Aba "A pagar": a linha já sabe se é bônus ou dividendo (campo `kind`). */
-function payInstallmentRow(row: Record<string, unknown>) { openPayConfirm(row, row.kind as Installment); }
-/** Versão de `canPay` para a linha de parcela (lê o `kind` da própria linha). */
-function canPayRow(row: Record<string, unknown>): boolean { return canPay(row, row.kind as Installment); }
-function markAsPaidRow(row: Record<string, unknown>)     { markAsPaid(row as unknown as PayoutRequest); }
 function downloadReceiptRow(row: Record<string, unknown>) { downloadReceipt(row as unknown as PayoutRequest); }
 
 // ─── Load Payouts (reutilizável) ──────────────────────────────
@@ -1777,11 +1639,32 @@ onMounted(async () => {
   color: var(--text-secondary);
 }
 
+// ─── Célula de chave PIX (aba "A pagar") ──────────────────────
+.pix-cell {
+  display: flex;
+  align-items: center;
+  gap: $spacing-2;
+
+  &__key {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
 .actions-cell {
   display: flex;
   flex-direction: column;
   align-items: stretch;
   gap: $spacing-2;
+
+  // Placeholder de "sem ação" na aba histórico (linhas não concluídas).
+  &__readonly {
+    color: var(--text-tertiary);
+    text-align: center;
+  }
 
   // Cada ação ocupa a largura toda da célula e fica empilhada — assim os
   // rótulos ficam alinhados e nunca quebram no meio da palavra.
