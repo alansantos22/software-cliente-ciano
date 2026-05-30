@@ -315,6 +315,42 @@ describe('BonusCalculatorService', () => {
       expect(leadership[0]).toMatchObject({ userId: 'g', amount: 10 }); // 1% de 1000
     });
 
+    it('uses M bonuses + M-1 dividends as the cascade base (paid-month rule)', async () => {
+      snapshotService.getSnapshot.mockResolvedValue([
+        makeSnapshot({ userId: 's', title: UserTitle.BRONZE, teamLevels: 2 }),
+        makeSnapshot({ userId: 'd', sponsorId: 's', title: UserTitle.NONE }),
+      ]);
+
+      let capturedParams: any = null;
+      const qb: any = {
+        select: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockImplementation((_clause: string, params: any) => {
+          if (params && 'prevMonth' in params) capturedParams = params;
+          return qb;
+        }),
+        getRawOne: jest.fn().mockResolvedValue({ total: '1000' }),
+      };
+      earningRepo.createQueryBuilder.mockReturnValue(qb);
+
+      await service.calculateTeamAndLeadershipBonuses('2025-03');
+
+      expect(capturedParams).not.toBeNull();
+      expect(capturedParams.month).toBe('2025-03');
+      // Dividendos da base vêm do mês anterior (pagam no mesmo mês que o bônus).
+      expect(capturedParams.prevMonth).toBe('2025-02');
+      // Dividendo do próprio mês M NÃO entra (paga só em M+2).
+      expect(capturedParams.bonusTypes).not.toContain(BonusType.DIVIDEND);
+      expect(capturedParams.bonusTypes).toEqual(
+        expect.arrayContaining([
+          BonusType.FIRST_PURCHASE,
+          BonusType.REPURCHASE,
+          BonusType.TEAM,
+          BonusType.LEADERSHIP,
+        ]),
+      );
+    });
+
     it('should not pay team/leadership to inactive users', async () => {
       snapshotService.getSnapshot.mockResolvedValue([
         makeSnapshot({ userId: 'u1', title: UserTitle.GOLD, teamLevels: 4, leadershipPercent: 1, isActive: false }),

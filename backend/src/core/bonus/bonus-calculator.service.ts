@@ -10,6 +10,13 @@ import { SnapshotService } from '../snapshot/snapshot.service';
 import { BonusType, UserTitle } from '../../shared/interfaces/enums';
 import { getCurrentPeriod } from '../../shared/utils/helpers';
 
+/** Mês de competência anterior (YYYY-MM) a um dado mês. */
+function previousMonth(referenceMonth: string): string {
+  const [y, m] = referenceMonth.split('-').map(Number);
+  const d = new Date(y!, m! - 1 - 1, 1); // m é 1-12, JS é 0-11; ref-1
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+}
+
 /**
  * Motor de bônus.
  *
@@ -18,9 +25,12 @@ import { getCurrentPeriod } from '../../shared/utils/helpers';
  *   2. DIVIDEND                    — gerado quando o admin informa o lucro líquido.
  *   3. TEAM + LEADERSHIP           — gerados por último, em travessia leaf-up.
  *
- * Cascata: o bônus de equipe é 2% de TUDO que a rede ganhou (compra, recompra,
- * dividendos E os próprios bônus de equipe/liderança dos downlines). Por isso o
- * cálculo precisa percorrer a árvore das folhas para a raiz — ver
+ * Cascata: o bônus de equipe é 2% de TUDO que a rede VAI RECEBER no mesmo mês
+ * em que esse bônus é pago (compra, recompra, dividendos E os próprios bônus de
+ * equipe/liderança dos downlines). Como bônus de rede pagam ref+1 e dividendos
+ * pagam ref+2, a base do bônus de competência M (pago em M+1) usa os bônus de M
+ * e os dividendos de M-1 — ver `sumEarnings`. Por isso o cálculo precisa
+ * percorrer a árvore das folhas para a raiz — ver
  * `calculateTeamAndLeadershipBonuses`.
  */
 @Injectable()
@@ -222,16 +232,20 @@ export class BonusCalculatorService {
   /**
    * Calcula os bônus de equipe e liderança do mês.
    *
-   * DEVE ser chamado APÓS `calculateDividends` (o bônus de equipe incide também
-   * sobre os dividendos da rede).
+   * Base (regra do cliente, 2026-05): o bônus incide sobre o que o downline VAI
+   * RECEBER no mesmo mês em que o bônus de competência M é pago (M+1) — ou seja,
+   * os bônus de M e os dividendos de M-1 (ver `sumEarnings`). Os dividendos do
+   * próprio mês M pagam só em M+2 e não entram nesta base; basta que o mês M-1
+   * já tenha sido fechado (dividendos persistidos) — caso contrário a base só
+   * exclui essa parcela.
    *
    * Lê do SNAPSHOT do mês de referência (título, níveis de bônus, posição na
    * rede e status ativo) — não o estado atual — garantindo determinismo.
    *
-   * Regra de cascata: equipe = 2% de TUDO que os downlines ganharam, inclusive
-   * os bônus de equipe/liderança deles. Para fechar a cascata sem recursão
-   * frágil, processa-se a árvore das folhas para a raiz (ordem de altura
-   * crescente): ao calcular um nó, todos os seus descendentes já têm
+   * Regra de cascata: equipe = 2% de TUDO que os downlines vão receber no mês,
+   * inclusive os bônus de equipe/liderança deles. Para fechar a cascata sem
+   * recursão frágil, processa-se a árvore das folhas para a raiz (ordem de
+   * altura crescente): ao calcular um nó, todos os seus descendentes já têm
    * equipe/liderança gravados.
    */
   async calculateTeamAndLeadershipBonuses(referenceMonth: string): Promise<void> {
@@ -385,6 +399,23 @@ export class BonusCalculatorService {
       immediateRows.map((r) => [r.userId, parseFloat(r.total) || 0]),
     );
 
+    // ── Dividendos do mês ANTERIOR (M-1) ──────────────────────────────
+    // Entram na base de equipe/liderança porque pagam no mesmo mês (M+1) que
+    // os bônus de competência M. Os dividendos do próprio mês M pagam só em
+    // M+2 e, portanto, NÃO entram nesta base — eles alimentarão a base de
+    // equipe/liderança do mês seguinte. Ver `sumEarnings`.
+    const prevDividendRows = await this.earningRepo
+      .createQueryBuilder('e')
+      .select('e.user_id', 'userId')
+      .addSelect('SUM(e.amount)', 'total')
+      .where('e.reference_month = :prevMonth', { prevMonth: previousMonth(referenceMonth) })
+      .andWhere('e.bonus_type = :dividend', { dividend: BonusType.DIVIDEND })
+      .groupBy('e.user_id')
+      .getRawMany<{ userId: string; total: string }>();
+    const prevDividendByUser = new Map<string, number>(
+      prevDividendRows.map((r) => [r.userId, parseFloat(r.total) || 0]),
+    );
+
     // ── Equipe + liderança (cascata leaf-up, in-memory) ────────────────
     const snapById = new Map(snapshots.map((s) => [s.userId, s]));
     const childrenOf = new Map<string, string[]>();
@@ -409,13 +440,15 @@ export class BonusCalculatorService {
     };
     const ordered = [...snapshots].sort((a, b) => heightOf(a.userId) - heightOf(b.userId));
 
-    // Soma todos os ganhos do mês para um conjunto de usuários — incluindo
-    // os já computados no preview (dividendos/equipe/liderança em memória).
+    // Soma os recebíveis do downline que caem no mês de pagamento do bônus de
+    // competência M (= M+1): bônus de M (compra/recompra + equipe/liderança já
+    // computados no preview) + dividendos de M-1. NÃO usa os dividendos de M
+    // (`dividends`), que pagam só em M+2.
     const sumFor = (ids: string[]): number => {
       let total = 0;
       for (const id of ids) {
         total += immediateByUser.get(id) ?? 0;
-        total += dividends.get(id) ?? 0;
+        total += prevDividendByUser.get(id) ?? 0;
         total += team.get(id) ?? 0;
         total += leadership.get(id) ?? 0;
       }
@@ -501,18 +534,45 @@ export class BonusCalculatorService {
   }
 
   /**
-   * Soma TODOS os ganhos (qualquer bonusType) dos usuários informados no mês.
-   * Inclui FIRST_PURCHASE, REPURCHASE, DIVIDEND, TEAM e LEADERSHIP — é isso que
-   * dá o efeito de cascata ao bônus de equipe/liderança.
+   * Soma os RECEBÍVEIS dos downlines que caem no MESMO mês de pagamento em que
+   * o bônus de equipe/liderança de `referenceMonth` será pago.
+   *
+   * Regra do cliente (2026-05): equipe/liderança incidem sobre o que o usuário
+   * VAI RECEBER naquele mês — não sobre o que foi calculado no mês de
+   * competência. Como os pagamentos são separados (bônus de rede pagam ref+1 e
+   * dividendos pagam ref+2), os recebíveis que caem no mês de pagamento do
+   * bônus de `M` (= M+1) são:
+   *   • bônus de competência M (FIRST_PURCHASE, REPURCHASE, TEAM, LEADERSHIP) → pagam M+1
+   *   • dividendos de competência M-1                                         → pagam M+1
+   *
+   * Incluir TEAM/LEADERSHIP de M dá o efeito de cascata (a travessia leaf-up
+   * garante que os descendentes já estejam gravados quando o ancestral é
+   * calculado).
    */
   private async sumEarnings(userIds: string[], referenceMonth: string): Promise<number> {
     if (userIds.length === 0) return 0;
+
+    const prevMonth = previousMonth(referenceMonth);
 
     const row = await this.earningRepo
       .createQueryBuilder('e')
       .select('SUM(e.amount)', 'total')
       .where('e.user_id IN (:...ids)', { ids: userIds })
-      .andWhere('e.reference_month = :month', { month: referenceMonth })
+      .andWhere(
+        '((e.reference_month = :month AND e.bonus_type IN (:...bonusTypes)) ' +
+          'OR (e.reference_month = :prevMonth AND e.bonus_type = :dividend))',
+        {
+          month: referenceMonth,
+          prevMonth,
+          bonusTypes: [
+            BonusType.FIRST_PURCHASE,
+            BonusType.REPURCHASE,
+            BonusType.TEAM,
+            BonusType.LEADERSHIP,
+          ],
+          dividend: BonusType.DIVIDEND,
+        },
+      )
       .getRawOne();
 
     return parseFloat(row?.total || '0');

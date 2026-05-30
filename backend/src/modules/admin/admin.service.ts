@@ -423,10 +423,11 @@ export class AdminService {
     // caso de o lote ser gerado antes do job ter rodado.
     await this.snapshotService.captureMonth(profitMonth);
 
-    // ⚠️ Ordem obrigatória (regra de cascata): os dividendos precisam existir
-    // ANTES do cálculo de equipe/liderança, pois o bônus de equipe incide
-    // também sobre os dividendos da rede. Equipe + liderança são calculados
-    // por último, em travessia leaf-up — ver BonusCalculatorService.
+    // Dividendos do mês M (pagam M+2). Equipe + liderança de M (pagam M+1)
+    // são calculados em seguida, em travessia leaf-up — sua base é o que o
+    // downline RECEBE em M+1: bônus de M + dividendos de M-1 (estes já
+    // persistidos do fechamento anterior), NÃO os dividendos de M calculados
+    // aqui. Ver BonusCalculatorService.
     await this.bonusCalc.calculateDividends(profitMonth, dividendPool);
     await this.bonusCalc.calculateTeamAndLeadershipBonuses(profitMonth);
 
