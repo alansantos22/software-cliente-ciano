@@ -43,3 +43,14 @@ o saldo correto. Snapshots antigos com `quotaBalance` errado deixaram de
 afetar o cálculo. Bug colateral fixado: `simulatePurchase` em
 `AdminManagerService` não somava `adminGrantedQuotas` ao recalcular o
 `quotaBalance` do usuário (zerava cotas concedidas pelo admin).
+
+**Regra base equipe/liderança (2026-05-30):** o bônus de equipe/liderança incide
+sobre o que o downline VAI RECEBER no mesmo mês em que esse bônus é pago — não
+sobre o que foi calculado no mês de competência. Como bônus de rede pagam ref+1 e
+dividendos pagam ref+2 (migration 010 / `computePaymentMonths`), a base do bônus
+de competência M (pago em M+1) = bônus de M (compra/recompra/equipe/liderança) +
+dividendos de **M-1**. Os dividendos do próprio M (pagam M+2) NÃO entram — vão
+para a base do mês seguinte. Implementado em `BonusCalculatorService.sumEarnings`
+(caminho persistido) e no `sumFor`/`prevDividendByUser` de `previewBatchAmounts`
+(preview). Antes a base usava TODOS os ganhos do mesmo mês M, incluindo o
+dividendo de M — equívoco corrigido após separação das datas de pagamento.

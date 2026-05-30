@@ -603,7 +603,7 @@ const columns = [
   { key: 'referenceMonth', label: 'Competência',  width: '120px' },
   { key: 'paymentMonth',   label: 'Pagamento em', width: '180px' },
   { key: 'status',         label: 'Status',       width: '130px' },
-  { key: 'actions',        label: 'Ações',        width: '320px' },
+  { key: 'actions',        label: 'Ações',        width: '200px' },
 ];
 
 const distributionColumns = [
@@ -1406,14 +1406,23 @@ onMounted(async () => {
 
 .actions-cell {
   display: flex;
+  flex-direction: column;
+  align-items: stretch;
   gap: $spacing-2;
-  flex-wrap: wrap;
 
-  // Nenhum botão da célula pode quebrar o rótulo no meio — preferimos que
-  // estourem o `width` (que já foi ajustado) a virar duas linhas com tipografia
-  // confusa.
-  :deep(button) {
+  // Cada ação ocupa a largura toda da célula e fica empilhada — assim os
+  // rótulos ficam alinhados e nunca quebram no meio da palavra.
+  :deep(.ds-button) {
+    width: 100%;
     white-space: nowrap;
+  }
+
+  // O slot padrão carrega ícone + texto juntos; impedimos que esse span
+  // encolha e force a quebra do rótulo em duas linhas.
+  :deep(.ds-button__text) {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 }
 
