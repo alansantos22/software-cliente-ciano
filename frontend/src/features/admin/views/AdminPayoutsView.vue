@@ -1482,9 +1482,18 @@ onMounted(async () => {
   flex-wrap: wrap;
   align-items: flex-end;
 
-  > * {
+  // Só os campos de texto/seleção crescem para preencher a linha.
+  > .ds-input,
+  > .ds-dropdown {
     flex: 1;
     min-width: 150px;
+  }
+
+  // O seletor de mês e o botão mantêm a largura natural. Esticá-los (flex: 1)
+  // espremia as setas ←/→ do month picker e deixava a caixa de data cortada.
+  > .ds-month-picker,
+  > .ds-button {
+    flex: 0 0 auto;
   }
 }
 

@@ -232,6 +232,7 @@ watch(() => props.modelValue, () => {
 
   &__nav {
     @include flex-center;
+    flex-shrink: 0; // nunca deixar a seta espremer quando o picker estiver num flex container
     width: 36px;
     height: 36px;
     border: 1px solid var(--border-default);

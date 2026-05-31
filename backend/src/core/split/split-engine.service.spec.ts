@@ -12,6 +12,7 @@ function makeState(overrides: Partial<QuotaSystemState> = {}): QuotaSystemState 
     currentQuotaPrice: 2000,
     totalQuotasSold: 0,
     splitCount: 0,
+    lotNumber: 1,
     currentPhase: 0,
     nextEventTarget: 50,
     nextEventLabel: 'Aumento de Preço',
@@ -245,6 +246,86 @@ describe('SplitEngineService', () => {
       expect(stateRepo.save).toHaveBeenCalledWith(
         expect.objectContaining({ nextEventLabel: 'Aumento de Preço' }),
       );
+    });
+  });
+
+  // ─── forceNextEvent (botão "Forçar Virada de Lote") ──────────────────────────
+
+  describe('forceNextEvent', () => {
+    it('aplica um AUMENTO quando a fase é menor que a máxima', async () => {
+      stateRepo.findOne.mockResolvedValue(
+        makeState({ currentPhase: 1, currentQuotaPrice: 2500, lotNumber: 1, splitCount: 0, totalQuotasSold: 30 }),
+      );
+      let saved: any = null;
+      stateRepo.save.mockImplementation((s: QuotaSystemState) => { saved = s; return Promise.resolve(s); });
+
+      await service.forceNextEvent();
+
+      // fase 1 → 2, preço 3000, lote 1 → 2 (NÃO é split)
+      expect(saved).toMatchObject({ currentPhase: 2, currentQuotaPrice: 3000, lotNumber: 2, splitCount: 0 });
+    });
+
+    it('aplica um SPLIT quando já está na fase máxima', async () => {
+      stateRepo.findOne.mockResolvedValue(
+        makeState({ currentPhase: 2, currentQuotaPrice: 3000, lotNumber: 2, splitCount: 0, totalQuotasSold: 50 }),
+      );
+      let saved: any = null;
+      stateRepo.save.mockImplementation((s: QuotaSystemState) => { saved = s; return Promise.resolve(s); });
+      const updateQb = makeQueryBuilderUpdate();
+      userRepo.createQueryBuilder
+        .mockReturnValueOnce({ ...updateQb, update: () => updateQb })
+        .mockReturnValueOnce({ ...updateQb, update: () => updateQb })
+        .mockReturnValueOnce(makeQueryBuilderSelect({ total: '0' }));
+
+      await service.forceNextEvent();
+
+      // fase máx → split: preço volta a 2000, splitCount +1, lote 2 → 3
+      expect(saved).toMatchObject({ currentPhase: 0, currentQuotaPrice: 2000, lotNumber: 3, splitCount: 1 });
+    });
+  });
+
+  // ─── Ciclo de vida completo (Modelo "Lote = faixa de preço") ─────────────────
+  // Prova de regressão: percorre vários eventos seguidos e garante que o número
+  // do lote sobe a cada evento e que o preço segue 2500→3000→[split→2000]→2500…
+  // Se alguém voltar lotNumber para `splitCount+1` ou bagunçar as fases, quebra.
+
+  describe('ciclo de vida completo', () => {
+    it('lote sobe a cada evento e preços seguem a regra do cliente', async () => {
+      // Estado vivo persistente: findOne devolve o último salvo.
+      let live = makeState({
+        currentPhase: 1, currentQuotaPrice: 2500, lotNumber: 1,
+        splitCount: 0, totalQuotasSold: 0, nextEventTarget: 50,
+      });
+      stateRepo.findOne.mockImplementation(() => Promise.resolve(live));
+      stateRepo.save.mockImplementation((s: QuotaSystemState) => { live = { ...live, ...s }; return Promise.resolve(live); });
+      // Builder universal: serve tanto pros UPDATEs quanto pro SELECT do split.
+      userRepo.createQueryBuilder.mockImplementation(() => ({
+        update: jest.fn().mockReturnThis(),
+        set: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        execute: jest.fn().mockResolvedValue({}),
+        select: jest.fn().mockReturnThis(),
+        getRawOne: jest.fn().mockResolvedValue({ total: '0' }),
+      }));
+
+      const snapshot = () => ({ lote: live.lotNumber, preco: Number(live.currentQuotaPrice), fase: live.currentPhase, splits: live.splitCount });
+
+      // Estado inicial = primeiro lote
+      expect(snapshot()).toEqual({ lote: 1, preco: 2500, fase: 1, splits: 0 });
+
+      const esperado = [
+        { lote: 2, preco: 3000, fase: 2, splits: 0 }, // aumento
+        { lote: 3, preco: 2000, fase: 0, splits: 1 }, // split (cotas dobram)
+        { lote: 4, preco: 2500, fase: 1, splits: 1 }, // aumento
+        { lote: 5, preco: 3000, fase: 2, splits: 1 }, // aumento
+        { lote: 6, preco: 2000, fase: 0, splits: 2 }, // split
+        { lote: 7, preco: 2500, fase: 1, splits: 2 }, // aumento
+      ];
+
+      for (const passo of esperado) {
+        await service.forceNextEvent();
+        expect(snapshot()).toEqual(passo);
+      }
     });
   });
 

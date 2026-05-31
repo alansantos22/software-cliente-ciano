@@ -23,7 +23,15 @@ export class QuotaSystemState {
   @Column({ type: 'int', default: 0, name: 'split_count' })
   splitCount: number;
 
-  @Column({ type: 'int', default: 0, name: 'current_phase' })
+  // Número do lote EXIBIDO (Modelo "Lote = faixa de preço"): avança +1 a cada
+  // evento de preço (aumento OU split), não em split. Começa em 1 (R$2500).
+  // Diferente de splitCount, que só conta splits e dá o tamanho do lote em cotas.
+  @Column({ type: 'int', default: 1, name: 'lot_number' })
+  lotNumber: number;
+
+  // Default 1 para casar com o preço default de 2500 (fase 0=2000, 1=2500, 2=3000).
+  // Um split reseta explicitamente para fase 0/R$2000; este default só vale no insert inicial.
+  @Column({ type: 'int', default: 1, name: 'current_phase' })
   currentPhase: number;
 
   @Column({ type: 'int', default: 50, name: 'next_event_target' })

@@ -56,7 +56,7 @@ export class AdminController {
 
   @Put('price-engine')
   updatePriceEngine(@Body() dto: UpdatePriceEngineDto) {
-    return this.adminService.updatePriceEngine(dto.forceSplit);
+    return this.adminService.updatePriceEngine(dto.forceNextEvent);
   }
 
   // ─── Payouts (3-Stage) ─────────────────────────────────

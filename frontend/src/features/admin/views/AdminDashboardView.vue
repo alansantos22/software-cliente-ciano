@@ -335,8 +335,25 @@ function goToPayouts() {
   router.push('/admin/payouts');
 }
 
-function handleForceSplit() {
-  console.info('[Admin] Force split triggered');
+/** Aplica os dados do motor de preço vindos da API nos refs do painel. */
+function applyPriceEngine(pe: any) {
+  if (!pe) return;
+  currentQuotaPrice.value = Number(pe.quotaPrice) || 2500;
+  lotProgress.value = Number(pe.lotSold) || 0;
+  lotSize.value = Number(pe.lotSize) || 50;
+  lotNumber.value = Number(pe.lotNumber) || 1;
+  pendingEventType.value = pe.pendingEventType || null;
+}
+
+/** Força a virada de lote (próximo evento: aumento ou split) e recarrega o painel. */
+async function handleForceSplit() {
+  try {
+    await adminService.updatePriceEngine({ forceNextEvent: true });
+    const res = await adminService.getPriceEngine();
+    applyPriceEngine(res.data);
+  } catch (e) {
+    console.error('[Admin] Falha ao forçar virada de lote', e);
+  }
 }
 
 function handleCrmAction(type: 'extrato' | 'bloquear' | 'desbloquear', user: any) {
@@ -415,14 +432,7 @@ onMounted(async () => {
     }
 
     // Load price engine data from API
-    if (priceEngineRes.data) {
-      const pe = priceEngineRes.data;
-      currentQuotaPrice.value = Number(pe.quotaPrice) || 2500;
-      lotProgress.value = Number(pe.lotSold) || 0;
-      lotSize.value = Number(pe.lotSize) || 50;
-      lotNumber.value = Number(pe.lotNumber) || 1;
-      pendingEventType.value = pe.pendingEventType || null;
-    }
+    applyPriceEngine(priceEngineRes.data);
 
     if (titleRes.data) {
       const dist = titleRes.data;
