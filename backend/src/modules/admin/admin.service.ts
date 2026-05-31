@@ -264,10 +264,22 @@ export class AdminService {
 
   // ─── Payouts (Admin-Driven 3-Stage) ────────────────────
 
-  async calculateDistribution(profitMonth: string, netProfit: number) {
+  async calculateDistribution(
+    profitMonth: string,
+    netProfit: number,
+    options: { testMode?: boolean } = {},
+  ) {
     const settings = await this.settingsRepo.findOne({ where: { id: 1 } });
     const dividendPoolPercent = settings?.profitPayoutPercentage || 20;
     const dividendPool = netProfit * dividendPoolPercent / 100;
+
+    // SOMENTE no Modo de testes recapturamos o snapshot para refletir a rede
+    // ATUAL (permite testar mudanças na árvore: novos downlines, vínculos,
+    // títulos). Em produção o snapshot é IMUTÁVEL — congelado no estado de fim
+    // de mês — para não pagar quem não tinha cota no mês nem dar bônus indevido.
+    if (options.testMode) {
+      await this.snapshotService.captureMonth(profitMonth, { force: true });
+    }
 
     // ── Datas de pagamento ────────────────────────────────────────
     // Regra do cliente (2026-05): bônus de rede pagam ref+1 e dividendos
@@ -418,10 +430,14 @@ export class AdminService {
     const dividendPoolPercent = settings?.profitPayoutPercentage || 20;
     const dividendPool = netProfit * dividendPoolPercent / 100;
 
-    // Garante o snapshot do mês (idempotente). Normalmente já foi capturado
-    // pelo MonthlyCloseJob no fechamento; aqui é uma rede de segurança para o
-    // caso de o lote ser gerado antes do job ter rodado.
-    await this.snapshotService.captureMonth(profitMonth);
+    // Garante o snapshot do mês. SOMENTE no Modo de testes (allowFutureMonth)
+    // recapturamos (force) para refletir a rede atual — permite testar mudanças
+    // na árvore sem o snapshot raso fazer o bônus de equipe/liderança parar no
+    // 1º nível. Em produção a foto é IMUTÁVEL: usa a capturada no fechamento
+    // (MonthlyCloseJob) ou, na ausência dela, captura uma vez (idempotente).
+    await this.snapshotService.captureMonth(profitMonth, {
+      force: options.allowFutureMonth ?? false,
+    });
 
     // Dividendos do mês M (pagam M+2). Equipe + liderança de M (pagam M+1)
     // são calculados em seguida, em travessia leaf-up — sua base é o que o
@@ -589,8 +605,10 @@ export class AdminService {
    *   2. Limpa o `processed_at` dos ganhos imediatos (compra/recompra) do mês.
    *   3. Apaga os PayoutRequests do mês.
    *
-   * O snapshot do mês é preservado — regenerar o lote usa a mesma foto,
-   * garantindo um recálculo determinístico.
+   * O snapshot do mês é preservado por esta operação. Ao regenerar: em produção
+   * reusa a mesma foto (recálculo determinístico); no Modo de testes
+   * (allowFutureMonth) `generateBatch` recaptura a foto para refletir a rede
+   * atual.
    */
   async voidBatch(profitMonth: string) {
     const payouts = await this.payoutRepo.find({ where: { referenceMonth: profitMonth } });

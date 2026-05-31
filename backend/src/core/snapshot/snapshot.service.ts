@@ -90,13 +90,33 @@ export class SnapshotService {
 
   /**
    * Captura a foto de todos os usuários para o mês informado.
-   * Idempotente: se já existir snapshot para o mês, não faz nada.
+   *
+   * Idempotente por padrão: se já existir snapshot para o mês, não faz nada —
+   * é o comportamento correto para um mês JÁ FECHADO, cujo snapshot deve ser
+   * imutável (determinismo).
+   *
+   * `opts.force = true` recaptura: apaga o snapshot existente e tira uma foto
+   * nova do estado ATUAL. Usado enquanto o mês ainda está ABERTO (prévia do
+   * admin / Modo de testes), porque aí o snapshot não é uma verdade histórica e
+   * sim um rascunho — e precisa refletir mudanças posteriores na rede (novos
+   * downlines, vínculos, títulos). Sem isso, uma foto capturada cedo e rasa
+   * fazia o bônus de equipe/liderança parar no 1º nível (a travessia só
+   * enxergava a árvore congelada incompleta).
    */
-  async captureMonth(month: string): Promise<{ created: number; skipped: boolean }> {
+  async captureMonth(
+    month: string,
+    opts: { force?: boolean } = {},
+  ): Promise<{ created: number; skipped: boolean }> {
     const existing = await this.snapshotRepo.count({ where: { month } });
     if (existing > 0) {
-      this.logger.log(`⏭️  Snapshot de ${month} já existe (${existing} registros) — pulando`);
-      return { created: 0, skipped: true };
+      if (!opts.force) {
+        this.logger.log(`⏭️  Snapshot de ${month} já existe (${existing} registros) — pulando`);
+        return { created: 0, skipped: true };
+      }
+      await this.snapshotRepo.delete({ month });
+      this.logger.warn(
+        `♻️  Snapshot de ${month} recapturado (force) — ${existing} registro(s) antigos removidos`,
+      );
     }
 
     const users = await this.userRepo.find({ where: { deletedAt: IsNull() } });

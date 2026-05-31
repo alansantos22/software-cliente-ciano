@@ -37,7 +37,7 @@ export const adminService = {
   },
 
   // ── Payouts ──
-  calculateDistribution(payload: { profitMonth: string; netProfit: number }) {
+  calculateDistribution(payload: { profitMonth: string; netProfit: number; allowFutureMonth?: boolean }) {
     return api.post('/admin/payouts/calculate-distribution', payload);
   },
 
