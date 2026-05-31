@@ -159,7 +159,7 @@ function cancelConfirm() {
 function executeAction() {
   if (confirmingAction.value === 'force-split' && confirmInput.value === 'CONFIRMAR') {
     emit('force-split');
-    successMsg.value = 'Virada de lote agendada com sucesso.';
+    successMsg.value = 'Virada de lote executada com sucesso.';
   }
   confirmingAction.value = null;
   confirmInput.value = '';

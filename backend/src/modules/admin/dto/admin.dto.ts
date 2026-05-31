@@ -90,7 +90,8 @@ export class BulkPayoutActionDto {
 // ─── Price Engine DTOs ────────────────────────────────
 
 export class UpdatePriceEngineDto {
-  @IsOptional() forceSplit?: boolean;
+  // Força a virada de lote: aplica o próximo evento (aumento de preço ou split).
+  @IsOptional() forceNextEvent?: boolean;
 }
 
 // ─── Manager DTOs ─────────────────────────────────────

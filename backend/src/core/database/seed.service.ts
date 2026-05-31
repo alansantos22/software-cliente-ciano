@@ -77,7 +77,18 @@ export class SeedService implements OnModuleInit {
     const existing = await this.quotaStateRepo.findOne({ where: { id: 1 } });
     if (existing) return;
 
-    const state = this.quotaStateRepo.create({ id: 1 });
+    // Estado inicial DEVE casar fase↔preço: fase 0=R$2000, 1=R$2500, 2=R$3000.
+    // Os defaults da entity (fase 0 + preço 2500) são inconsistentes — geram uma
+    // "virada invisível" no primeiro aumento (fase 0→1 recalcula 2000+500=2500,
+    // o mesmo preço). Espelhamos a lógica de primeira execução do getState().
+    const state = this.quotaStateRepo.create({
+      id: 1,
+      currentPhase: 1,
+      currentQuotaPrice: 2500,
+      lotNumber: 1,
+      nextEventTarget: 50,
+      nextEventLabel: 'Aumento de Preço',
+    });
     await this.quotaStateRepo.save(state);
     this.logger.log('📊 Quota system state created');
   }

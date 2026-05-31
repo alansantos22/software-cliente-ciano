@@ -247,16 +247,16 @@ export class AdminService {
       nextEventLabel: state.nextEventLabel,
       lotSize: lotSize,
       lotSold: lotSold,
-      lotNumber: state.splitCount + 1,
+      lotNumber: state.lotNumber,
       pendingEventType: state.pendingEventType,
       pendingEventDate: state.pendingEventDate,
     };
   }
 
-  async updatePriceEngine(forceSplit?: boolean) {
-    if (forceSplit) {
-      await this.splitEngine.forceSplit();
-      return { message: 'Split forçado executado com sucesso' };
+  async updatePriceEngine(forceNextEvent?: boolean) {
+    if (forceNextEvent) {
+      await this.splitEngine.forceNextEvent();
+      return { message: 'Virada de lote executada com sucesso' };
     }
 
     return { message: 'Nenhuma ação executada' };

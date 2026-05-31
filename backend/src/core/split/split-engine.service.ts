@@ -27,6 +27,7 @@ export class SplitEngineService {
         id: 1,
         currentPhase: 1,
         currentQuotaPrice: this.BASE_PRICE + this.PRICE_INCREMENT, // R$2500
+        lotNumber: 1,
       });
       await this.stateRepo.save(state);
     }
@@ -80,11 +81,18 @@ export class SplitEngineService {
   }
 
   /**
-   * Force a split event (admin action)
+   * Força a virada de lote imediatamente (ação do admin).
+   * "Virar de lote" = aplicar o PRÓXIMO evento agendado: um aumento de preço,
+   * ou um split se já estiver na fase máxima. NÃO força sempre um split — o
+   * número do lote avança em qualquer um dos dois (Modelo "Lote = faixa de preço").
    */
-  async forceSplit(): Promise<void> {
+  async forceNextEvent(): Promise<void> {
     const state = await this.getState();
-    await this.executeSplit(state);
+    if (state.currentPhase < this.MAX_PHASE) {
+      await this.advancePhase(state);
+    } else {
+      await this.executeSplit(state);
+    }
   }
 
   private calculateTarget(splitCount: number): number {
@@ -118,6 +126,7 @@ export class SplitEngineService {
     const lotSize = this.calculateTarget(state.splitCount);
     state.currentPhase = newPhase;
     state.currentQuotaPrice = newPrice;
+    state.lotNumber += 1; // Modelo "Lote = faixa de preço": todo aumento é um novo lote
     state.nextEventTarget = state.totalQuotasSold + lotSize;
     state.nextEventLabel = newPhase >= this.MAX_PHASE ? 'Split' : 'Aumento de Preço';
     state.pendingEventType = null;
@@ -178,6 +187,7 @@ export class SplitEngineService {
     state.currentQuotaPrice = newPrice;
     state.currentPhase = 0;
     state.splitCount = newSplitCount;
+    state.lotNumber += 1; // o split também é um novo lote (preço volta a R$2000)
     state.totalSplitQuotas = parseInt(result?.total || '0', 10);
     state.nextEventTarget = state.totalQuotasSold + newLotSize;
     state.nextEventLabel = 'Aumento de Preço';
