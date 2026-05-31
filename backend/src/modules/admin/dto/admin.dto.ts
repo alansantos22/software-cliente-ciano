@@ -42,6 +42,13 @@ export class UpdateCareerPlanDto {
 export class CalculateDistributionDto {
   @IsString() profitMonth: string;      // YYYY-MM
   @IsNumber() @Min(0) netProfit: number;
+
+  /**
+   * Modo de testes (checkbox do frontend). Quando ligado, o snapshot do mês é
+   * recapturado para refletir a rede ATUAL — permite testar mudanças na árvore.
+   * Desligado (produção), o snapshot fica congelado no estado de fim de mês.
+   */
+  @IsOptional() @IsBoolean() allowFutureMonth?: boolean;
 }
 
 export class GenerateBatchDto {

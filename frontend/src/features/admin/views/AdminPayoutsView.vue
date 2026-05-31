@@ -865,6 +865,7 @@ async function calculateDistribution() {
     const res = await adminService.calculateDistribution({
       profitMonth: profitMonth.value,
       netProfit: netProfit.value,
+      allowFutureMonth: testMode.value,
     });
     if (res.data) {
       // Map backend field names to table column keys

@@ -63,7 +63,9 @@ export class AdminController {
 
   @Post('payouts/calculate-distribution')
   calculateDistribution(@Body() dto: CalculateDistributionDto) {
-    return this.adminService.calculateDistribution(dto.profitMonth, dto.netProfit);
+    return this.adminService.calculateDistribution(dto.profitMonth, dto.netProfit, {
+      testMode: dto.allowFutureMonth ?? false,
+    });
   }
 
   @Post('payouts/generate-batch')

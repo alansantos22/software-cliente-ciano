@@ -54,3 +54,28 @@ para a base do mês seguinte. Implementado em `BonusCalculatorService.sumEarning
 (caminho persistido) e no `sumFor`/`prevDividendByUser` de `previewBatchAmounts`
 (preview). Antes a base usava TODOS os ganhos do mesmo mês M, incluindo o
 dividendo de M — equívoco corrigido após separação das datas de pagamento.
+
+**Bug do snapshot raso — equipe/liderança "parando no 1º nível" (fix 2026-05-30):**
+`SnapshotService.captureMonth` era idempotente puro (pula se já há linhas). No Modo
+de testes (gerando lote de mês futuro/aberto), o snapshot era congelado na 1ª prévia
+e nunca mais atualizava; downlines de nível 2+ adicionados depois ficavam de fora da
+árvore congelada, e a travessia `collectDownlineIds` (que está correta — testada até
+4 níveis) só enxergava o nível 1. NÃO era bug do algoritmo nem da regra (base =
+ganhos dos patrocinados, profundidade por título: bronze 2 / prata 3 / ouro 4 /
+diamante 5). Fix: `captureMonth(month, { force })` apaga+recaptura; `AdminService`
+recaptura (force) em `calculateDistribution` e `generateBatch` **SOMENTE no Modo de
+testes** (flag `allowFutureMonth`, o checkbox do frontend). Em produção o snapshot é
+IMUTÁVEL — congelado no fim do mês pelo `MonthlyCloseJob` — para não pagar quem não
+tinha cota no mês nem dar bônus indevido (decisão do cliente 2026-05-30). A flag
+`allowFutureMonth` agora também trafega no DTO/endpoint de `calculate-distribution`.
+Testes: `snapshot.service.spec.ts`.
+
+**Profundidade de liderança SEM compressão (confirmado pelo cliente 2026-05-30):**
+o bônus de liderança conta os qualificados (ouro/diamante) dentro de **5 camadas
+ESTRUTURAIS** abaixo do líder — desce nível a nível como numa árvore, NUNCA
+comprime (não pula bronze/prata para alcançar um qualificado mais fundo). Ex.: um
+diamante na 6ª camada estrutural fica de fora, mesmo que seja o 1º qualificado da
+linha. Implementado via `collectDownlineIds` (BFS camada a camada, `LEADERSHIP_DEPTH=5`)
++ filtro de título ouro/diamante. Seed (migration 004): leadership_percent
+ouro=1%, diamante=2%, bronze/prata=0 (só ouro/diamante recebem). Idem o bônus de
+equipe usa profundidade estrutural por título (bronze 2 / prata 3 / ouro 4 / diamante 5).
