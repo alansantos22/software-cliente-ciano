@@ -19,4 +19,8 @@ export default registerAs('pagbank', () => ({
   frontendUrl: process.env.FRONTEND_URL || 'http://localhost:5173',
   // URL pública do backend que recebe as notificações (webhook).
   notificationUrl: process.env.PAGBANK_NOTIFICATION_URL || '',
+  // Nº máximo de parcelas no cartão. Os juros são pagos pelo CLIENTE (não há
+  // parcelas sem juros bancadas pela loja), conforme o plano de parcelamento
+  // configurado na conta PagBank (Vendas → Taxas e Planos).
+  maxInstallments: Number(process.env.PAGBANK_MAX_INSTALLMENTS) || 12,
 }));
