@@ -54,6 +54,22 @@ get_env_var() {
   grep -E "^$2=" "$1" | head -n1 | cut -d'=' -f2- | sed -e 's/^"//' -e 's/"$//'
 }
 
+# helper: grava/atualiza uma variável num arquivo .env de forma idempotente.
+# Se a chave já existe (mesmo comentada com '# ' antes), substitui a linha;
+# senão, adiciona ao final. $1 = arquivo, $2 = chave, $3 = valor.
+set_env_var() {
+  local file="$1" key="$2" value="$3"
+  [ -f "$file" ] || die "Arquivo $file não encontrado."
+  if grep -qE "^[#[:space:]]*${key}=" "$file"; then
+    # Usa um delimitador improvável ('|') e escapa & e | do valor para o sed.
+    local esc
+    esc="$(printf '%s' "$value" | sed -e 's/[&|\\]/\\&/g')"
+    sed -i -E "s|^[#[:space:]]*${key}=.*|${key}=${esc}|" "$file"
+  else
+    printf '%s=%s\n' "$key" "$value" >> "$file"
+  fi
+}
+
 # ======================================================================
 #  FUNÇÕES DE TAREFAS INDIVIDUAIS (rodadas pelo menu)
 # ======================================================================
@@ -332,6 +348,161 @@ SUDO
   echo
 }
 
+# Configura as variáveis do PagBank (compra de cotas) de forma interativa.
+# Escreve no .env escolhido (.env.production na VPS, ou .env em dev local),
+# atualizando as chaves existentes sem mexer no resto do arquivo.
+configure_pagbank() {
+  log "Configuração do PagBank (gateway de pagamento das cotas)"
+
+  # 1. Qual arquivo .env editar?
+  echo "  Qual ambiente você quer configurar?"
+  echo "    ${C_OK}1${C_OFF}) Produção  (backend/.env.production — na VPS)"
+  echo "    ${C_OK}2${C_OFF}) Desenvolvimento  (backend/.env — sua máquina local)"
+  read -rp "Opção [1]: " PB_ENV_OPT
+  PB_ENV_OPT="${PB_ENV_OPT:-1}"
+
+  local ENV_FILE
+  if [ "$PB_ENV_OPT" = "2" ]; then
+    ENV_FILE="$APP_DIR/backend/.env"
+    # Em dev local o script normalmente roda fora de /var/www; tenta o cwd também.
+    [ -f "$ENV_FILE" ] || ENV_FILE="$(pwd)/backend/.env"
+  else
+    ENV_FILE="$APP_DIR/backend/.env.production"
+  fi
+
+  if [ ! -f "$ENV_FILE" ]; then
+    warn "Arquivo $ENV_FILE não existe ainda — vou criá-lo."
+    touch "$ENV_FILE"
+  fi
+  ok "Configurando: $ENV_FILE"
+
+  # 2. Sandbox ou produção? Define a base URL automaticamente.
+  echo
+  echo "  Ambiente do PagBank:"
+  echo "    ${C_OK}1${C_OFF}) Sandbox / Teste     (sandbox.api.pagseguro.com)"
+  echo "    ${C_OK}2${C_OFF}) Produção / Real     (api.pagseguro.com)"
+  read -rp "Opção [1]: " PB_MODE
+  PB_MODE="${PB_MODE:-1}"
+  local PB_BASE_URL
+  if [ "$PB_MODE" = "2" ]; then
+    PB_BASE_URL="https://api.pagseguro.com"
+  else
+    PB_BASE_URL="https://sandbox.api.pagseguro.com"
+  fi
+
+  # 3. Token de API (Bearer). Encontrado no Portal do Desenvolvedor → Tokens,
+  #    ou em Minhas Aplicações. É o que autentica as chamadas /checkouts.
+  echo
+  echo "  ${C_INFO}Token de API (Bearer)${C_OFF}"
+  echo "  Onde achar: PagBank → Portal do Desenvolvedor → 'Tokens' (ou 'Minhas Aplicações')."
+  local CURRENT_TOKEN
+  CURRENT_TOKEN="$(get_env_var "$ENV_FILE" PAGBANK_TOKEN 2>/dev/null || true)"
+  if [ -n "$CURRENT_TOKEN" ]; then
+    echo "  (Há um token salvo terminando em ...${CURRENT_TOKEN: -6}. Enter mantém o atual.)"
+  fi
+  read -rp "  PAGBANK_TOKEN: " PB_TOKEN
+  PB_TOKEN="${PB_TOKEN:-$CURRENT_TOKEN}"
+  [ -n "$PB_TOKEN" ] || warn "Token vazio — o checkout não vai funcionar até você preencher."
+
+  # 4. URL de notificação (webhook). É enviada no payload de cada checkout.
+  #    O setup monta a URL pela rota real do backend: /api/payments/webhook/pagbank
+  echo
+  echo "  ${C_INFO}URL de notificação (webhook)${C_OFF}"
+  echo "  É a URL pública que o PagBank chama quando o pagamento muda de status."
+  echo "  A rota do backend é fixa: /api/payments/webhook/pagbank"
+  local PB_DEFAULT_NOTIF_BASE PB_NOTIF
+  if [ "$PB_ENV_OPT" = "2" ]; then
+    # Dev: não há domínio público; o usuário cola a URL do túnel (ngrok) ou deixa vazio.
+    echo "  Em DEV local você precisa de um túnel público (ex.: 'ngrok http ${APP_PORT}')."
+    echo "  Cole a URL https do túnel (sem a rota) ou deixe vazio para pular o webhook."
+    read -rp "  URL pública do backend (ex.: https://abc123.ngrok.io): " PB_TUNNEL
+    if [ -n "$PB_TUNNEL" ]; then
+      PB_NOTIF="${PB_TUNNEL%/}/api/payments/webhook/pagbank"
+    else
+      PB_NOTIF=""
+    fi
+  else
+    # Produção: deriva do domínio do site. Tenta ler do CORS/FRONTEND já gravado.
+    PB_DEFAULT_NOTIF_BASE="$(get_env_var "$ENV_FILE" FRONTEND_URL 2>/dev/null || true)"
+    if [ -z "$PB_DEFAULT_NOTIF_BASE" ]; then
+      read -rp "  Domínio público do site (ex.: https://cotas.suaempresa.com.br): " PB_DEFAULT_NOTIF_BASE
+    fi
+    if [ -n "$PB_DEFAULT_NOTIF_BASE" ]; then
+      PB_NOTIF="${PB_DEFAULT_NOTIF_BASE%/}/api/payments/webhook/pagbank"
+      echo "  -> Webhook montado: ${PB_NOTIF}"
+    else
+      PB_NOTIF=""
+    fi
+  fi
+
+  # 5. Token de validação da assinatura do webhook (x-authenticity-token).
+  #    Assinatura = SHA256("{token}-{payload}"). Vem do iBanking. No sandbox
+  #    muitas vezes o header nem é enviado, então pode ficar vazio (validação
+  #    é pulada pelo backend nesse caso — só faça isso em teste).
+  echo
+  echo "  ${C_INFO}Token de assinatura do webhook (opcional)${C_OFF}"
+  echo "  Valida a autenticidade das notificações (header x-authenticity-token)."
+  echo "  Vem do iBanking (Integrações → Token de segurança). Pode deixar VAZIO em sandbox."
+  local CURRENT_WH
+  CURRENT_WH="$(get_env_var "$ENV_FILE" PAGBANK_WEBHOOK_TOKEN 2>/dev/null || true)"
+  read -rp "  PAGBANK_WEBHOOK_TOKEN [Enter = manter/vazio]: " PB_WH
+  PB_WH="${PB_WH:-$CURRENT_WH}"
+  if [ "$PB_MODE" = "2" ] && [ -z "$PB_WH" ]; then
+    warn "Em PRODUÇÃO sem PAGBANK_WEBHOOK_TOKEN a validação de assinatura fica DESLIGADA."
+  fi
+
+  # 6. Texto na fatura do cartão (máx. 17 chars).
+  echo
+  local CURRENT_SD
+  CURRENT_SD="$(get_env_var "$ENV_FILE" PAGBANK_SOFT_DESCRIPTOR 2>/dev/null || true)"
+  read -rp "  Texto na fatura do cartão [${CURRENT_SD:-CIANO COTAS}] (máx 17): " PB_SD
+  PB_SD="${PB_SD:-${CURRENT_SD:-CIANO COTAS}}"
+  PB_SD="${PB_SD:0:17}"
+
+  # 7. Grava tudo.
+  log "Gravando variáveis do PagBank em $ENV_FILE"
+  set_env_var "$ENV_FILE" PAGBANK_BASE_URL        "$PB_BASE_URL"
+  set_env_var "$ENV_FILE" PAGBANK_TOKEN           "$PB_TOKEN"
+  set_env_var "$ENV_FILE" PAGBANK_WEBHOOK_TOKEN   "$PB_WH"
+  set_env_var "$ENV_FILE" PAGBANK_NOTIFICATION_URL "$PB_NOTIF"
+  set_env_var "$ENV_FILE" PAGBANK_SOFT_DESCRIPTOR "$PB_SD"
+
+  # Mantém a posse/permissão corretas se for o .env.production na VPS.
+  if [ "$PB_ENV_OPT" != "2" ] && [ -d "$APP_DIR" ]; then
+    local OWNER
+    OWNER="$(stat -c '%U' "$APP_DIR" 2>/dev/null || echo "")"
+    if [ -n "$OWNER" ]; then
+      chown "$OWNER:$OWNER" "$ENV_FILE" 2>/dev/null || true
+    fi
+    chmod 600 "$ENV_FILE" 2>/dev/null || true
+  fi
+
+  echo
+  ok "PagBank configurado."
+  echo "  Ambiente .............: $([ "$PB_MODE" = "2" ] && echo 'PRODUÇÃO (api.pagseguro.com)' || echo 'SANDBOX (sandbox.api.pagseguro.com)')"
+  echo "  Token API ............: $([ -n "$PB_TOKEN" ] && echo "...${PB_TOKEN: -6}" || echo 'NÃO definido')"
+  echo "  Webhook URL ..........: ${PB_NOTIF:-'(vazio — sem notificações)'}"
+  echo "  Validação assinatura .: $([ -n "$PB_WH" ] && echo 'ATIVA' || echo 'DESLIGADA (token vazio)')"
+  echo "  Texto na fatura ......: ${PB_SD}"
+
+  # Em produção, reinicia o backend pra carregar as novas variáveis.
+  if [ "$PB_ENV_OPT" != "2" ] && [ -d "$APP_DIR/backend" ]; then
+    echo
+    read -rp "Reiniciar o backend agora para aplicar? [S/n] " PB_RESTART
+    if [[ ! "$PB_RESTART" =~ ^[nN]$ ]]; then
+      local OWNER
+      OWNER="$(stat -c '%U' "$APP_DIR" 2>/dev/null || echo "")"
+      if [ -n "$OWNER" ]; then
+        sudo -u "$OWNER" bash -lc "cd '$APP_DIR/backend' && pm2 startOrReload ecosystem.config.cjs --update-env && pm2 save" \
+          && ok "Backend reiniciado." \
+          || warn "Não consegui reiniciar via pm2 — reinicie manualmente (pm2 reload ${SERVICE})."
+      fi
+    else
+      warn "Lembre de reiniciar: pm2 reload ${SERVICE} --update-env"
+    fi
+  fi
+}
+
 # ======================================================================
 #  MENU INICIAL — escolha o que rodar
 # ======================================================================
@@ -345,7 +516,8 @@ echo "    ${C_OK}1${C_OFF}) Instalação completa (VPS nova / primeira vez)"
 echo "    ${C_OK}2${C_OFF}) Apenas aplicar migrations SQL pendentes (corrige tabela 'migrations')"
 echo "    ${C_OK}3${C_OFF}) Apenas (re)criar o script /var/www/ciano/deploy.sh"
 echo "    ${C_OK}4${C_OFF}) Migrar backend de systemd → PM2 (em VPS já instalada)"
-echo "    ${C_OK}5${C_OFF}) Sair"
+echo "    ${C_OK}5${C_OFF}) Configurar PagBank (token, webhook etc.) no .env"
+echo "    ${C_OK}6${C_OFF}) Sair"
 echo
 read -rp "Opção [1]: " MENU_OPT
 MENU_OPT="${MENU_OPT:-1}"
@@ -354,7 +526,8 @@ case "$MENU_OPT" in
   2) run_migrations_only; exit 0 ;;
   3) create_deploy_script; exit 0 ;;
   4) migrate_to_pm2; exit 0 ;;
-  5) echo "Saindo."; exit 0 ;;
+  5) configure_pagbank; exit 0 ;;
+  6) echo "Saindo."; exit 0 ;;
   1) : ;;   # segue o fluxo de instalação completa abaixo
   *) die "Opção inválida: $MENU_OPT" ;;
 esac
@@ -615,6 +788,17 @@ MAIL_FROM="${MAIL_FROM}"
 
 # Frontend URL (usado nos links de e-mail)
 FRONTEND_URL=https://${DOMAIN}
+
+# PagBank / PagSeguro (Checkout - compra de cotas)
+# Configure os valores depois com:  sudo bash setup.sh  -> opção 5
+# Por padrão começa em SANDBOX; troque PAGBANK_BASE_URL p/ api.pagseguro.com em produção.
+PAGBANK_BASE_URL=https://sandbox.api.pagseguro.com
+PAGBANK_TOKEN=
+# URL pública que recebe os webhooks — montada a partir do domínio do site.
+PAGBANK_NOTIFICATION_URL=https://${DOMAIN}/api/payments/webhook/pagbank
+# Token de assinatura do webhook (iBanking). Vazio = validação desligada (só p/ teste).
+PAGBANK_WEBHOOK_TOKEN=
+PAGBANK_SOFT_DESCRIPTOR=CIANO COTAS
 ENV
 chown "$DEPLOY_USER:$DEPLOY_USER" "$APP_DIR/backend/.env.production"
 chmod 600 "$APP_DIR/backend/.env.production"
