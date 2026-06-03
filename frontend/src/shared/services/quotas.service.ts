@@ -28,4 +28,8 @@ export const quotasService = {
   getConfirmation(transactionId: string) {
     return api.get(`/checkout/confirmation/${transactionId}`);
   },
+
+  getPaymentStatus(transactionId: string) {
+    return api.get(`/checkout/status/${transactionId}`);
+  },
 };

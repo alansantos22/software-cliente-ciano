@@ -82,6 +82,12 @@ const routes: RouteRecordRaw[] = [
         meta: { requiresAuth: true, title: 'Comprar Cotas' },
       },
       {
+        path: 'checkout/retorno',
+        name: 'checkout-return',
+        component: () => import('@/features/checkout/views/CheckoutReturnView.vue'),
+        meta: { requiresAuth: true, title: 'Confirmando pagamento' },
+      },
+      {
         path: 'checkout/confirmation/:transactionId',
         name: 'checkout-confirmation',
         component: () => import('@/features/checkout/views/CheckoutConfirmationView.vue'),

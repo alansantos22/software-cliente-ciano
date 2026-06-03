@@ -29,7 +29,13 @@ export enum TransactionType {
 
 export enum TransactionStatus {
   PENDING = 'pending',
+  // Checkout criado no gateway; aguardando o usuário pagar (PIX/cartão).
+  WAITING_PAYMENT = 'waiting_payment',
   COMPLETED = 'completed',
+  // Pagamento recusado pelo gateway (ex: cartão negado).
+  DECLINED = 'declined',
+  // Checkout/QR expirou sem pagamento.
+  EXPIRED = 'expired',
   CANCELLED = 'cancelled',
 }
 

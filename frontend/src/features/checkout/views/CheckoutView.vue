@@ -78,27 +78,8 @@
             @confirm="processOrder"
             @back="goToStep(1)"
           />
-        </section>
-
-        <!-- Step 3: Processamento / pagamento -->
-        <section v-else-if="currentStep === 3" key="step-3" class="checkout-view__step">
-          <!-- PIX -->
-          <PixPayment
-            v-if="selectedPaymentMethod === 'pix'"
-            :order-number="orderData.orderNumber"
-            :pix-code="orderData.pixCode"
-            :amount="totalAmount"
-            :referral-code="userReferralCode"
-            @paid="onPixPaid"
-          />
-
-          <!-- Cartão -->
-          <CardRedirect
-            v-else-if="selectedPaymentMethod === 'credit'"
-            :order-number="orderData.orderNumber"
-            :amount="totalAmount"
-            :payment-url="orderData.paymentUrl"
-          />
+          <!-- Ao confirmar, o usuário é redirecionado ao PagBank para pagar.
+               O retorno acontece em /checkout/retorno (CheckoutReturnView). -->
         </section>
       </Transition>
     </div>
@@ -107,18 +88,14 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
-import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/shared/stores';
 import { quotasService } from '@/shared/services/quotas.service';
 import QuotaCalculator from '../components/QuotaCalculator.vue';
 import PaymentSelector from '../components/PaymentSelector.vue';
 import OrderConfirmation from '../components/OrderConfirmation.vue';
-import PixPayment from '../components/PixPayment.vue';
-import CardRedirect from '../components/CardRedirect.vue';
 import DsAlert from '@/design-system/DsAlert.vue';
 
-// ─── Router & Stores ──────────────────────────────────────────────────────────
-const router = useRouter();
+// ─── Stores ───────────────────────────────────────────────────────────────────
 const authStore = useAuthStore();
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -131,7 +108,7 @@ onMounted(async () => {
   } catch { /* keep default */ }
 });
 
-const stepLabels = ['Suas Cotas', 'Pagamento', 'Confirmar', 'Finalizar'];
+const stepLabels = ['Suas Cotas', 'Pagamento', 'Confirmar'];
 
 // ─── State ────────────────────────────────────────────────────────────────────
 const currentStep = ref(0);
@@ -141,21 +118,11 @@ const selectedPaymentMethod = ref('');
 const isProcessing = ref(false);
 const purchaseError = ref('');
 
-const orderData = ref({
-  orderNumber: '',
-  pixCode: '',
-  paymentUrl: '',
-});
-
 // ─── Computed ─────────────────────────────────────────────────────────────────
 const currentUserQuotas = computed<number>(() => {
   // ⚠️ REGRA DO SISTEMA: apenas cotas COMPRADAS definem o nível
   return authStore.user?.purchasedQuotas ?? 0;
 });
-
-const userReferralCode = computed(() => authStore.user?.referralCode ?? 'CIANO');
-
-const totalAmount = computed(() => selectedQuotas.value * quotaPrice.value);
 
 const progressPercent = computed(() => {
   return Math.round((currentStep.value / (stepLabels.length - 1)) * 100);
@@ -182,15 +149,20 @@ async function processOrder() {
   purchaseError.value = '';
 
   try {
+    // Cria a transação (PENDENTE) e abre o checkout no PagBank.
     const { data } = await quotasService.purchase(selectedQuotas.value, selectedPaymentMethod.value);
-    orderData.value = {
-      orderNumber: data?.transactionId || `CQ${Date.now().toString().slice(-8)}`,
-      pixCode:
-        `00020126580014BR.GOV.BCB.PIX0136${data?.transactionId || ''}-${crypto.randomUUID()}` +
-        `5204000053039865802BR5925CIANO COTAS POUSADAS6009SAO PAULO62070503***63041234`,
-      paymentUrl: '',
-    };
-    goToStep(3);
+
+    if (!data?.paymentUrl) {
+      purchaseError.value = 'Não foi possível iniciar o pagamento. Tente novamente.';
+      return;
+    }
+
+    // Guarda o id da transação para a página de retorno consultar o status.
+    sessionStorage.setItem('ciano:lastTxn', data.transactionId);
+
+    // Redireciona para a página de pagamento hospedada do PagBank
+    // (o usuário escolhe PIX ou cartão lá e volta para /checkout/retorno).
+    window.location.href = data.paymentUrl;
   } catch (e: any) {
     const msg = e?.response?.data?.message;
     if (Array.isArray(msg)) {
@@ -203,27 +175,6 @@ async function processOrder() {
   } finally {
     isProcessing.value = false;
   }
-}
-
-// ─── Post-payment ─────────────────────────────────────────────────────────────
-function onPixPaid() {
-  router.push({
-    name: 'checkout-confirmation',
-    params: { transactionId: orderData.value.orderNumber },
-    query: {
-      quotas: selectedQuotas.value,
-      method: 'pix',
-      level: getTargetLevel(currentUserQuotas.value + selectedQuotas.value),
-    },
-  });
-}
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-function getTargetLevel(total: number): string {
-  if (total >= 60) return 'imperial';
-  if (total >= 20) return 'vip';
-  if (total >= 10) return 'platinum';
-  return 'socio';
 }
 </script>
 

@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { QuotasService } from './quotas.service';
-import { QuotasController, CheckoutController } from './quotas.controller';
+import { QuotasController, CheckoutController, PaymentsWebhookController } from './quotas.controller';
 import { QuotaTransaction } from './entities/quota-transaction.entity';
 import { QuotaSystemState } from './entities/quota-system-state.entity';
 import { SplitEvent } from './entities/split-event.entity';
@@ -11,6 +11,7 @@ import { PartnerLevelRequirement } from '../admin/entities/partner-level-require
 import { BonusModule } from '../../core/bonus/bonus.module';
 import { SplitModule } from '../../core/split/split.module';
 import { TitleModule } from '../../core/title/title.module';
+import { PaymentsModule } from '../payments/payments.module';
 
 @Module({
   imports: [
@@ -25,8 +26,9 @@ import { TitleModule } from '../../core/title/title.module';
     BonusModule,
     SplitModule,
     TitleModule,
+    PaymentsModule,
   ],
-  controllers: [QuotasController, CheckoutController],
+  controllers: [QuotasController, CheckoutController, PaymentsWebhookController],
   providers: [QuotasService],
   exports: [QuotasService],
 })

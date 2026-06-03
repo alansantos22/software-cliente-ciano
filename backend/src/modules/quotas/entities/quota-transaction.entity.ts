@@ -40,6 +40,24 @@ export class QuotaTransaction {
   @Column({ type: 'enum', enum: TransactionStatus, default: TransactionStatus.PENDING })
   status: TransactionStatus;
 
+  // ─── Gateway de pagamento (PagBank/PagSeguro) ────────────────────────────
+  /** Nome do provedor de pagamento (ex: 'pagbank'). */
+  @Column({ type: 'varchar', length: 20, nullable: true })
+  gateway: string | null;
+
+  /** ID do checkout retornado pelo gateway na criação. */
+  @Index('idx_quota_txn_checkout')
+  @Column({ type: 'varchar', length: 64, nullable: true, name: 'gateway_checkout_id' })
+  gatewayCheckoutId: string | null;
+
+  /** ID do pedido/charge informado pelo gateway na confirmação. */
+  @Column({ type: 'varchar', length: 64, nullable: true, name: 'gateway_order_id' })
+  gatewayOrderId: string | null;
+
+  /** Link de pagamento (redirect rel=PAY) para onde o usuário é enviado. */
+  @Column({ type: 'varchar', length: 500, nullable: true, name: 'payment_url' })
+  paymentUrl: string | null;
+
   @Index('idx_quota_txn_month')
   @Column({ type: 'varchar', length: 7, name: 'reference_month' })
   referenceMonth: string;
@@ -49,4 +67,8 @@ export class QuotaTransaction {
 
   @Column({ type: 'datetime', nullable: true, name: 'completed_at' })
   completedAt: Date | null;
+
+  /** Momento em que o pagamento foi confirmado pelo gateway. */
+  @Column({ type: 'datetime', nullable: true, name: 'paid_at' })
+  paidAt: Date | null;
 }

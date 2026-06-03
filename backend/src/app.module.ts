@@ -12,6 +12,7 @@ import {
   jwtConfig,
   throttleConfig,
   emailConfig,
+  pagbankConfig,
 } from './config';
 
 // Shared modules
@@ -50,7 +51,7 @@ import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: `.env.${process.env.NODE_ENV || 'development'}`,
-      load: [appConfig, databaseConfig, jwtConfig, throttleConfig, emailConfig],
+      load: [appConfig, databaseConfig, jwtConfig, throttleConfig, emailConfig, pagbankConfig],
     }),
 
     // Database
