@@ -77,6 +77,33 @@ describe('PagBankService', () => {
       expect(body.payment_methods).toEqual([{ type: 'PIX' }, { type: 'CREDIT_CARD' }]);
     });
 
+    it('omits tax_id when the CPF is invalid (lets the customer fill it on PagBank)', async () => {
+      http.post.mockReturnValue(
+        of({ data: { id: 'CHEC_2', links: [{ rel: 'PAY', href: 'https://pay/CHEC_2' }] } }),
+      );
+
+      await service.createCheckout({
+        ...params,
+        customer: { ...params.customer, cpf: '123.456.789-00' }, // dígito verificador inválido
+      });
+
+      const [, body] = http.post.mock.calls[0];
+      expect(body.customer.tax_id).toBeUndefined();
+      // Cliente pode preencher o documento na própria tela do PagBank.
+      expect(body.customer_modifiable).toBe(true);
+    });
+
+    it('sends tax_id when the CPF is valid', async () => {
+      http.post.mockReturnValue(
+        of({ data: { id: 'CHEC_3', links: [{ rel: 'PAY', href: 'https://pay/CHEC_3' }] } }),
+      );
+
+      await service.createCheckout(params); // cpf 123.456.789-09 é válido
+
+      const [, body] = http.post.mock.calls[0];
+      expect(body.customer.tax_id).toBe('12345678909');
+    });
+
     it('should throw when the response has no PAY link', async () => {
       http.post.mockReturnValue(of({ data: { id: 'CHEC_1', links: [{ rel: 'SELF', href: 'x' }] } }));
 

@@ -1,9 +1,10 @@
-import { IsString, IsEmail, IsOptional, IsInt, IsEnum, Min, Length } from 'class-validator';
+import { IsString, IsEmail, IsOptional, IsInt, Min, Length } from 'class-validator';
+import { IsCpf } from '../../../shared/validators/is-cpf.validator';
 
 export class OnboardingRegisterDto {
   @IsString() fullName: string;
 
-  @IsString() @Length(11, 14) cpf: string;
+  @IsString() @IsCpf({ message: 'CPF inválido' }) cpf: string;
 
   @IsEmail() email: string;
 
