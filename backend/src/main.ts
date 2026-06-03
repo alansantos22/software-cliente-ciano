@@ -25,6 +25,9 @@ async function bootstrap() {
   const app = await NestFactory.create<NestFastifyApplication>(
     AppModule,
     new FastifyAdapter({ logger: true }),
+    // Necessário para validar a assinatura do webhook do PagBank sobre o
+    // corpo cru (antes do parse JSON).
+    { rawBody: true },
   );
 
   const configService = app.get(ConfigService);
