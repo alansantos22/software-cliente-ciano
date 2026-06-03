@@ -57,3 +57,27 @@ export function isWithinDays(date: Date, days: number): boolean {
   const daysDiff = diff / (1000 * 60 * 60 * 24);
   return daysDiff <= days;
 }
+
+/**
+ * Valida um CPF brasileiro (11 dígitos + dígitos verificadores).
+ * Aceita o valor com ou sem máscara; ignora pontuação. Rejeita sequências
+ * repetidas (000.000.000-00, 111... etc.), que passam na conta mas são inválidas.
+ * @param value - CPF com ou sem máscara
+ * @returns true se for um CPF estruturalmente válido
+ */
+export function isValidCpf(value: string | null | undefined): boolean {
+  const cpf = (value ?? '').replace(/\D/g, '');
+  if (cpf.length !== 11) return false;
+  if (/^(\d)\1{10}$/.test(cpf)) return false; // todos os dígitos iguais
+
+  const calcCheckDigit = (length: number): number => {
+    let sum = 0;
+    for (let i = 0; i < length; i++) {
+      sum += Number(cpf[i]) * (length + 1 - i);
+    }
+    const rest = (sum * 10) % 11;
+    return rest === 10 ? 0 : rest;
+  };
+
+  return calcCheckDigit(9) === Number(cpf[9]) && calcCheckDigit(10) === Number(cpf[10]);
+}

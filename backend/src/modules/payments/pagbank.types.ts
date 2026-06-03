@@ -13,7 +13,10 @@ export interface PagBankPhone {
 export interface PagBankCustomer {
   name: string;
   email: string;
-  tax_id: string; // CPF/CNPJ somente dígitos
+  // CPF/CNPJ somente dígitos. Opcional: se omitido, o PagBank pede o documento
+  // na própria página de pagamento. Só enviamos quando o CPF é válido — um valor
+  // inválido faz o PagBank rejeitar o checkout (erro em customer.tax_id).
+  tax_id?: string;
   phones?: PagBankPhone[];
 }
 

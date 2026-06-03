@@ -4,6 +4,7 @@ import { ConfigService } from '@nestjs/config';
 import { firstValueFrom } from 'rxjs';
 import { createHash } from 'crypto';
 import { TransactionStatus } from '../../shared/interfaces/enums';
+import { isValidCpf } from '../../shared/utils/helpers';
 import type {
   PagBankCreateCheckoutRequest,
   PagBankCreateCheckoutResponse,
@@ -62,12 +63,20 @@ export class PagBankService {
     const notificationUrl = this.config.get<string>('pagbank.notificationUrl');
     const softDescriptor = this.config.get<string>('pagbank.softDescriptor');
 
+    // Só enviamos o CPF se ele for válido. Um tax_id inválido faz o PagBank
+    // rejeitar o checkout; quando omitido, o cliente preenche na tela de pagamento.
+    const taxId = this.onlyDigits(params.customer.cpf);
+    const hasValidCpf = isValidCpf(taxId);
+
     const body: PagBankCreateCheckoutRequest = {
       reference_id: params.referenceId,
+      // Permite o cliente preencher/ajustar os próprios dados na página do PagBank
+      // (necessário quando omitimos o CPF por ser inválido).
+      customer_modifiable: true,
       customer: {
         name: params.customer.name,
         email: params.customer.email,
-        tax_id: this.onlyDigits(params.customer.cpf),
+        ...(hasValidCpf ? { tax_id: taxId } : {}),
         phones: this.buildPhones(params.customer.phone),
       },
       items: [
