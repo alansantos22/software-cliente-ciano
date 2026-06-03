@@ -33,19 +33,6 @@ export interface PagBankPaymentMethod {
   type: PagBankPaymentMethodType;
 }
 
-/** Opção de configuração de um método (ex.: limite de parcelas). */
-export interface PagBankPaymentMethodConfigOption {
-  // INSTALLMENTS_LIMIT = nº máx. de parcelas;
-  // INTEREST_FREE_INSTALLMENTS = nº de parcelas sem juros bancadas pela loja.
-  option: 'INSTALLMENTS_LIMIT' | 'INTEREST_FREE_INSTALLMENTS';
-  value: string; // a API espera string numérica
-}
-
-export interface PagBankPaymentMethodConfig {
-  type: PagBankPaymentMethodType;
-  config_options: PagBankPaymentMethodConfigOption[];
-}
-
 export interface PagBankCreateCheckoutRequest {
   reference_id: string;
   expiration_date?: string; // ISO-8601
@@ -53,7 +40,6 @@ export interface PagBankCreateCheckoutRequest {
   customer_modifiable?: boolean;
   items: PagBankItem[];
   payment_methods: PagBankPaymentMethod[];
-  payment_methods_configs?: PagBankPaymentMethodConfig[];
   soft_descriptor?: string;
   redirect_url?: string;
   return_url?: string;

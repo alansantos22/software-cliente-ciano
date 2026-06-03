@@ -62,7 +62,6 @@ export class PagBankService {
     const frontendUrl = this.config.get<string>('pagbank.frontendUrl')!;
     const notificationUrl = this.config.get<string>('pagbank.notificationUrl');
     const softDescriptor = this.config.get<string>('pagbank.softDescriptor');
-    const maxInstallments = this.config.get<number>('pagbank.maxInstallments') ?? 12;
 
     // Só enviamos o CPF se ele for válido. Um tax_id inválido faz o PagBank
     // rejeitar o checkout; quando omitido, o cliente preenche na tela de pagamento.
@@ -89,15 +88,6 @@ export class PagBankService {
         },
       ],
       payment_methods: [{ type: 'PIX' }, { type: 'CREDIT_CARD' }],
-      // Parcelamento no cartão: limita o nº de parcelas. NÃO informamos
-      // INTEREST_FREE_INSTALLMENTS, então os juros são pagos pelo CLIENTE
-      // (conforme o plano de parcelamento da conta PagBank).
-      payment_methods_configs: [
-        {
-          type: 'CREDIT_CARD',
-          config_options: [{ option: 'INSTALLMENTS_LIMIT', value: String(maxInstallments) }],
-        },
-      ],
       soft_descriptor: softDescriptor?.slice(0, 17),
       // Após pagar, o usuário volta para a página de retorno do nosso site.
       redirect_url: `${frontendUrl}/checkout/retorno?txn=${params.referenceId}`,
