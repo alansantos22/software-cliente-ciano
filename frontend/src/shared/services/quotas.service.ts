@@ -21,8 +21,9 @@ export const quotasService = {
     return api.get('/quotas/partner-levels');
   },
 
-  purchase(quantity: number, paymentMethod: string) {
-    return api.post('/checkout/purchase', { quantity, paymentMethod });
+  purchase(quantity: number) {
+    // A forma de pagamento é escolhida na página do PagBank.
+    return api.post('/checkout/purchase', { quantity });
   },
 
   getConfirmation(transactionId: string) {

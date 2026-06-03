@@ -44,12 +44,6 @@
         <span class="summary-item__value">{{ quotas }} {{ quotas === 1 ? 'cota' : 'cotas' }}</span>
       </div>
       <div class="summary-item">
-        <span class="summary-item__label">Método de pagamento</span>
-        <span class="summary-item__value">
-          {{ methodLabels[paymentMethod] ?? paymentMethod }}
-        </span>
-      </div>
-      <div class="summary-item">
         <span class="summary-item__label">Cotas compradas após esta compra</span>
         <span class="summary-item__value" :style="{ color: targetLevel.color }">
           {{ totalQuotas }} cotas compradas
@@ -70,7 +64,7 @@
     <!-- Ações -->
     <div class="order-confirmation__actions">
       <DsButton variant="ghost" :disabled="isProcessing" @click="$emit('back')">
-        ← Revisar pagamento
+        ← Revisar cotas
       </DsButton>
 
       <DsButton
@@ -98,7 +92,6 @@ const props = defineProps<{
   quotas: number;
   purchasedQuotas: number;
   quotaPrice: number;
-  paymentMethod: string;
   isProcessing: boolean;
 }>();
 
@@ -114,12 +107,6 @@ const levels = [
   { key: 'vip', label: 'VIP', min: 20, icon: 'crown', color: '#b45309' },
   { key: 'imperial', label: 'Imperial', min: 60, icon: 'gem', color: '#7c3aed' },
 ];
-
-const methodLabels: Record<string, string> = {
-  pix: 'PIX — Aprovação Imediata',
-  credit: 'Cartão de Crédito',
-  boleto: 'Boleto Bancário',
-};
 
 // ─── Computed ─────────────────────────────────────────────────────────────────
 const totalQuotas = computed(() => props.purchasedQuotas + props.quotas);

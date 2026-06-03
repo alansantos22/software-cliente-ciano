@@ -56,27 +56,17 @@
           />
         </section>
 
-        <!-- Step 1: Seleção de pagamento -->
+        <!-- Step 1: Confirmação. A forma de pagamento (PIX/cartão/parcelas) é
+             escolhida na própria página do PagBank, então não temos um passo
+             de seleção de pagamento aqui. -->
         <section v-else-if="currentStep === 1" key="step-1" class="checkout-view__step">
-          <PaymentSelector
-            :quotas="selectedQuotas"
-            :purchased-quotas="currentUserQuotas"
-            :quota-price="quotaPrice"
-            @next="onPaymentSelected"
-            @back="goToStep(0)"
-          />
-        </section>
-
-        <!-- Step 2: Confirmação emocional -->
-        <section v-else-if="currentStep === 2" key="step-2" class="checkout-view__step">
           <OrderConfirmation
             :quotas="selectedQuotas"
             :purchased-quotas="currentUserQuotas"
             :quota-price="quotaPrice"
-            :payment-method="selectedPaymentMethod"
             :is-processing="isProcessing"
             @confirm="processOrder"
-            @back="goToStep(1)"
+            @back="goToStep(0)"
           />
           <!-- Ao confirmar, o usuário é redirecionado ao PagBank para pagar.
                O retorno acontece em /checkout/retorno (CheckoutReturnView). -->
@@ -91,7 +81,6 @@ import { ref, computed, onMounted } from 'vue';
 import { useAuthStore } from '@/shared/stores';
 import { quotasService } from '@/shared/services/quotas.service';
 import QuotaCalculator from '../components/QuotaCalculator.vue';
-import PaymentSelector from '../components/PaymentSelector.vue';
 import OrderConfirmation from '../components/OrderConfirmation.vue';
 import DsAlert from '@/design-system/DsAlert.vue';
 
@@ -108,13 +97,12 @@ onMounted(async () => {
   } catch { /* keep default */ }
 });
 
-const stepLabels = ['Suas Cotas', 'Pagamento', 'Confirmar'];
+const stepLabels = ['Suas Cotas', 'Confirmar'];
 
 // ─── State ────────────────────────────────────────────────────────────────────
 const currentStep = ref(0);
 const stepDirection = ref<'forward' | 'back'>('forward');
 const selectedQuotas = ref(1);
-const selectedPaymentMethod = ref('');
 const isProcessing = ref(false);
 const purchaseError = ref('');
 
@@ -138,11 +126,6 @@ function goToStep(step: number) {
   currentStep.value = step;
 }
 
-function onPaymentSelected(method: string) {
-  selectedPaymentMethod.value = method;
-  goToStep(2);
-}
-
 // ─── Order processing ─────────────────────────────────────────────────────────
 async function processOrder() {
   isProcessing.value = true;
@@ -150,7 +133,7 @@ async function processOrder() {
 
   try {
     // Cria a transação (PENDENTE) e abre o checkout no PagBank.
-    const { data } = await quotasService.purchase(selectedQuotas.value, selectedPaymentMethod.value);
+    const { data } = await quotasService.purchase(selectedQuotas.value);
 
     if (!data?.paymentUrl) {
       purchaseError.value = 'Não foi possível iniciar o pagamento. Tente novamente.';
