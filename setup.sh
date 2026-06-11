@@ -503,6 +503,116 @@ configure_pagbank() {
   fi
 }
 
+# Alterna o PagBank entre SANDBOX e PRODUÇÃO sem redigitar tudo.
+# Como o token de API e o token de webhook são DIFERENTES em cada ambiente,
+# o script guarda o valor de cada um em chaves "stash" no próprio .env
+# (PAGBANK_TOKEN_SANDBOX / PAGBANK_TOKEN_PRODUCTION etc.). O backend ignora
+# essas chaves — ele só lê PAGBANK_TOKEN/PAGBANK_WEBHOOK_TOKEN — então elas
+# servem apenas para a alternância não exigir colar os tokens de novo.
+toggle_pagbank_mode() {
+  log "Alternar PagBank: SANDBOX ⇄ PRODUÇÃO"
+
+  local ENV_FILE="$APP_DIR/backend/.env.production"
+  [ -f "$ENV_FILE" ] || die "Arquivo $ENV_FILE não encontrado — a VPS já foi configurada?"
+
+  local SANDBOX_URL="https://sandbox.api.pagseguro.com"
+  local PROD_URL="https://api.pagseguro.com"
+
+  # 1. Detecta o ambiente atual pela base URL gravada.
+  local CUR_URL CUR_MODE DEFAULT_OPT
+  CUR_URL="$(get_env_var "$ENV_FILE" PAGBANK_BASE_URL 2>/dev/null || true)"
+  if [ "$CUR_URL" = "$PROD_URL" ]; then
+    CUR_MODE="PRODUÇÃO"; DEFAULT_OPT="1"   # está em produção → padrão é voltar pro sandbox
+  else
+    CUR_MODE="SANDBOX";  DEFAULT_OPT="2"   # está em sandbox → padrão é ir pra produção
+  fi
+  echo "  Ambiente atual: ${C_INFO}${CUR_MODE}${C_OFF} (${CUR_URL:-PAGBANK_BASE_URL não definido})"
+
+  echo
+  echo "  Mudar para:"
+  echo "    ${C_OK}1${C_OFF}) Sandbox / Teste     (sandbox.api.pagseguro.com)"
+  echo "    ${C_OK}2${C_OFF}) Produção / Real     (api.pagseguro.com)"
+  read -rp "Opção [${DEFAULT_OPT}]: " PB_TARGET
+  PB_TARGET="${PB_TARGET:-$DEFAULT_OPT}"
+
+  local NEW_URL NEW_MODE CUR_STASH NEW_STASH
+  if [ "$PB_TARGET" = "2" ]; then
+    NEW_URL="$PROD_URL";    NEW_MODE="PRODUÇÃO"; NEW_STASH="PRODUCTION"
+  else
+    NEW_URL="$SANDBOX_URL"; NEW_MODE="SANDBOX";  NEW_STASH="SANDBOX"
+  fi
+  if [ "$CUR_URL" = "$PROD_URL" ]; then CUR_STASH="PRODUCTION"; else CUR_STASH="SANDBOX"; fi
+
+  # 2. Guarda os tokens do ambiente atual no stash dele (pra poder voltar depois).
+  local CUR_TOKEN CUR_WH
+  CUR_TOKEN="$(get_env_var "$ENV_FILE" PAGBANK_TOKEN 2>/dev/null || true)"
+  CUR_WH="$(get_env_var "$ENV_FILE" PAGBANK_WEBHOOK_TOKEN 2>/dev/null || true)"
+  # (if explícito — '[ ] && cmd' mataria o script sob 'set -e' quando o teste falha)
+  if [ -n "$CUR_TOKEN" ]; then set_env_var "$ENV_FILE" "PAGBANK_TOKEN_${CUR_STASH}" "$CUR_TOKEN"; fi
+  if [ -n "$CUR_WH" ];    then set_env_var "$ENV_FILE" "PAGBANK_WEBHOOK_TOKEN_${CUR_STASH}" "$CUR_WH"; fi
+
+  # 3. Recupera os tokens do ambiente de destino (do stash, se já usados antes).
+  local NEW_TOKEN NEW_WH
+  NEW_TOKEN="$(get_env_var "$ENV_FILE" "PAGBANK_TOKEN_${NEW_STASH}" 2>/dev/null || true)"
+  NEW_WH="$(get_env_var "$ENV_FILE" "PAGBANK_WEBHOOK_TOKEN_${NEW_STASH}" 2>/dev/null || true)"
+
+  echo
+  echo "  ${C_INFO}Token de API do ambiente ${NEW_MODE}${C_OFF}"
+  echo "  Atenção: o token de SANDBOX e o de PRODUÇÃO são credenciais DIFERENTES."
+  if [ -n "$NEW_TOKEN" ]; then
+    echo "  (Há um token salvo p/ ${NEW_MODE} terminando em ...${NEW_TOKEN: -6}. Enter mantém.)"
+  else
+    echo "  Onde achar: PagBank → Portal do Desenvolvedor → 'Tokens' (no painel do ambiente certo)."
+  fi
+  read -rp "  PAGBANK_TOKEN (${NEW_MODE}): " PB_TOKEN_IN
+  NEW_TOKEN="${PB_TOKEN_IN:-$NEW_TOKEN}"
+  [ -n "$NEW_TOKEN" ] || warn "Token vazio — o checkout não vai funcionar até você preencher."
+
+  echo
+  echo "  ${C_INFO}Token de assinatura do webhook (${NEW_MODE})${C_OFF}"
+  if [ -n "$NEW_WH" ]; then
+    echo "  (Há um valor salvo p/ ${NEW_MODE}. Enter mantém.)"
+  fi
+  read -rp "  PAGBANK_WEBHOOK_TOKEN [Enter = manter/vazio]: " PB_WH_IN
+  NEW_WH="${PB_WH_IN:-$NEW_WH}"
+  if [ "$NEW_MODE" = "PRODUÇÃO" ] && [ -z "$NEW_WH" ]; then
+    warn "Em PRODUÇÃO sem PAGBANK_WEBHOOK_TOKEN a validação de assinatura fica DESLIGADA."
+  fi
+
+  # 4. Grava o ambiente ativo + atualiza o stash do destino.
+  log "Gravando variáveis do PagBank em $ENV_FILE"
+  set_env_var "$ENV_FILE" PAGBANK_BASE_URL      "$NEW_URL"
+  set_env_var "$ENV_FILE" PAGBANK_TOKEN         "$NEW_TOKEN"
+  set_env_var "$ENV_FILE" PAGBANK_WEBHOOK_TOKEN "$NEW_WH"
+  if [ -n "$NEW_TOKEN" ]; then set_env_var "$ENV_FILE" "PAGBANK_TOKEN_${NEW_STASH}" "$NEW_TOKEN"; fi
+  if [ -n "$NEW_WH" ];    then set_env_var "$ENV_FILE" "PAGBANK_WEBHOOK_TOKEN_${NEW_STASH}" "$NEW_WH"; fi
+
+  # Mantém posse/permissão do .env.production.
+  local OWNER
+  OWNER="$(stat -c '%U' "$APP_DIR" 2>/dev/null || echo "")"
+  if [ -n "$OWNER" ]; then chown "$OWNER:$OWNER" "$ENV_FILE" 2>/dev/null || true; fi
+  chmod 600 "$ENV_FILE" 2>/dev/null || true
+
+  echo
+  ok "PagBank agora em ${NEW_MODE}."
+  echo "  Base URL .............: ${NEW_URL}"
+  echo "  Token API ............: $([ -n "$NEW_TOKEN" ] && echo "...${NEW_TOKEN: -6}" || echo 'NÃO definido')"
+  echo "  Validação assinatura .: $([ -n "$NEW_WH" ] && echo 'ATIVA' || echo 'DESLIGADA (token vazio)')"
+
+  # 5. Reinicia o backend pra carregar as novas variáveis.
+  echo
+  read -rp "Reiniciar o backend agora para aplicar? [S/n] " PB_RESTART
+  if [[ ! "$PB_RESTART" =~ ^[nN]$ ]]; then
+    if [ -n "$OWNER" ]; then
+      sudo -u "$OWNER" bash -lc "cd '$APP_DIR/backend' && pm2 startOrReload ecosystem.config.cjs --update-env && pm2 save" \
+        && ok "Backend reiniciado." \
+        || warn "Não consegui reiniciar via pm2 — reinicie manualmente (pm2 reload ${SERVICE})."
+    fi
+  else
+    warn "Lembre de reiniciar: pm2 reload ${SERVICE} --update-env"
+  fi
+}
+
 # ======================================================================
 #  MENU INICIAL — escolha o que rodar
 # ======================================================================
@@ -517,7 +627,8 @@ echo "    ${C_OK}2${C_OFF}) Apenas aplicar migrations SQL pendentes (corrige tab
 echo "    ${C_OK}3${C_OFF}) Apenas (re)criar o script /var/www/ciano/deploy.sh"
 echo "    ${C_OK}4${C_OFF}) Migrar backend de systemd → PM2 (em VPS já instalada)"
 echo "    ${C_OK}5${C_OFF}) Configurar PagBank (token, webhook etc.) no .env"
-echo "    ${C_OK}6${C_OFF}) Sair"
+echo "    ${C_OK}6${C_OFF}) Alternar PagBank: SANDBOX ⇄ PRODUÇÃO"
+echo "    ${C_OK}7${C_OFF}) Sair"
 echo
 read -rp "Opção [1]: " MENU_OPT
 MENU_OPT="${MENU_OPT:-1}"
@@ -527,7 +638,8 @@ case "$MENU_OPT" in
   3) create_deploy_script; exit 0 ;;
   4) migrate_to_pm2; exit 0 ;;
   5) configure_pagbank; exit 0 ;;
-  6) echo "Saindo."; exit 0 ;;
+  6) toggle_pagbank_mode; exit 0 ;;
+  7) echo "Saindo."; exit 0 ;;
   1) : ;;   # segue o fluxo de instalação completa abaixo
   *) die "Opção inválida: $MENU_OPT" ;;
 esac
