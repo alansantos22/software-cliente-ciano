@@ -25,6 +25,8 @@ export interface CreateCheckoutParams {
     cpf: string;
     phone?: string;
   };
+  // TEST_PAYMENT_5_REAIS — REMOVER ANTES DE PRODUÇÃO: força a cobrança em R$5,00.
+  testMode?: boolean;
 }
 
 export interface CreateCheckoutResult {
@@ -68,6 +70,30 @@ export class PagBankService {
     const taxId = this.onlyDigits(params.customer.cpf);
     const hasValidCpf = isValidCpf(taxId);
 
+    // ╔══════════════════════════════════════════════════════════════════════╗
+    // ║ TEST_PAYMENT_5_REAIS — REMOVER ANTES DE PRODUÇÃO                       ║
+    // ║ Em modo de teste enviamos 1 item de R$5,00 para o PagBank, em vez do   ║
+    // ║ valor/quantidade reais. O resto do fluxo (redirect, webhook, crédito   ║
+    // ║ de cotas) permanece idêntico ao de produção.                           ║
+    // ╚══════════════════════════════════════════════════════════════════════╝
+    const items = params.testMode
+      ? [
+          {
+            reference_id: params.referenceId,
+            name: `[TESTE R$5] ${params.description}`,
+            quantity: 1,
+            unit_amount: 500, // R$5,00 em centavos
+          },
+        ]
+      : [
+          {
+            reference_id: params.referenceId,
+            name: params.description,
+            quantity: params.quantity,
+            unit_amount: this.toCents(params.unitAmount),
+          },
+        ];
+
     const body: PagBankCreateCheckoutRequest = {
       reference_id: params.referenceId,
       // Permite o cliente preencher/ajustar os próprios dados na página do PagBank
@@ -79,14 +105,7 @@ export class PagBankService {
         ...(hasValidCpf ? { tax_id: taxId } : {}),
         phones: this.buildPhones(params.customer.phone),
       },
-      items: [
-        {
-          reference_id: params.referenceId,
-          name: params.description,
-          quantity: params.quantity,
-          unit_amount: this.toCents(params.unitAmount),
-        },
-      ],
+      items, // TEST_PAYMENT_5_REAIS: em modo de teste, este é o item de R$5,00
       payment_methods: [{ type: 'PIX' }, { type: 'CREDIT_CARD' }],
       soft_descriptor: softDescriptor?.slice(0, 17),
       // Após pagar, o usuário volta para a página de retorno do nosso site.

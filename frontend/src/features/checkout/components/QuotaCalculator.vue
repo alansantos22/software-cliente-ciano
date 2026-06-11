@@ -102,6 +102,21 @@
         </div>
       </div>
 
+      <!-- ╔══════════════════════════════════════════════════════════════════╗
+           ║ TEST_PAYMENT_5_REAIS — REMOVER ANTES DE PRODUÇÃO                   ║
+           ║ Checkbox que faz o PagBank cobrar apenas R$5,00 (mantendo as cotas ║
+           ║ reais), só para testar o fluxo de cartão/PIX. NÃO PODE IR PARA     ║
+           ║ PRODUÇÃO. Para remover: apague este bloco inteiro + o emit/ref     ║
+           ║ `testMode` no <script> e a classe `.quota-calc__test-mode`.        ║
+           ╚══════════════════════════════════════════════════════════════════╝ -->
+      <label class="quota-calc__test-mode">
+        <input type="checkbox" v-model="testMode" />
+        <span>
+          <strong>🧪 Modo de teste</strong> — cobrar apenas <strong>R$ 5,00</strong> no PagBank
+          (as cotas continuam as reais; use só para testar pagamento)
+        </span>
+      </label>
+
       <DsButton variant="primary" size="lg" class="quota-calc__cta" @click="$emit('next')">
         Continuar com {{ selectedQuotas }} {{ selectedQuotas === 1 ? 'cota' : 'cotas' }} →
       </DsButton>
@@ -166,10 +181,15 @@ const props = defineProps<{
 const emit = defineEmits<{
   next: [];
   'update:quotas': [value: number];
+  // TEST_PAYMENT_5_REAIS — REMOVER ANTES DE PRODUÇÃO
+  'update:test-mode': [value: boolean];
 }>();
 
 // ─── State ────────────────────────────────────────────────────────────────────
 const selectedQuotas = ref(1);
+// TEST_PAYMENT_5_REAIS — REMOVER ANTES DE PRODUÇÃO: estado do checkbox de teste.
+const testMode = ref(false);
+watch(testMode, (v) => emit('update:test-mode', v));
 const justUnlockedLevel = ref<string | null>(null);
 const isEditing = ref(false);
 const counterInputRef = ref<HTMLInputElement | null>(null);
@@ -571,6 +591,29 @@ defineExpose({ selectedQuotas });
   // ── CTA ────────────────────────────────────────────────────────────────────
   &__cta {
     width: 100%;
+  }
+
+  // ╔════════════════════════════════════════════════════════════════════════╗
+  // ║ TEST_PAYMENT_5_REAIS — REMOVER ANTES DE PRODUÇÃO (estilo do checkbox)   ║
+  // ╚════════════════════════════════════════════════════════════════════════╝
+  &__test-mode {
+    display: flex;
+    align-items: flex-start;
+    gap: $spacing-2;
+    padding: $spacing-3 $spacing-4;
+    border: 1px dashed var(--color-warning, #d97706);
+    border-radius: $radius-lg;
+    background: color-mix(in srgb, var(--color-warning, #d97706) 8%, white);
+    font-size: 0.8rem;
+    line-height: 1.5;
+    color: var(--neutral-700);
+    cursor: pointer;
+
+    input {
+      margin-top: 2px;
+      flex-shrink: 0;
+      cursor: pointer;
+    }
   }
 
   // ── Benefits Panel ─────────────────────────────────────────────────────────

@@ -1,4 +1,4 @@
-import { IsInt, IsOptional, IsString, Min } from 'class-validator';
+import { IsBoolean, IsInt, IsOptional, IsString, Min } from 'class-validator';
 
 export class PurchaseQuotaDto {
   @IsInt()
@@ -10,4 +10,14 @@ export class PurchaseQuotaDto {
   @IsOptional()
   @IsString()
   paymentMethod?: string;
+
+  // ╔══════════════════════════════════════════════════════════════════════╗
+  // ║ TEST_PAYMENT_5_REAIS — REMOVER ANTES DE IR PARA PRODUÇÃO              ║
+  // ║ Quando true, o valor ENVIADO ao PagBank é forçado para R$5,00 (apenas ║
+  // ║ para testar o fluxo real de cartão/PIX sem pagar o preço cheio). As   ║
+  // ║ cotas continuam sendo as reais. NÃO DEVE EXISTIR EM PRODUÇÃO.         ║
+  // ╚══════════════════════════════════════════════════════════════════════╝
+  @IsOptional()
+  @IsBoolean()
+  testMode?: boolean;
 }
