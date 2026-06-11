@@ -48,6 +48,12 @@
 </template>
 
 <script setup lang="ts">
+import { onMounted } from 'vue';
+import { useQuotaPresentationStore } from '@/shared/stores/quotaPresentation.store';
+
+const presentationStore = useQuotaPresentationStore();
+onMounted(() => presentationStore.loadMetrics());
+
 const testimonials = [
   {
     id: 1,
@@ -87,12 +93,7 @@ const testimonials = [
   },
 ];
 
-const trustMetrics = [
-  { value: 'R$ 600K', label: 'Faturamento Anual' },
-  { value: '500%', label: 'Crescimento sobre o Ano Anterior' },
-  { value: '4 Hotéis', label: 'Ativos no Portfólio' },
-  { value: '100%', label: 'Dividendos Pagos em Dia' },
-];
+const trustMetrics = presentationStore.heroMetrics;
 </script>
 
 <style lang="scss" scoped>

@@ -82,7 +82,9 @@ export class QuotasService {
    * pagamento (redirect). As cotas/bônus/split só são creditados quando o
    * webhook confirma o pagamento (ver `confirmPayment`).
    */
-  async purchase(userId: string, quantity: number) {
+  // TEST_PAYMENT_5_REAIS — REMOVER ANTES DE PRODUÇÃO: o parâmetro `testMode`
+  // existe só para forçar o valor enviado ao PagBank para R$5,00.
+  async purchase(userId: string, quantity: number, testMode = false) {
     const user = await this.userRepo.findOne({ where: { id: userId } });
     if (!user) throw new BadRequestException('Usuário não encontrado');
 
@@ -117,6 +119,16 @@ export class QuotasService {
     });
     await this.txnRepo.save(txn);
 
+    // ╔════════════════════════════════════════════════════════════════════╗
+    // ║ TEST_PAYMENT_5_REAIS — REMOVER ANTES DE PRODUÇÃO                     ║
+    // ║ Em modo de teste forçamos o valor cobrado pelo PagBank para R$5,00   ║
+    // ║ (mantendo a transação interna com o valor/cotas reais). Isso permite ║
+    // ║ testar o fluxo real de cartão/PIX sem pagar o preço cheio.           ║
+    // ╚════════════════════════════════════════════════════════════════════╝
+    if (testMode) {
+      this.logger.warn(`⚠️ TEST_PAYMENT_5_REAIS ativo na txn ${txn.id} — cobrando R$5,00 no PagBank`);
+    }
+
     // 2. Cria o checkout no PagBank e guarda o link de pagamento.
     const { checkoutId, paymentUrl } = await this.pagBank.createCheckout({
       referenceId: txn.id,
@@ -125,6 +137,8 @@ export class QuotasService {
       unitAmount: price,
       description,
       customer: { name: user.name, email: user.email, cpf: user.cpf, phone: user.phone },
+      // TEST_PAYMENT_5_REAIS — REMOVER ANTES DE PRODUÇÃO
+      testMode,
     });
 
     txn.gatewayCheckoutId = checkoutId;

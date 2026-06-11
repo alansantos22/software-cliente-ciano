@@ -21,9 +21,11 @@ export const quotasService = {
     return api.get('/quotas/partner-levels');
   },
 
-  purchase(quantity: number) {
+  // TEST_PAYMENT_5_REAIS — REMOVER ANTES DE PRODUÇÃO: o parâmetro `testMode`
+  // só existe para forçar o valor cobrado no PagBank para R$5,00.
+  purchase(quantity: number, testMode = false) {
     // A forma de pagamento é escolhida na página do PagBank.
-    return api.post('/checkout/purchase', { quantity });
+    return api.post('/checkout/purchase', { quantity, testMode });
   },
 
   getConfirmation(transactionId: string) {
