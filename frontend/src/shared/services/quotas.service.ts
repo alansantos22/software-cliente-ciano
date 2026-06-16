@@ -22,9 +22,9 @@ export const quotasService = {
   },
 
   // TEST_PAYMENT_5_REAIS — REMOVER ANTES DE PRODUÇÃO: o parâmetro `testMode`
-  // só existe para forçar o valor cobrado no PagBank para R$5,00.
+  // só existe para forçar o valor cobrado na InfinitePay para R$5,00.
   purchase(quantity: number, testMode = false) {
-    // A forma de pagamento é escolhida na página do PagBank.
+    // A forma de pagamento é escolhida na página da InfinitePay.
     return api.post('/checkout/purchase', { quantity, testMode });
   },
 

@@ -58,7 +58,7 @@
         </section>
 
         <!-- Step 1: Confirmação. A forma de pagamento (PIX/cartão/parcelas) é
-             escolhida na própria página do PagBank, então não temos um passo
+             escolhida na própria página da InfinitePay, então não temos um passo
              de seleção de pagamento aqui. -->
         <section v-else-if="currentStep === 1" key="step-1" class="checkout-view__step">
           <OrderConfirmation
@@ -69,7 +69,7 @@
             @confirm="processOrder"
             @back="goToStep(0)"
           />
-          <!-- Ao confirmar, o usuário é redirecionado ao PagBank para pagar.
+          <!-- Ao confirmar, o usuário é redirecionado à InfinitePay para pagar.
                O retorno acontece em /checkout/retorno (CheckoutReturnView). -->
         </section>
       </Transition>
@@ -108,7 +108,7 @@ const isProcessing = ref(false);
 const purchaseError = ref('');
 
 // TEST_PAYMENT_5_REAIS — REMOVER ANTES DE PRODUÇÃO: quando marcado, o checkout
-// cobra apenas R$5,00 no PagBank (para testar cartão/PIX sem pagar o valor real).
+// cobra apenas R$5,00 na InfinitePay (para testar cartão/PIX sem pagar o valor real).
 const testMode = ref(false);
 
 // ─── Computed ─────────────────────────────────────────────────────────────────
@@ -137,7 +137,7 @@ async function processOrder() {
   purchaseError.value = '';
 
   try {
-    // Cria a transação (PENDENTE) e abre o checkout no PagBank.
+    // Cria a transação (PENDENTE) e abre o checkout na InfinitePay.
     // TEST_PAYMENT_5_REAIS — REMOVER ANTES DE PRODUÇÃO: 2º arg força R$5,00.
     const { data } = await quotasService.purchase(selectedQuotas.value, testMode.value);
 
@@ -149,7 +149,7 @@ async function processOrder() {
     // Guarda o id da transação para a página de retorno consultar o status.
     sessionStorage.setItem('ciano:lastTxn', data.transactionId);
 
-    // Redireciona para a página de pagamento hospedada do PagBank
+    // Redireciona para a página de pagamento hospedada da InfinitePay
     // (o usuário escolhe PIX ou cartão lá e volta para /checkout/retorno).
     window.location.href = data.paymentUrl;
   } catch (e: any) {

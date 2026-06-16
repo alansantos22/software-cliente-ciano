@@ -104,7 +104,7 @@
 
       <!-- ╔══════════════════════════════════════════════════════════════════╗
            ║ TEST_PAYMENT_5_REAIS — REMOVER ANTES DE PRODUÇÃO                   ║
-           ║ Checkbox que faz o PagBank cobrar apenas R$5,00 (mantendo as cotas ║
+           ║ Checkbox que faz a InfinitePay cobrar apenas R$5,00 (mantendo cotas║
            ║ reais), só para testar o fluxo de cartão/PIX. NÃO PODE IR PARA     ║
            ║ PRODUÇÃO. Para remover: apague este bloco inteiro + o emit/ref     ║
            ║ `testMode` no <script> e a classe `.quota-calc__test-mode`.        ║
@@ -112,7 +112,7 @@
       <label class="quota-calc__test-mode">
         <input type="checkbox" v-model="testMode" />
         <span>
-          <strong>🧪 Modo de teste</strong> — cobrar apenas <strong>R$ 5,00</strong> no PagBank
+          <strong>🧪 Modo de teste</strong> — cobrar apenas <strong>R$ 5,00</strong> na InfinitePay
           (as cotas continuam as reais; use só para testar pagamento)
         </span>
       </label>
