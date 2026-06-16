@@ -4,7 +4,6 @@ import {
   PaymentsWebhookController,
 } from './quotas.controller';
 import { User } from '../users/entities/user.entity';
-import { TransactionStatus } from '../../shared/interfaces/enums';
 
 describe('QuotasController', () => {
   let controller: QuotasController;
@@ -59,9 +58,9 @@ describe('CheckoutController', () => {
     controller = new CheckoutController(service);
   });
 
-  it('purchase forwards the quantity from the DTO', async () => {
+  it('purchase forwards the quantity and testMode from the DTO', async () => {
     await controller.purchase(user, { quantity: 3 } as any);
-    expect(service.purchase).toHaveBeenCalledWith('u1', 3);
+    expect(service.purchase).toHaveBeenCalledWith('u1', 3, undefined);
   });
 
   it('getConfirmation forwards transaction id and user id', async () => {
@@ -78,61 +77,46 @@ describe('CheckoutController', () => {
 describe('PaymentsWebhookController', () => {
   let controller: PaymentsWebhookController;
   let quotasService: any;
-  let pagBank: any;
+  let infinitePay: any;
 
   beforeEach(() => {
     quotasService = {
       confirmPayment: jest.fn().mockResolvedValue(undefined),
       markFailed: jest.fn().mockResolvedValue(undefined),
     };
-    pagBank = {
-      verifyWebhookSignature: jest.fn().mockReturnValue(true),
-      mapStatus: jest.fn(),
+    infinitePay = {
+      // Confirmação ativa: webhook não é assinado, validamos via API/valor.
+      confirmActiveStatus: jest.fn().mockResolvedValue(false),
     };
-    controller = new PaymentsWebhookController(quotasService, pagBank);
+    controller = new PaymentsWebhookController(quotasService, infinitePay);
   });
 
-  const req = { rawBody: Buffer.from('{}') };
+  const ack = { success: true, message: null };
 
-  it('ignores a payload with an invalid signature', async () => {
-    pagBank.verifyWebhookSignature.mockReturnValue(false);
-    const result = await controller.handlePagBankWebhook(req, { reference_id: 'r1' } as any, 'sig');
-    expect(result).toEqual({ received: true });
+  it('always returns the InfinitePay ack shape', async () => {
+    const result = await controller.handleInfinitePayWebhook({ order_nsu: 'r1' } as any);
+    expect(result).toEqual(ack);
+  });
+
+  it('ignores a payload without an order_nsu', async () => {
+    const result = await controller.handleInfinitePayWebhook({} as any);
+    expect(result).toEqual(ack);
+    expect(infinitePay.confirmActiveStatus).not.toHaveBeenCalled();
     expect(quotasService.confirmPayment).not.toHaveBeenCalled();
   });
 
-  it('ignores a payload without a reference_id', async () => {
-    const result = await controller.handlePagBankWebhook(req, {} as any, 'sig');
-    expect(result).toEqual({ received: true });
-    expect(pagBank.mapStatus).not.toHaveBeenCalled();
+  it('confirms payment when the active confirmation succeeds', async () => {
+    infinitePay.confirmActiveStatus.mockResolvedValue(true);
+    await controller.handleInfinitePayWebhook({
+      order_nsu: 'r1',
+      transaction_nsu: 'nsu-1',
+    } as any);
+    expect(quotasService.confirmPayment).toHaveBeenCalledWith('r1', 'nsu-1');
   });
 
-  it('confirms payment when the mapped status is COMPLETED', async () => {
-    pagBank.mapStatus.mockReturnValue(TransactionStatus.COMPLETED);
-    await controller.handlePagBankWebhook(
-      req,
-      { reference_id: 'r1', id: 'order-1' } as any,
-      'sig',
-    );
-    expect(quotasService.confirmPayment).toHaveBeenCalledWith('r1', 'order-1');
-  });
-
-  it('marks failed when the mapped status is terminal-negative', async () => {
-    pagBank.mapStatus.mockReturnValue(TransactionStatus.DECLINED);
-    await controller.handlePagBankWebhook(req, { reference_id: 'r1' } as any, 'sig');
-    expect(quotasService.markFailed).toHaveBeenCalledWith('r1', TransactionStatus.DECLINED);
-  });
-
-  it('takes no action for a non-terminal status', async () => {
-    pagBank.mapStatus.mockReturnValue(TransactionStatus.PENDING);
-    await controller.handlePagBankWebhook(req, { reference_id: 'r1' } as any, 'sig');
+  it('takes no action when the active confirmation fails', async () => {
+    infinitePay.confirmActiveStatus.mockResolvedValue(false);
+    await controller.handleInfinitePayWebhook({ order_nsu: 'r1' } as any);
     expect(quotasService.confirmPayment).not.toHaveBeenCalled();
-    expect(quotasService.markFailed).not.toHaveBeenCalled();
-  });
-
-  it('falls back to JSON.stringify when there is no raw body', async () => {
-    pagBank.mapStatus.mockReturnValue(TransactionStatus.PENDING);
-    await controller.handlePagBankWebhook({}, { reference_id: 'r1' } as any, 'sig');
-    expect(pagBank.verifyWebhookSignature).toHaveBeenCalledWith('{"reference_id":"r1"}', 'sig');
   });
 });

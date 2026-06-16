@@ -1,10 +1,10 @@
 import { Module } from '@nestjs/common';
 import { HttpModule } from '@nestjs/axios';
-import { PagBankService } from './pagbank.service';
+import { InfinitePayService } from './infinitepay.service';
 
 /**
- * Encapsula a integração com o gateway de pagamento (PagBank/PagSeguro).
- * Exporta o PagBankService para que o QuotasModule possa criar checkouts.
+ * Encapsula a integração com o gateway de pagamento (InfinitePay).
+ * Exporta o InfinitePayService para que o QuotasModule possa criar checkouts.
  * Não depende do QuotasModule (a confirmação do pagamento é orquestrada
  * pelo QuotasService, que importa este módulo — relação unidirecional).
  */
@@ -15,7 +15,7 @@ import { PagBankService } from './pagbank.service';
       maxRedirects: 0,
     }),
   ],
-  providers: [PagBankService],
-  exports: [PagBankService],
+  providers: [InfinitePayService],
+  exports: [InfinitePayService],
 })
 export class PaymentsModule {}

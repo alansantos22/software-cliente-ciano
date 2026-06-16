@@ -4,19 +4,19 @@ import {
   Post,
   Body,
   Param,
-  Headers,
-  Req,
   HttpCode,
   Logger,
 } from '@nestjs/common';
 import { QuotasService } from './quotas.service';
-import { PagBankService } from '../payments/pagbank.service';
+import { InfinitePayService } from '../payments/infinitepay.service';
 import { PurchaseQuotaDto } from './dto/purchase-quota.dto';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Public } from '../../common/decorators/public.decorator';
 import { User } from '../users/entities/user.entity';
-import { TransactionStatus } from '../../shared/interfaces/enums';
-import type { PagBankWebhookPayload } from '../payments/pagbank.types';
+import type {
+  InfinitePayWebhookPayload,
+  InfinitePayWebhookAck,
+} from '../payments/infinitepay.types';
 
 @Controller('quotas')
 export class QuotasController {
@@ -79,8 +79,12 @@ export class CheckoutController {
 }
 
 /**
- * Endpoint público de notificações (webhook) do PagBank. Não passa por JWT.
- * Valida a assinatura sobre o corpo cru e confirma/falha a transação.
+ * Endpoint público de notificações (webhook) da InfinitePay. Não passa por JWT.
+ *
+ * A InfinitePay NÃO documenta assinatura de webhook, então não confiamos no
+ * payload cru: usamos `confirmActiveStatus` (confirmação ativa + validação de
+ * valor) antes de creditar cotas. A InfinitePay exige resposta em < 1s com
+ * `{ success, message }`; HTTP 400 dispara reenvio automático do webhook.
  */
 @Controller('payments')
 export class PaymentsWebhookController {
@@ -88,46 +92,31 @@ export class PaymentsWebhookController {
 
   constructor(
     private readonly quotasService: QuotasService,
-    private readonly pagBank: PagBankService,
+    private readonly infinitePay: InfinitePayService,
   ) {}
 
   @Public()
-  @Post('webhook/pagbank')
+  @Post('webhook/infinitepay')
   @HttpCode(200)
-  async handlePagBankWebhook(
-    @Req() req: { rawBody?: Buffer },
-    @Body() payload: PagBankWebhookPayload,
-    @Headers('x-authenticity-token') signature?: string,
-  ) {
-    const rawBody = req.rawBody?.toString('utf8') ?? JSON.stringify(payload);
-
-    if (!this.pagBank.verifyWebhookSignature(rawBody, signature)) {
-      this.logger.warn('Webhook PagBank com assinatura inválida — ignorado.');
-      // Responde 200 para o PagBank não reenviar indefinidamente um payload forjado.
-      return { received: true };
-    }
-
-    const referenceId = payload.reference_id;
+  async handleInfinitePayWebhook(
+    @Body() payload: InfinitePayWebhookPayload,
+  ): Promise<InfinitePayWebhookAck> {
+    // order_nsu é o eco do ID interno da transação que enviamos na criação.
+    const referenceId = payload.order_nsu;
     if (!referenceId) {
-      this.logger.warn('Webhook PagBank sem reference_id — ignorado.');
-      return { received: true };
+      this.logger.warn('Webhook InfinitePay sem order_nsu — ignorado.');
+      return { success: true, message: null };
     }
 
-    const mapped = this.pagBank.mapStatus(payload);
-    const orderId = payload.id;
+    // Confirmação ATIVA (mitigação de segurança: webhook não é assinado).
+    const confirmed = await this.infinitePay.confirmActiveStatus(payload);
 
-    if (mapped === TransactionStatus.COMPLETED) {
-      await this.quotasService.confirmPayment(referenceId, orderId);
-    } else if (
-      mapped === TransactionStatus.DECLINED ||
-      mapped === TransactionStatus.CANCELLED ||
-      mapped === TransactionStatus.EXPIRED
-    ) {
-      await this.quotasService.markFailed(referenceId, mapped);
+    if (confirmed) {
+      await this.quotasService.confirmPayment(referenceId, payload.transaction_nsu);
     } else {
-      this.logger.log(`Webhook PagBank: status não-terminal para ${referenceId} — sem ação.`);
+      this.logger.log(`Webhook InfinitePay: pagamento não confirmado para ${referenceId} — sem ação.`);
     }
 
-    return { received: true };
+    return { success: true, message: null };
   }
 }

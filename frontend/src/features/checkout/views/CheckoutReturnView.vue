@@ -8,7 +8,7 @@
         </div>
         <h1>Confirmando seu pagamento…</h1>
         <p>
-          Estamos aguardando a confirmação do PagBank. Isso costuma levar alguns
+          Estamos aguardando a confirmação da InfinitePay. Isso costuma levar alguns
           segundos para PIX. Não feche esta página.
         </p>
       </template>
@@ -39,7 +39,7 @@
         </div>
         <h1>Ainda processando</h1>
         <p>
-          Seu pagamento ainda não foi confirmado. Assim que o PagBank confirmar,
+          Seu pagamento ainda não foi confirmado. Assim que a InfinitePay confirmar,
           suas cotas serão creditadas automaticamente — você pode acompanhar pelo
           seu histórico de transações.
         </p>

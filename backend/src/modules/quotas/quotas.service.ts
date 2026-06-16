@@ -10,7 +10,7 @@ import { PartnerLevelRequirement } from '../admin/entities/partner-level-require
 import { BonusCalculatorService } from '../../core/bonus/bonus-calculator.service';
 import { SplitEngineService } from '../../core/split/split-engine.service';
 import { TitleCalculatorService } from '../../core/title/title-calculator.service';
-import { PagBankService } from '../payments/pagbank.service';
+import { InfinitePayService } from '../payments/infinitepay.service';
 import { TransactionType, TransactionStatus } from '../../shared/interfaces/enums';
 import { getCurrentPeriod } from '../../shared/utils/helpers';
 
@@ -28,7 +28,7 @@ export class QuotasService {
     private readonly bonusCalc: BonusCalculatorService,
     private readonly splitEngine: SplitEngineService,
     private readonly titleCalc: TitleCalculatorService,
-    private readonly pagBank: PagBankService,
+    private readonly infinitePay: InfinitePayService,
   ) {}
 
   async getConfig() {
@@ -78,12 +78,12 @@ export class QuotasService {
 
   /**
    * Inicia a compra de cotas. NÃO credita nada ainda: cria a transação como
-   * WAITING_PAYMENT, abre um checkout no PagBank e devolve o link de
+   * WAITING_PAYMENT, abre um checkout na InfinitePay e devolve o link de
    * pagamento (redirect). As cotas/bônus/split só são creditados quando o
    * webhook confirma o pagamento (ver `confirmPayment`).
    */
   // TEST_PAYMENT_5_REAIS — REMOVER ANTES DE PRODUÇÃO: o parâmetro `testMode`
-  // existe só para forçar o valor enviado ao PagBank para R$5,00.
+  // existe só para forçar o valor enviado à InfinitePay para R$5,00.
   async purchase(userId: string, quantity: number, testMode = false) {
     const user = await this.userRepo.findOne({ where: { id: userId } });
     if (!user) throw new BadRequestException('Usuário não encontrado');
@@ -114,23 +114,23 @@ export class QuotasService {
       quotasAffected: quantity,
       description,
       status: TransactionStatus.WAITING_PAYMENT,
-      gateway: 'pagbank',
+      gateway: 'infinitepay',
       referenceMonth: month,
     });
     await this.txnRepo.save(txn);
 
     // ╔════════════════════════════════════════════════════════════════════╗
     // ║ TEST_PAYMENT_5_REAIS — REMOVER ANTES DE PRODUÇÃO                     ║
-    // ║ Em modo de teste forçamos o valor cobrado pelo PagBank para R$5,00   ║
+    // ║ Em modo de teste forçamos o valor cobrado pela InfinitePay p/ R$5,00 ║
     // ║ (mantendo a transação interna com o valor/cotas reais). Isso permite ║
     // ║ testar o fluxo real de cartão/PIX sem pagar o preço cheio.           ║
     // ╚════════════════════════════════════════════════════════════════════╝
     if (testMode) {
-      this.logger.warn(`⚠️ TEST_PAYMENT_5_REAIS ativo na txn ${txn.id} — cobrando R$5,00 no PagBank`);
+      this.logger.warn(`⚠️ TEST_PAYMENT_5_REAIS ativo na txn ${txn.id} — cobrando R$5,00 na InfinitePay`);
     }
 
-    // 2. Cria o checkout no PagBank e guarda o link de pagamento.
-    const { checkoutId, paymentUrl } = await this.pagBank.createCheckout({
+    // 2. Cria o checkout na InfinitePay e guarda o link de pagamento.
+    const { checkoutId, paymentUrl } = await this.infinitePay.createCheckout({
       referenceId: txn.id,
       amount: totalAmount,
       quantity,
@@ -162,7 +162,7 @@ export class QuotasService {
    * quando o status vira PAID). Credita cotas, dispara bônus, split e títulos.
    *
    * IDEMPOTENTE: se a transação já estiver COMPLETED, retorna sem reprocessar
-   * — o PagBank pode reenviar a mesma notificação várias vezes.
+   * — a InfinitePay pode reenviar a mesma notificação várias vezes.
    */
   async confirmPayment(transactionId: string, gatewayOrderId?: string): Promise<void> {
     const txn = await this.txnRepo.findOne({ where: { id: transactionId } });

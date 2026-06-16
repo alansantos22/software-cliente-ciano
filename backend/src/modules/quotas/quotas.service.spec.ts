@@ -11,7 +11,7 @@ import { PartnerLevelRequirement } from '../admin/entities/partner-level-require
 import { BonusCalculatorService } from '../../core/bonus/bonus-calculator.service';
 import { SplitEngineService } from '../../core/split/split-engine.service';
 import { TitleCalculatorService } from '../../core/title/title-calculator.service';
-import { PagBankService } from '../payments/pagbank.service';
+import { InfinitePayService } from '../payments/infinitepay.service';
 import { TransactionStatus, TransactionType } from '../../shared/interfaces/enums';
 
 const mockState = {
@@ -57,7 +57,7 @@ describe('QuotasService', () => {
   let bonusCalc: { calculateFirstPurchaseBonus: jest.Mock; calculateRepurchaseBonus: jest.Mock };
   let splitEngine: { getState: jest.Mock; incrementQuotasSold: jest.Mock; checkAndProcess: jest.Mock };
   let titleCalc: { recalculateTitle: jest.Mock };
-  let pagBank: { createCheckout: jest.Mock };
+  let infinitePay: { createCheckout: jest.Mock };
 
   beforeEach(async () => {
     txnRepo = {
@@ -91,10 +91,10 @@ describe('QuotasService', () => {
       checkAndProcess: jest.fn().mockResolvedValue(undefined),
     };
     titleCalc = { recalculateTitle: jest.fn().mockResolvedValue(undefined) };
-    pagBank = {
+    infinitePay = {
       createCheckout: jest.fn().mockResolvedValue({
         checkoutId: 'CHEC_123',
-        paymentUrl: 'https://pay.pagseguro.com/CHEC_123',
+        paymentUrl: 'https://checkout.infinitepay.io/CHEC_123',
       }),
     };
 
@@ -110,7 +110,7 @@ describe('QuotasService', () => {
         { provide: BonusCalculatorService, useValue: bonusCalc },
         { provide: SplitEngineService, useValue: splitEngine },
         { provide: TitleCalculatorService, useValue: titleCalc },
-        { provide: PagBankService, useValue: pagBank },
+        { provide: InfinitePayService, useValue: infinitePay },
       ],
     }).compile();
 
@@ -161,21 +161,21 @@ describe('QuotasService', () => {
   // ─── purchase ────────────────────────────────────────────────────────────────
 
   describe('purchase', () => {
-    it('should create a WAITING_PAYMENT transaction and open a PagBank checkout', async () => {
+    it('should create a WAITING_PAYMENT transaction and open an InfinitePay checkout', async () => {
       userRepo.findOne.mockResolvedValue({ ...mockUser, purchasedQuotas: 0 });
 
       const result = await service.purchase('user-1', 5);
 
       // Cria a transação aguardando pagamento e chama o gateway.
       expect(txnRepo.create).toHaveBeenCalledWith(
-        expect.objectContaining({ status: TransactionStatus.WAITING_PAYMENT, gateway: 'pagbank' }),
+        expect.objectContaining({ status: TransactionStatus.WAITING_PAYMENT, gateway: 'infinitepay' }),
       );
-      expect(pagBank.createCheckout).toHaveBeenCalledWith(
+      expect(infinitePay.createCheckout).toHaveBeenCalledWith(
         expect.objectContaining({ referenceId: 'txn-1', quantity: 5, amount: 5 * 2000 }),
       );
       expect(result.quantity).toBe(5);
       expect(result.totalAmount).toBe(5 * 2000);
-      expect(result.paymentUrl).toBe('https://pay.pagseguro.com/CHEC_123');
+      expect(result.paymentUrl).toBe('https://checkout.infinitepay.io/CHEC_123');
       expect(result.status).toBe(TransactionStatus.WAITING_PAYMENT);
     });
 

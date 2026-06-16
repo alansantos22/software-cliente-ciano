@@ -40,8 +40,8 @@ export class QuotaTransaction {
   @Column({ type: 'enum', enum: TransactionStatus, default: TransactionStatus.PENDING })
   status: TransactionStatus;
 
-  // ─── Gateway de pagamento (PagBank/PagSeguro) ────────────────────────────
-  /** Nome do provedor de pagamento (ex: 'pagbank'). */
+  // ─── Gateway de pagamento (InfinitePay) ──────────────────────────────────
+  /** Nome do provedor de pagamento (ex: 'infinitepay'). */
   @Column({ type: 'varchar', length: 20, nullable: true })
   gateway: string | null;
 
