@@ -9,25 +9,27 @@
  * O que ele faz:
  *   1. Pede confirmação (digite o nome do banco) — pule com --force / --yes.
  *   2. DROP DATABASE + CREATE DATABASE (schema 100% vazio).
- *   3. Cria o usuário ADMIN usando ADMIN_EMAIL / ADMIN_NAME / ADMIN_PASSWORD
+ *   3. Conecta via TypeORM com synchronize=true, que recria TODAS as tabelas
+ *      a partir das *.entity.ts (fonte da verdade — nada de SQL manual, então
+ *      novas tabelas/colunas entram sozinhas).
+ *   4. Cria o usuário ADMIN usando ADMIN_EMAIL / ADMIN_NAME / ADMIN_PASSWORD
  *      do .env (o cliente quer que o admin use o e-mail dele).
  *
  * Como rodar (a partir de backend/):
- *   npx ts-node -r tsconfig-paths/register scripts/reset-database.ts
- *   npx ts-node scripts/reset-database.ts --force        # sem confirmação
- *   NODE_ENV=production npx ts-node scripts/reset-database.ts   # outra base
- *
- * Obs.: após o reset, o TypeORM (synchronize) recria as tabelas no próximo
- * boot do servidor e o SeedService repopula settings/títulos/etc. O admin já
- * é criado aqui para o script funcionar sozinho, sem precisar subir a API.
+ *   npm run db:reset
+ *   npm run db:reset -- --force                 # sem confirmação
+ *   NODE_ENV=production npm run db:reset -- --force   # outra base
  * ============================================================================
  */
+import 'reflect-metadata';
 import * as path from 'path';
 import * as readline from 'readline';
 import * as dotenv from 'dotenv';
 import * as mysql from 'mysql2/promise';
 import * as argon2 from 'argon2';
-import { randomUUID } from 'crypto';
+import { DataSource } from 'typeorm';
+import { User } from '../src/modules/users/entities/user.entity';
+import { UserRole } from '../src/shared/interfaces/enums';
 
 // Carrega o mesmo .env que o app usa (.env.development por padrão).
 const env = process.env.NODE_ENV || 'development';
@@ -76,7 +78,6 @@ async function resetSchema(): Promise<void> {
     port: cfg.port,
     user: cfg.user,
     password: cfg.password,
-    multipleStatements: true,
   });
   try {
     // DROP + recriar = schema vazio. O backtick em volta protege o nome.
@@ -91,78 +92,52 @@ async function resetSchema(): Promise<void> {
 }
 
 /**
- * Cria a tabela `users` COMPLETA (todas as colunas da entity User) e insere
- * o admin. É essencial que TODAS as colunas existam — uma tabela parcial
- * (faltando, p.ex., pix_key_type) quebra o app na primeira query com
- * "Unknown column 'User.pix_key_type' in 'field list'", antes mesmo de o
- * synchronize conseguir reconciliar o schema.
+ * Conecta com synchronize=true para o TypeORM recriar TODAS as tabelas a
+ * partir das entities, e então cria o admin. Carregamos todas as *.entity
+ * por glob (mesma config do app.module) — assim nenhuma tabela fica de fora
+ * e o script não precisa ser atualizado quando surgir uma entity nova.
  */
-async function seedAdmin(): Promise<void> {
-  const conn = await mysql.createConnection({
+async function buildSchemaAndAdmin(): Promise<void> {
+  const dataSource = new DataSource({
+    type: 'mysql',
     host: cfg.host,
     port: cfg.port,
-    user: cfg.user,
+    username: cfg.user,
     password: cfg.password,
     database: cfg.database,
+    entities: [path.resolve(__dirname, '..', 'src', '**', '*.entity.ts')],
+    synchronize: true,
+    charset: 'utf8mb4',
+    timezone: 'Z',
   });
-  try {
-    await conn.query(`
-      CREATE TABLE IF NOT EXISTS users (
-        id                    CHAR(36)        NOT NULL PRIMARY KEY,
-        email                 VARCHAR(255)    NOT NULL UNIQUE,
-        password_hash         VARCHAR(255)    NOT NULL,
-        name                  VARCHAR(255)    NOT NULL,
-        cpf                   VARCHAR(14)     NOT NULL UNIQUE,
-        phone                 VARCHAR(20)     NOT NULL,
-        city                  VARCHAR(100)    NOT NULL,
-        state                 VARCHAR(2)      NOT NULL,
-        pix_key               VARCHAR(255)    NOT NULL,
-        pix_key_type          VARCHAR(20)     NULL,
-        role                  VARCHAR(20)     NOT NULL DEFAULT 'user',
-        title                 VARCHAR(20)     NOT NULL DEFAULT 'none',
-        partner_level         VARCHAR(20)     NOT NULL DEFAULT 'socio',
-        sponsor_id            VARCHAR(36)     NULL,
-        referral_code         VARCHAR(20)     NOT NULL UNIQUE,
-        avatar_url            VARCHAR(500)    NULL,
-        is_active             TINYINT(1)      NOT NULL DEFAULT 1,
-        purchased_quotas      INT             NOT NULL DEFAULT 0,
-        admin_granted_quotas  INT             NOT NULL DEFAULT 0,
-        split_quotas          INT             NOT NULL DEFAULT 0,
-        quota_balance         INT             NOT NULL DEFAULT 0,
-        total_earnings        DECIMAL(15,2)   NOT NULL DEFAULT 0,
-        last_purchase_date    DATETIME        NULL,
-        created_at            DATETIME(6)     NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
-        updated_at            DATETIME(6)     NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
-        deleted_at            DATETIME        NULL,
-        direct_count          INT             NOT NULL DEFAULT 0,
-        team_count            INT             NOT NULL DEFAULT 0
-      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-    `);
 
+  await dataSource.initialize();
+  console.log('🧱 Schema recriado a partir das entities (todas as tabelas).');
+
+  try {
+    const userRepo = dataSource.getRepository(User);
     const passwordHash = await argon2.hash(admin.password);
-    await conn.query(
-      `INSERT INTO users
-        (id, email, password_hash, name, cpf, phone, city, state, pix_key, role, referral_code, is_active)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'admin', 'CIANO-ADMIN', 1)`,
-      [
-        randomUUID(),
-        admin.email,
-        passwordHash,
-        admin.name,
-        '00000000000',
-        '00000000000',
-        'Sistema',
-        'SP',
-        admin.email,
-      ],
-    );
+    const user = userRepo.create({
+      email: admin.email,
+      passwordHash,
+      name: admin.name,
+      cpf: '00000000000',
+      phone: '00000000000',
+      city: 'Sistema',
+      state: 'SP',
+      pixKey: admin.email,
+      role: UserRole.ADMIN,
+      referralCode: 'CIANO-ADMIN',
+      isActive: true,
+    });
+    await userRepo.save(user);
 
     console.log(`🔑 Admin criado:`);
     console.log(`    Nome  : ${admin.name}`);
     console.log(`    E-mail: ${admin.email}`);
     console.log(`    Senha : ${admin.password}  (defina ADMIN_PASSWORD no .env para trocar)`);
   } finally {
-    await conn.end();
+    await dataSource.destroy();
   }
 }
 
@@ -173,10 +148,10 @@ async function main(): Promise<void> {
   }
 
   await resetSchema();
-  await seedAdmin();
+  await buildSchemaAndAdmin();
 
-  console.log('\n✅ Pronto. Base zerada e admin recriado.');
-  console.log('   Suba o servidor para o TypeORM recriar as demais tabelas e o seed completar.');
+  console.log('\n✅ Pronto. Base zerada, todas as tabelas recriadas e admin criado.');
+  console.log('   Suba o servidor — o SeedService completa settings/títulos/estado de cotas.');
   process.exit(0);
 }
 
