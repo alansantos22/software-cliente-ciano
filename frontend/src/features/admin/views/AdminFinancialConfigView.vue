@@ -545,7 +545,7 @@ import {
   DsTooltip,
 } from '@/design-system';
 import { adminService } from '@/shared/services/admin.service';
-import { useQuotaPresentationStore } from '@/shared/stores';
+import { useQuotaPresentationStore, type HeroMetric } from '@/shared/stores';
 
 const presentationStore = useQuotaPresentationStore();
 
@@ -609,6 +609,9 @@ const config = reactive({
 });
 
 let savedConfig = JSON.parse(JSON.stringify(config));
+// Baseline snapshot of the hero metrics (Números em Destaque). These live in a
+// separate Pinia store, so they must be diffed/saved independently of `config`.
+let savedMetrics: HeroMetric[] = presentationStore.heroMetrics.map(m => ({ ...m }));
 const careerLevelIds: number[] = [];
 
 // Career Table
@@ -714,6 +717,16 @@ const pendingDiff = computed<DiffEntry[]>(() => {
       if (sv !== cv) diffs.push({ key:`career_${i}_${field}`, label:`${level.title} – ${label}`, oldFormatted:formatFieldValue(sv,fmt), newFormatted:formatFieldValue(cv,fmt), tab:'career' });
     });
   });
+  presentationStore.heroMetrics.forEach((metric, i) => {
+    const saved = savedMetrics[i];
+    if (!saved) return;
+    if (saved.value !== metric.value) {
+      diffs.push({ key: `metric_value_${i}`, label: `Número em Destaque ${i + 1}`, oldFormatted: saved.value, newFormatted: metric.value, tab: 'global' });
+    }
+    if (saved.label !== metric.label) {
+      diffs.push({ key: `metric_label_${i}`, label: `Legenda em Destaque ${i + 1}`, oldFormatted: saved.label, newFormatted: metric.label, tab: 'global' });
+    }
+  });
   return diffs;
 });
 
@@ -781,6 +794,7 @@ async function confirmSave() {
   } catch { /* non-critical */ }
   isSaving.value = false;
   savedConfig = JSON.parse(JSON.stringify(config));
+  savedMetrics = presentationStore.heroMetrics.map(m => ({ ...m }));
   const now = new Date();
   auditInfo.date = `${now.toLocaleDateString('pt-BR')} às ${now.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}`;
   showConfirmModal.value = false; saveSuccess.value = true;
@@ -867,6 +881,7 @@ onMounted(async () => {
   } catch { /* keep defaults */ }
 
   savedConfig = JSON.parse(JSON.stringify(config));
+  savedMetrics = presentationStore.heroMetrics.map(m => ({ ...m }));
 });
 </script>
 <style lang="scss" scoped>
