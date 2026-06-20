@@ -91,9 +91,11 @@ async function resetSchema(): Promise<void> {
 }
 
 /**
- * Cria a tabela `users` mínima e insere o admin. Mantemos as colunas
- * NOT NULL coerentes com a entity User para que a linha sobreviva quando
- * o TypeORM (synchronize) reconciliar o schema no próximo boot.
+ * Cria a tabela `users` COMPLETA (todas as colunas da entity User) e insere
+ * o admin. É essencial que TODAS as colunas existam — uma tabela parcial
+ * (faltando, p.ex., pix_key_type) quebra o app na primeira query com
+ * "Unknown column 'User.pix_key_type' in 'field list'", antes mesmo de o
+ * synchronize conseguir reconciliar o schema.
  */
 async function seedAdmin(): Promise<void> {
   const conn = await mysql.createConnection({
@@ -106,20 +108,34 @@ async function seedAdmin(): Promise<void> {
   try {
     await conn.query(`
       CREATE TABLE IF NOT EXISTS users (
-        id             CHAR(36)      NOT NULL PRIMARY KEY,
-        email          VARCHAR(255)  NOT NULL UNIQUE,
-        password_hash  VARCHAR(255)  NOT NULL,
-        name           VARCHAR(255)  NOT NULL,
-        cpf            VARCHAR(14)    NOT NULL UNIQUE,
-        phone          VARCHAR(20)    NOT NULL,
-        city           VARCHAR(100)   NOT NULL,
-        state          VARCHAR(2)     NOT NULL,
-        pix_key        VARCHAR(255)   NOT NULL,
-        role           VARCHAR(20)    NOT NULL DEFAULT 'user',
-        referral_code  VARCHAR(20)    NOT NULL UNIQUE,
-        is_active      TINYINT(1)     NOT NULL DEFAULT 1,
-        created_at     DATETIME(6)    NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
-        updated_at     DATETIME(6)    NOT NULL DEFAULT CURRENT_TIMESTAMP(6)
+        id                    CHAR(36)        NOT NULL PRIMARY KEY,
+        email                 VARCHAR(255)    NOT NULL UNIQUE,
+        password_hash         VARCHAR(255)    NOT NULL,
+        name                  VARCHAR(255)    NOT NULL,
+        cpf                   VARCHAR(14)     NOT NULL UNIQUE,
+        phone                 VARCHAR(20)     NOT NULL,
+        city                  VARCHAR(100)    NOT NULL,
+        state                 VARCHAR(2)      NOT NULL,
+        pix_key               VARCHAR(255)    NOT NULL,
+        pix_key_type          VARCHAR(20)     NULL,
+        role                  VARCHAR(20)     NOT NULL DEFAULT 'user',
+        title                 VARCHAR(20)     NOT NULL DEFAULT 'none',
+        partner_level         VARCHAR(20)     NOT NULL DEFAULT 'socio',
+        sponsor_id            VARCHAR(36)     NULL,
+        referral_code         VARCHAR(20)     NOT NULL UNIQUE,
+        avatar_url            VARCHAR(500)    NULL,
+        is_active             TINYINT(1)      NOT NULL DEFAULT 1,
+        purchased_quotas      INT             NOT NULL DEFAULT 0,
+        admin_granted_quotas  INT             NOT NULL DEFAULT 0,
+        split_quotas          INT             NOT NULL DEFAULT 0,
+        quota_balance         INT             NOT NULL DEFAULT 0,
+        total_earnings        DECIMAL(15,2)   NOT NULL DEFAULT 0,
+        last_purchase_date    DATETIME        NULL,
+        created_at            DATETIME(6)     NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+        updated_at            DATETIME(6)     NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+        deleted_at            DATETIME        NULL,
+        direct_count          INT             NOT NULL DEFAULT 0,
+        team_count            INT             NOT NULL DEFAULT 0
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     `);
 
