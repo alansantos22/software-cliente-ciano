@@ -56,8 +56,7 @@ export class CheckoutController {
 
   @Post('purchase')
   purchase(@CurrentUser() user: User, @Body() dto: PurchaseQuotaDto) {
-    // TEST_PAYMENT_5_REAIS — REMOVER ANTES DE PRODUÇÃO: repassa dto.testMode.
-    return this.quotasService.purchase(user.id, dto.quantity, dto.testMode);
+    return this.quotasService.purchase(user.id, dto.quantity);
   }
 
   @Get('confirmation/:transactionId')

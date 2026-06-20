@@ -58,9 +58,9 @@ describe('CheckoutController', () => {
     controller = new CheckoutController(service);
   });
 
-  it('purchase forwards the quantity and testMode from the DTO', async () => {
+  it('purchase forwards the quantity from the DTO', async () => {
     await controller.purchase(user, { quantity: 3 } as any);
-    expect(service.purchase).toHaveBeenCalledWith('u1', 3, undefined);
+    expect(service.purchase).toHaveBeenCalledWith('u1', 3);
   });
 
   it('getConfirmation forwards transaction id and user id', async () => {

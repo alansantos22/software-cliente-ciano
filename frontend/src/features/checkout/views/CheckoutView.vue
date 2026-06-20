@@ -52,7 +52,6 @@
             :purchased-quotas="currentUserQuotas"
             :quota-price="quotaPrice"
             @update:quotas="selectedQuotas = $event"
-            @update:test-mode="testMode = $event"
             @next="goToStep(1)"
           />
         </section>
@@ -107,10 +106,6 @@ const selectedQuotas = ref(1);
 const isProcessing = ref(false);
 const purchaseError = ref('');
 
-// TEST_PAYMENT_5_REAIS — REMOVER ANTES DE PRODUÇÃO: quando marcado, o checkout
-// cobra apenas R$5,00 na InfinitePay (para testar cartão/PIX sem pagar o valor real).
-const testMode = ref(false);
-
 // ─── Computed ─────────────────────────────────────────────────────────────────
 const currentUserQuotas = computed<number>(() => {
   // ⚠️ REGRA DO SISTEMA: apenas cotas COMPRADAS definem o nível
@@ -138,8 +133,7 @@ async function processOrder() {
 
   try {
     // Cria a transação (PENDENTE) e abre o checkout na InfinitePay.
-    // TEST_PAYMENT_5_REAIS — REMOVER ANTES DE PRODUÇÃO: 2º arg força R$5,00.
-    const { data } = await quotasService.purchase(selectedQuotas.value, testMode.value);
+    const { data } = await quotasService.purchase(selectedQuotas.value);
 
     if (!data?.paymentUrl) {
       purchaseError.value = 'Não foi possível iniciar o pagamento. Tente novamente.';
