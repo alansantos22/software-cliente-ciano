@@ -21,11 +21,9 @@ export const quotasService = {
     return api.get('/quotas/partner-levels');
   },
 
-  // TEST_PAYMENT_5_REAIS — REMOVER ANTES DE PRODUÇÃO: o parâmetro `testMode`
-  // só existe para forçar o valor cobrado na InfinitePay para R$5,00.
-  purchase(quantity: number, testMode = false) {
+  purchase(quantity: number) {
     // A forma de pagamento é escolhida na página da InfinitePay.
-    return api.post('/checkout/purchase', { quantity, testMode });
+    return api.post('/checkout/purchase', { quantity });
   },
 
   getConfirmation(transactionId: string) {

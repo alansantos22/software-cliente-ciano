@@ -69,17 +69,6 @@ describe('InfinitePayService', () => {
       expect(body.customer.phone_number).toBe('11999998888');
     });
 
-    it('forces a R$5 item in test mode', async () => {
-      http.post.mockReturnValue(of({ data: { invoice_slug: 'INV_2', url: 'https://pay/INV_2' } }));
-
-      await service.createCheckout({ ...params, testMode: true });
-
-      const [, body] = http.post.mock.calls[0];
-      expect(body.items).toHaveLength(1);
-      expect(body.items[0].price).toBe(500);
-      expect(body.items[0].quantity).toBe(1);
-    });
-
     it('throws when the response has no payment url', async () => {
       http.post.mockReturnValue(of({ data: { invoice_slug: 'INV_1' } }));
 

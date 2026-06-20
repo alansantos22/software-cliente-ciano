@@ -25,8 +25,6 @@ export interface CreateCheckoutParams {
     cpf: string;
     phone?: string;
   };
-  // TEST_PAYMENT_5_REAIS — REMOVER ANTES DE PRODUÇÃO: força a cobrança em R$5,00.
-  testMode?: boolean;
 }
 
 export interface CreateCheckoutResult {
@@ -81,26 +79,13 @@ export class InfinitePayService {
     const frontendUrl = this.config.get<string>('infinitepay.frontendUrl')!;
     const webhookUrl = this.config.get<string>('infinitepay.webhookUrl');
 
-    // ╔══════════════════════════════════════════════════════════════════════╗
-    // ║ TEST_PAYMENT_5_REAIS — REMOVER ANTES DE PRODUÇÃO                       ║
-    // ║ Em modo de teste enviamos 1 item de R$5,00, em vez do valor/quantidade ║
-    // ║ reais. O resto do fluxo (redirect, webhook, crédito de cotas) é igual. ║
-    // ╚══════════════════════════════════════════════════════════════════════╝
-    const items = params.testMode
-      ? [
-          {
-            quantity: 1,
-            price: 500, // R$5,00 em centavos
-            description: `[TESTE R$5] ${params.description}`,
-          },
-        ]
-      : [
-          {
-            quantity: params.quantity,
-            price: this.toCents(params.unitAmount),
-            description: params.description,
-          },
-        ];
+    const items = [
+      {
+        quantity: params.quantity,
+        price: this.toCents(params.unitAmount),
+        description: params.description,
+      },
+    ];
 
     const phone = this.onlyDigits(params.customer.phone ?? '');
 
