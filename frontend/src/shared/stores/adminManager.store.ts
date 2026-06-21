@@ -66,7 +66,7 @@ export const useAdminManagerStore = defineStore('adminManager', () => {
 
   async function verifyPassword(password: string): Promise<boolean> {
     try {
-      const res = await adminService.verifyManagerPassword({ password, operation: 'verify' });
+      const res = await adminService.verifyManagerPassword({ managerPassword: password });
       return res.data?.valid === true;
     } catch {
       return false;

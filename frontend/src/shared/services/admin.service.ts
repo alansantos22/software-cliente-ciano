@@ -93,7 +93,7 @@ export const adminService = {
     return api.post('/admin/manager/set-password', payload);
   },
 
-  verifyManagerPassword(payload: { password: string; operation: string }) {
+  verifyManagerPassword(payload: { managerPassword: string }) {
     return api.post('/admin/manager/verify-password', payload);
   },
 

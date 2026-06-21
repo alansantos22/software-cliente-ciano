@@ -71,7 +71,9 @@ describe('AdminManagerService', () => {
     payoutRepo = { delete: jest.fn().mockResolvedValue({ affected: 0 }) };
     settingsRepo = {
       findOne: jest.fn().mockResolvedValue({ id: 1, managerPasswordHash: 'mgr-hash' }),
-      update: jest.fn().mockResolvedValue(undefined),
+      update: jest.fn().mockResolvedValue({ affected: 1 }),
+      create: jest.fn((x) => x),
+      save: jest.fn(async (x) => x),
     };
     bonusCalc = {
       calculateFirstPurchaseBonus: jest.fn().mockResolvedValue(undefined),
@@ -120,6 +122,14 @@ describe('AdminManagerService', () => {
       await service.setPassword('secret');
       expect(argon2.hash).toHaveBeenCalledWith('secret');
       expect(settingsRepo.update).toHaveBeenCalledWith(1, { managerPasswordHash: 'mgr-hash' });
+    });
+
+    it('setPassword should create the row when id=1 is missing (update no-op)', async () => {
+      settingsRepo.update.mockResolvedValue({ affected: 0 });
+      await service.setPassword('secret');
+      expect(settingsRepo.save).toHaveBeenCalledWith(
+        expect.objectContaining({ id: 1, managerPasswordHash: 'mgr-hash' }),
+      );
     });
 
     it('verifyPassword should throw when no manager password is configured', async () => {
