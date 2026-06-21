@@ -30,12 +30,39 @@ export class SeedService implements OnModuleInit {
   ) {}
 
   async onModuleInit() {
+    await this.ensureManagerPasswordColumn();
     await this.seedAdmin();
     await this.seedGlobalSettings();
     await this.seedQuotaSystemState();
     await this.seedTitleRequirements();
     await this.seedPartnerLevelRequirements();
     this.logger.log('✅ Seed data verified/inserted');
+  }
+
+  /**
+   * Garante a coluna `manager_password_hash` em produção. Em alguns ambientes
+   * o `synchronize` não aplicou a coluna (schema reconstruído à mão / sync
+   * desligado), então `setPassword` gravava num campo inexistente: o update
+   * "tinha sucesso" (201) mas o hash sumia, e a senha voltava como não
+   * configurada. Este ALTER é idempotente — só adiciona se faltar.
+   */
+  private async ensureManagerPasswordColumn() {
+    try {
+      const table = this.settingsRepo.metadata.tableName;
+      const cols: Array<{ COLUMN_NAME: string }> = await this.settingsRepo.query(
+        `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
+         WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = 'manager_password_hash'`,
+        [table],
+      );
+      if (cols.length === 0) {
+        await this.settingsRepo.query(
+          `ALTER TABLE \`${table}\` ADD COLUMN \`manager_password_hash\` VARCHAR(255) NULL`,
+        );
+        this.logger.warn(`🔧 Coluna manager_password_hash criada em ${table} (estava ausente)`);
+      }
+    } catch (err) {
+      this.logger.error(`Falha ao garantir coluna manager_password_hash: ${(err as Error).message}`);
+    }
   }
 
   private async seedAdmin() {

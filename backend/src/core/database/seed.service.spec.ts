@@ -29,6 +29,9 @@ describe('SeedService', () => {
   beforeEach(async () => {
     userRepo = repoMock();
     settingsRepo = repoMock();
+    // ensureManagerPasswordColumn: coluna já existe → nenhum ALTER.
+    settingsRepo.metadata = { tableName: 'global_financial_settings' };
+    settingsRepo.query = jest.fn().mockResolvedValue([{ COLUMN_NAME: 'manager_password_hash' }]);
     quotaStateRepo = repoMock();
     titleReqRepo = repoMock();
     partnerReqRepo = repoMock();
