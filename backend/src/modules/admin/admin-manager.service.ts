@@ -33,11 +33,15 @@ export class AdminManagerService {
   private async verifyManagerPassword(password: string): Promise<void> {
     const settings = await this.settingsRepo.findOne({ where: { id: 1 } });
     if (!settings?.managerPasswordHash) {
+      this.logger.warn(
+        `🔐 verifyManagerPassword: hash AUSENTE (settings row ${settings ? 'existe' : 'NÃO existe'})`,
+      );
       throw new BadRequestException('Senha de gerente não configurada');
     }
 
     const valid = await argon2.verify(settings.managerPasswordHash, password);
     if (!valid) {
+      this.logger.warn('🔐 verifyManagerPassword: hash presente mas senha NÃO confere');
       throw new BadRequestException('Senha de gerente inválida');
     }
   }
@@ -59,6 +63,15 @@ export class AdminManagerService {
         this.settingsRepo.create({ id: 1, managerPasswordHash: hash }),
       );
     }
+
+    // Relê do banco para confirmar que o hash REALMENTE persistiu. Se isto
+    // logar "hash NÃO persistiu" mesmo com 201, a coluna não existe no schema
+    // de produção (synchronize não aplicou) — o update grava num campo fantasma.
+    const check = await this.settingsRepo.findOne({ where: { id: 1 } });
+    this.logger.warn(
+      `🔐 setPassword: update.affected=${result.affected ?? 0}, ` +
+        `hash ${check?.managerPasswordHash ? 'PERSISTIU ✅' : 'NÃO persistiu ❌'}`,
+    );
 
     return { message: 'Senha de gerente definida com sucesso' };
   }
