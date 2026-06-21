@@ -42,43 +42,18 @@ export class UpdateCareerPlanDto {
 export class CalculateDistributionDto {
   @IsString() profitMonth: string;      // YYYY-MM
   @IsNumber() @Min(0) netProfit: number;
-
-  /**
-   * Modo de testes (checkbox do frontend). Quando ligado, o snapshot do mês é
-   * recapturado para refletir a rede ATUAL — permite testar mudanças na árvore.
-   * Desligado (produção), o snapshot fica congelado no estado de fim de mês.
-   */
-  @IsOptional() @IsBoolean() allowFutureMonth?: boolean;
 }
 
 export class GenerateBatchDto {
   @IsString() profitMonth: string;
   @IsNumber() @Min(0) netProfit: number;
   // dividendPool is computed server-side from GlobalFinancialSettings
-
-  /**
-   * Bypass do bloqueio "mês ainda não fechou". Para testes em
-   * homologação — permite gerar o lote do mês corrente ou de meses
-   * futuros, ignorando a checagem de competência fechada.
-   */
-  @IsOptional() @IsBoolean() allowFutureMonth?: boolean;
 }
 
 export class ProcessPayoutActionDto {
   @IsString() action: 'processing' | 'completed' | 'failed';
   @IsOptional() @IsString() transactionId?: string;
   @IsOptional() @IsString() failureReason?: string;
-  /** Bypass da trava de mês de vencimento (Modo de testes). */
-  @IsOptional() @IsBoolean() allowEarly?: boolean;
-}
-
-export class PayInstallmentDto {
-  /**
-   * Bypass da trava "só pode pagar a partir do mês de vencimento". Ligado pelo
-   * "Modo de testes" do frontend para permitir pagar bônus/dividendos de meses
-   * que ainda não venceram em homologação.
-   */
-  @IsOptional() @IsBoolean() allowEarly?: boolean;
 }
 
 export class BulkPayoutActionDto {

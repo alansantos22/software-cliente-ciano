@@ -264,22 +264,13 @@ export class AdminService {
 
   // ─── Payouts (Admin-Driven 3-Stage) ────────────────────
 
-  async calculateDistribution(
-    profitMonth: string,
-    netProfit: number,
-    options: { testMode?: boolean } = {},
-  ) {
+  async calculateDistribution(profitMonth: string, netProfit: number) {
     const settings = await this.settingsRepo.findOne({ where: { id: 1 } });
     const dividendPoolPercent = settings?.profitPayoutPercentage || 20;
     const dividendPool = netProfit * dividendPoolPercent / 100;
 
-    // SOMENTE no Modo de testes recapturamos o snapshot para refletir a rede
-    // ATUAL (permite testar mudanças na árvore: novos downlines, vínculos,
-    // títulos). Em produção o snapshot é IMUTÁVEL — congelado no estado de fim
-    // de mês — para não pagar quem não tinha cota no mês nem dar bônus indevido.
-    if (options.testMode) {
-      await this.snapshotService.captureMonth(profitMonth, { force: true });
-    }
+    // O snapshot é IMUTÁVEL — congelado no estado de fim de mês — para não
+    // pagar quem não tinha cota no mês nem dar bônus indevido.
 
     // ── Datas de pagamento ────────────────────────────────────────
     // Regra do cliente (2026-05): bônus de rede pagam ref+1 e dividendos
@@ -396,24 +387,15 @@ export class AdminService {
     };
   }
 
-  async generateBatch(
-    profitMonth: string,
-    netProfit: number,
-    adminId: string,
-    options: { allowFutureMonth?: boolean } = {},
-  ) {
+  async generateBatch(profitMonth: string, netProfit: number, adminId: string) {
     // ── Bloqueio: não permitir processar mês corrente ou futuro ─────
     // Regra do cliente: o mês de competência só pode ser fechado quando já
     // tiver acabado, do contrário o lucro do mês ainda está em movimento.
-    // `allowFutureMonth` é um bypass para o "Modo de testes" do frontend.
-    if (!options.allowFutureMonth && profitMonth >= getCurrentPeriod()) {
+    if (profitMonth >= getCurrentPeriod()) {
       throw new BadRequestException(
         `Não é possível processar o pagamento de ${profitMonth}: o mês ainda não fechou. ` +
           `Aguarde o primeiro dia do mês seguinte para gerar este lote.`,
       );
-    }
-    if (options.allowFutureMonth && profitMonth >= getCurrentPeriod()) {
-      this.logger.warn(`⚠️  Modo de testes: gerando lote do mês ${profitMonth} (mês não fechou).`);
     }
 
     // Check for existing batch FIRST (antes de qualquer cálculo)
@@ -430,14 +412,10 @@ export class AdminService {
     const dividendPoolPercent = settings?.profitPayoutPercentage || 20;
     const dividendPool = netProfit * dividendPoolPercent / 100;
 
-    // Garante o snapshot do mês. SOMENTE no Modo de testes (allowFutureMonth)
-    // recapturamos (force) para refletir a rede atual — permite testar mudanças
-    // na árvore sem o snapshot raso fazer o bônus de equipe/liderança parar no
-    // 1º nível. Em produção a foto é IMUTÁVEL: usa a capturada no fechamento
-    // (MonthlyCloseJob) ou, na ausência dela, captura uma vez (idempotente).
-    await this.snapshotService.captureMonth(profitMonth, {
-      force: options.allowFutureMonth ?? false,
-    });
+    // Garante o snapshot do mês. A foto é IMUTÁVEL: usa a capturada no
+    // fechamento (MonthlyCloseJob) ou, na ausência dela, captura uma vez
+    // (idempotente).
+    await this.snapshotService.captureMonth(profitMonth, { force: false });
 
     // Dividendos do mês M (pagam M+2). Equipe + liderança de M (pagam M+1)
     // são calculados em seguida, em travessia leaf-up — sua base é o que o
@@ -605,10 +583,8 @@ export class AdminService {
    *   2. Limpa o `processed_at` dos ganhos imediatos (compra/recompra) do mês.
    *   3. Apaga os PayoutRequests do mês.
    *
-   * O snapshot do mês é preservado por esta operação. Ao regenerar: em produção
-   * reusa a mesma foto (recálculo determinístico); no Modo de testes
-   * (allowFutureMonth) `generateBatch` recaptura a foto para refletir a rede
-   * atual.
+   * O snapshot do mês é preservado por esta operação. Ao regenerar, reusa a
+   * mesma foto (recálculo determinístico).
    */
   async voidBatch(profitMonth: string) {
     const payouts = await this.payoutRepo.find({ where: { referenceMonth: profitMonth } });
@@ -723,7 +699,6 @@ export class AdminService {
     action: string,
     transactionId?: string,
     failureReason?: string,
-    allowEarly = false,
   ) {
     const payout = await this.payoutRepo.findOne({ where: { id: payoutId } });
     if (!payout) return null;
@@ -736,17 +711,15 @@ export class AdminService {
       // Trava: como paga as duas parcelas, só libera quando a MAIS TARDIA já
       // venceu (em geral os dividendos, ref+2). Evita quitar o lote inteiro
       // — e antecipar os dividendos — antes da hora.
-      if (!allowEarly) {
-        const dueMonths = [
-          Number(payout.networkAmount || 0) > 0 ? (payout.bonusPaymentMonth ?? payout.paymentMonth) : null,
-          Number(payout.quotaAmount || 0) > 0 ? (payout.dividendPaymentMonth ?? payout.paymentMonth) : null,
-        ].filter((m): m is string => !!m);
-        const latestDue = dueMonths.sort().pop();
-        if (latestDue && getCurrentPeriod() < latestDue) {
-          throw new BadRequestException(
-            `Este lote (competência ${payout.referenceMonth}) só pode ser marcado como pago a partir de ${latestDue}.`,
-          );
-        }
+      const dueMonths = [
+        Number(payout.networkAmount || 0) > 0 ? (payout.bonusPaymentMonth ?? payout.paymentMonth) : null,
+        Number(payout.quotaAmount || 0) > 0 ? (payout.dividendPaymentMonth ?? payout.paymentMonth) : null,
+      ].filter((m): m is string => !!m);
+      const latestDue = dueMonths.sort().pop();
+      if (latestDue && getCurrentPeriod() < latestDue) {
+        throw new BadRequestException(
+          `Este lote (competência ${payout.referenceMonth}) só pode ser marcado como pago a partir de ${latestDue}.`,
+        );
       }
       const now = new Date();
       if (!payout.bonusPaidAt) payout.bonusPaidAt = now;
@@ -766,7 +739,7 @@ export class AdminService {
       // (ref+1). Impede pagamento antecipado acidental. Comparação de strings
       // YYYY-MM é cronológica.
       const dueMonth = payout.bonusPaymentMonth ?? payout.paymentMonth;
-      if (!allowEarly && dueMonth && getCurrentPeriod() < dueMonth) {
+      if (dueMonth && getCurrentPeriod() < dueMonth) {
         throw new BadRequestException(
           `Os bônus deste lote (competência ${payout.referenceMonth}) só podem ser pagos a partir de ${dueMonth}.`,
         );
@@ -784,7 +757,7 @@ export class AdminService {
       // (ref+2). É a parcela mais sujeita a clique antecipado, pois aparece no
       // lote da competência dois meses antes de vencer.
       const dueMonth = payout.dividendPaymentMonth ?? payout.paymentMonth;
-      if (!allowEarly && dueMonth && getCurrentPeriod() < dueMonth) {
+      if (dueMonth && getCurrentPeriod() < dueMonth) {
         throw new BadRequestException(
           `Os dividendos deste lote (competência ${payout.referenceMonth}) só podem ser pagos a partir de ${dueMonth}.`,
         );

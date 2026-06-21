@@ -37,11 +37,11 @@ export const adminService = {
   },
 
   // ── Payouts ──
-  calculateDistribution(payload: { profitMonth: string; netProfit: number; allowFutureMonth?: boolean }) {
+  calculateDistribution(payload: { profitMonth: string; netProfit: number }) {
     return api.post('/admin/payouts/calculate-distribution', payload);
   },
 
-  generateBatch(payload: { profitMonth: string; netProfit: number; allowFutureMonth?: boolean }) {
+  generateBatch(payload: { profitMonth: string; netProfit: number }) {
     return api.post('/admin/payouts/generate-batch', payload);
   },
 
@@ -57,18 +57,18 @@ export const adminService = {
     return api.patch(`/admin/payouts/${payoutId}/process`);
   },
 
-  confirmPayout(payoutId: string, payload: { transactionId?: string; action: string; failureReason?: string; allowEarly?: boolean }) {
+  confirmPayout(payoutId: string, payload: { transactionId?: string; action: string; failureReason?: string }) {
     return api.patch(`/admin/payouts/${payoutId}/confirm`, payload);
   },
 
-  /** Marca apenas a parte de bônus do lote como paga. `allowEarly` libera o pagamento antes do mês de vencimento (modo de testes). */
-  payBonus(payoutId: string, allowEarly = false) {
-    return api.patch(`/admin/payouts/${payoutId}/pay-bonus`, { allowEarly });
+  /** Marca apenas a parte de bônus do lote como paga (a partir do mês de vencimento). */
+  payBonus(payoutId: string) {
+    return api.patch(`/admin/payouts/${payoutId}/pay-bonus`, {});
   },
 
-  /** Marca apenas a parte de dividendos do lote como paga. `allowEarly` libera o pagamento antes do mês de vencimento (modo de testes). */
-  payDividend(payoutId: string, allowEarly = false) {
-    return api.patch(`/admin/payouts/${payoutId}/pay-dividend`, { allowEarly });
+  /** Marca apenas a parte de dividendos do lote como paga (a partir do mês de vencimento). */
+  payDividend(payoutId: string) {
+    return api.patch(`/admin/payouts/${payoutId}/pay-dividend`, {});
   },
 
   bulkPayoutAction(payload: { payoutIds: string[]; action: string }) {
