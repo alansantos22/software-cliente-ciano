@@ -82,11 +82,28 @@ export class AdminManagerService {
   }
 
   async getUsers() {
+    // Inclui o admin na listagem (além dos usuários comuns). O admin aparece
+    // apenas para receber/retirar cotas — as demais ações são bloqueadas no
+    // servidor (ver ASSERT_NOT_ADMIN abaixo) e ocultas na UI via `role`.
     return this.userRepo.find({
-      where: { role: 'user' as any, deletedAt: IsNull() },
+      where: [
+        { role: 'user' as any, deletedAt: IsNull() },
+        { role: 'admin' as any, deletedAt: IsNull() },
+      ],
       order: { createdAt: 'DESC' },
-      select: ['id', 'name', 'email', 'cpf', 'title', 'partnerLevel', 'quotaBalance', 'purchasedQuotas', 'adminGrantedQuotas', 'splitQuotas', 'sponsorId', 'isActive', 'createdAt'],
+      select: ['id', 'name', 'email', 'cpf', 'title', 'partnerLevel', 'role', 'quotaBalance', 'purchasedQuotas', 'adminGrantedQuotas', 'splitQuotas', 'sponsorId', 'isActive', 'createdAt'],
     });
+  }
+
+  /**
+   * Garante que a ação não é aplicada sobre uma conta admin. Usado nas
+   * operações que não fazem sentido para o admin (patrocinador, ativação,
+   * exclusão, simulação de compra). Apenas add/remove de cotas são permitidas.
+   */
+  private assertNotAdmin(user: { role?: string }) {
+    if (user.role === 'admin') {
+      throw new BadRequestException('Esta operação não é permitida para a conta admin');
+    }
   }
 
   async addQuotas(userId: string, quantity: number, managerPassword: string, reason?: string) {
@@ -155,6 +172,7 @@ export class AdminManagerService {
 
     const user = await this.userRepo.findOne({ where: { id: userId } });
     if (!user) throw new BadRequestException('Usuário não encontrado');
+    this.assertNotAdmin(user);
 
     const newSponsor = await this.userRepo.findOne({ where: { id: newSponsorId } });
     if (!newSponsor) throw new BadRequestException('Novo patrocinador não encontrado');
@@ -192,6 +210,7 @@ export class AdminManagerService {
 
     const user = await this.userRepo.findOne({ where: { id: userId } });
     if (!user) throw new BadRequestException('Usuário não encontrado');
+    this.assertNotAdmin(user);
 
     user.isActive = isActive;
     await this.userRepo.save(user);
@@ -206,6 +225,7 @@ export class AdminManagerService {
 
     const user = await this.userRepo.findOne({ where: { id: userId } });
     if (!user) throw new BadRequestException('Usuário não encontrado');
+    this.assertNotAdmin(user);
 
     // Sobe os downlines diretos para o patrocinador do usuário deletado
     const downlines = await this.userRepo.find({ where: { sponsorId: userId } });
@@ -247,6 +267,7 @@ export class AdminManagerService {
 
     const user = await this.userRepo.findOne({ where: { id: userId } });
     if (!user) throw new BadRequestException('Usuário não encontrado');
+    this.assertNotAdmin(user);
 
     const state = await this.splitEngine.getState();
     const price = Number(state.currentQuotaPrice);
