@@ -49,7 +49,17 @@ export class AdminManagerService {
 
   async setPassword(password: string) {
     const hash = await argon2.hash(password);
-    await this.settingsRepo.update(1, { managerPasswordHash: hash });
+
+    // `update(1, ...)` é um no-op silencioso quando a linha id=1 não existe
+    // (afeta 0 linhas e retorna 201) — o hash nunca era persistido e a senha
+    // "configurada" voltava como não configurada. `save` cria-ou-atualiza.
+    const result = await this.settingsRepo.update(1, { managerPasswordHash: hash });
+    if (!result.affected) {
+      await this.settingsRepo.save(
+        this.settingsRepo.create({ id: 1, managerPasswordHash: hash }),
+      );
+    }
+
     return { message: 'Senha de gerente definida com sucesso' };
   }
 
