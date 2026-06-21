@@ -21,7 +21,10 @@
             <td class="mgr-user-table__user-cell">
               <div class="mgr-avatar">{{ getInitials(user.name) }}</div>
               <div class="mgr-info">
-                <span class="mgr-info__name">{{ user.name }}</span>
+                <span class="mgr-info__name">
+                  {{ user.name }}
+                  <span v-if="user.role === 'admin'" class="mgr-info__badge">Admin</span>
+                </span>
                 <span class="mgr-info__email">{{ user.email }}</span>
               </div>
             </td>
@@ -92,26 +95,30 @@
                       <font-awesome-icon icon="minus" />
                       Retirar Cotas
                     </button>
-                    <button class="mgr-action-menu__item mgr-action-menu__item--simulate" @click="action('simulate', user)">
-                      <font-awesome-icon icon="qrcode" />
-                      Simular Compra (PIX)
-                    </button>
-                    <button class="mgr-action-menu__item" @click="action('sponsor', user)">
-                      <font-awesome-icon icon="arrows-rotate" />
-                      Alterar Patrocinador
-                    </button>
-                    <button
-                      :class="['mgr-action-menu__item', user.isActive ? 'mgr-action-menu__item--warning' : 'mgr-action-menu__item--success']"
-                      @click="action('activate', user)"
-                    >
-                      <font-awesome-icon :icon="user.isActive ? 'user-slash' : 'user-check'" />
-                      {{ user.isActive ? 'Desativar Conta' : 'Ativar Conta' }}
-                    </button>
-                    <div class="mgr-action-menu__divider" />
-                    <button class="mgr-action-menu__item mgr-action-menu__item--danger" @click="action('delete', user)">
-                      <font-awesome-icon icon="trash" />
-                      Excluir Cadastro
-                    </button>
+
+                    <!-- Demais ações ficam ocultas para a conta admin -->
+                    <template v-if="user.role !== 'admin'">
+                      <button class="mgr-action-menu__item mgr-action-menu__item--simulate" @click="action('simulate', user)">
+                        <font-awesome-icon icon="qrcode" />
+                        Simular Compra (PIX)
+                      </button>
+                      <button class="mgr-action-menu__item" @click="action('sponsor', user)">
+                        <font-awesome-icon icon="arrows-rotate" />
+                        Alterar Patrocinador
+                      </button>
+                      <button
+                        :class="['mgr-action-menu__item', user.isActive ? 'mgr-action-menu__item--warning' : 'mgr-action-menu__item--success']"
+                        @click="action('activate', user)"
+                      >
+                        <font-awesome-icon :icon="user.isActive ? 'user-slash' : 'user-check'" />
+                        {{ user.isActive ? 'Desativar Conta' : 'Ativar Conta' }}
+                      </button>
+                      <div class="mgr-action-menu__divider" />
+                      <button class="mgr-action-menu__item mgr-action-menu__item--danger" @click="action('delete', user)">
+                        <font-awesome-icon icon="trash" />
+                        Excluir Cadastro
+                      </button>
+                    </template>
                   </div>
                 </transition>
               </Teleport>
@@ -310,6 +317,20 @@ function getSponsorName(sponsorId: string | null): string {
     font-weight: 600;
     color: var(--text-primary);
     white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+
+  &__badge {
+    font-size: 0.625rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 0.1rem 0.4rem;
+    border-radius: 999px;
+    background: rgba($secondary-500, 0.15);
+    color: $secondary-700;
   }
 
   &__email {
