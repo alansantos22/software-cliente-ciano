@@ -84,12 +84,55 @@ create_deploy_script() {
 #!/bin/bash
 # deploy.sh — Atualiza o sistema Ciano Cotas na VPS (puxa código, builda, reinicia).
 # Gerado automaticamente pelo setup.sh.
+#
+# Pode ser rodado de DUAS formas, sem quebrar:
+#   - como o usuário do app (ex.: ciano):        ./deploy.sh
+#   - como root / com sudo (ex.: sudo ./deploy.sh)
+#
+# IMPORTANTE: o PM2 é "por usuário" — cada usuário (ciano, root) tem o seu próprio
+# daemon e a sua própria lista de apps. O app de verdade roda no PM2 do DONO de
+# /var/www/ciano (o 'ciano'). Se o git/npm/pm2 rodasse como root (o que acontece
+# com 'sudo ./deploy.sh'), ele mexeria no PM2 do ROOT — um daemon diferente —, e o
+# app real (do ciano) NUNCA seria atualizado, enquanto um "fantasma" no root ficaria
+# em loop de erro. Por isso este script SEMPRE roda git/npm/pm2 como o dono do app,
+# e usa root apenas para recarregar o Nginx.
 set -e
 
 APP_DIR="/var/www/ciano"
 SERVICE="ciano"
 ENV_FILE="$APP_DIR/backend/.env.production"
 MIGRATIONS_DIR="$APP_DIR/backend/database/migrations"
+
+# --- Quem é o dono do app (no PM2 de quem o app de verdade roda) ---------------
+OWNER="$(stat -c '%U' "$APP_DIR")"
+[ -n "$OWNER" ] || { echo "✗ Não consegui detectar o dono de $APP_DIR" >&2; exit 1; }
+
+# Roda um comando como o DONO do app, com ambiente de login (PATH do pm2/node/npm),
+# independentemente de o deploy ter sido chamado como o próprio dono ou via sudo.
+if [ "$(id -un)" = "$OWNER" ]; then
+  as_owner() { bash -lc "$*"; }                 # já somos o dono → roda direto
+else
+  as_owner() { sudo -u "$OWNER" bash -lc "$*"; } # somos root/outro → vira o dono
+fi
+
+# Roda um comando como root (para o Nginx). Se já formos root, roda direto.
+if [ "$(id -u)" -eq 0 ]; then
+  as_root() { bash -c "$*"; }
+else
+  as_root() { sudo bash -c "$*"; }
+fi
+
+# --- Limpa um eventual app 'ciano' FANTASMA no PM2 do root ---------------------
+# (criado por deploys antigos que rodaram pm2 como root). Ele briga pela porta 3000
+# e fica em loop de erro. Só removemos se conseguirmos falar com o pm2 do root.
+if [ "$(id -u)" -eq 0 ] || sudo -n true 2>/dev/null; then
+  if as_root "command -v pm2 >/dev/null 2>&1 && pm2 describe '$SERVICE' >/dev/null 2>&1"; then
+    if [ "$OWNER" != "root" ]; then
+      echo "==> Removendo app '$SERVICE' fantasma do PM2 do root..."
+      as_root "pm2 delete '$SERVICE' >/dev/null 2>&1 || true; pm2 save --force >/dev/null 2>&1 || true"
+    fi
+  fi
+fi
 
 # Extrai só as variáveis do MySQL (sem 'source' — evita erro com '<' '>' em valores)
 get_env() {
@@ -99,9 +142,8 @@ DB_USERNAME="$(get_env DB_USERNAME)"
 DB_PASSWORD="$(get_env DB_PASSWORD)"
 DB_DATABASE="$(get_env DB_DATABASE)"
 
-echo "==> [1/6] Puxando atualizacoes do Git..."
-cd "$APP_DIR"
-git pull origin main
+echo "==> [1/6] Puxando atualizacoes do Git... (como '$OWNER')"
+as_owner "cd '$APP_DIR' && git pull origin main"
 
 echo "==> [2/6] Aplicando migrations SQL pendentes..."
 # Senha via env var (evita warning de senha na linha de comando)
@@ -134,29 +176,24 @@ if [ -d "$MIGRATIONS_DIR" ]; then
 fi
 unset MYSQL_PWD
 
-echo "==> [3/6] Build do Backend..."
-cd "$APP_DIR/backend"
-npm ci
-npm run build
+echo "==> [3/6] Build do Backend... (como '$OWNER')"
+as_owner "cd '$APP_DIR/backend' && npm ci && npm run build"
 
-echo "==> [4/6] Build do Frontend..."
-cd "$APP_DIR/frontend"
-npm ci
-npm run build
+echo "==> [4/6] Build do Frontend... (como '$OWNER')"
+as_owner "cd '$APP_DIR/frontend' && npm ci && npm run build"
 
-echo "==> [5/6] Reiniciando Backend (pm2 startOrReload — zero-downtime)..."
+echo "==> [5/6] Reiniciando Backend (pm2 startOrReload — zero-downtime, como '$OWNER')..."
 # startOrReload: cria o processo se ainda não existir, ou recarrega se já estiver rodando.
 # (pm2 reload puro falha com "Process or Namespace ... not found" se o app nunca foi iniciado.)
-cd "$APP_DIR/backend"
-pm2 startOrReload ecosystem.config.cjs --update-env
-pm2 save
+# SEMPRE como o dono — nunca como root — para mexer no PM2 certo.
+as_owner "cd '$APP_DIR/backend' && pm2 startOrReload ecosystem.config.cjs --update-env && pm2 save"
 
 echo "==> [6/6] Recarregando Nginx..."
-sudo nginx -t && sudo systemctl reload nginx
+as_root "nginx -t" && as_root "systemctl reload nginx"
 
 echo ""
 echo "Deploy concluido com sucesso!"
-pm2 status "$SERVICE"
+as_owner "pm2 status '$SERVICE'"
 DEPLOY
   chown "$OWNER:$OWNER" "${APP_DIR}/deploy.sh"
   chmod +x "${APP_DIR}/deploy.sh"
