@@ -12,7 +12,6 @@ import {
   CalculateDistributionDto,
   GenerateBatchDto,
   ProcessPayoutActionDto,
-  PayInstallmentDto,
   BulkPayoutActionDto,
   UpdatePriceEngineDto,
 } from './dto/admin.dto';
@@ -63,19 +62,12 @@ export class AdminController {
 
   @Post('payouts/calculate-distribution')
   calculateDistribution(@Body() dto: CalculateDistributionDto) {
-    return this.adminService.calculateDistribution(dto.profitMonth, dto.netProfit, {
-      testMode: dto.allowFutureMonth ?? false,
-    });
+    return this.adminService.calculateDistribution(dto.profitMonth, dto.netProfit);
   }
 
   @Post('payouts/generate-batch')
   generateBatch(@CurrentUser() user: User, @Body() dto: GenerateBatchDto) {
-    return this.adminService.generateBatch(
-      dto.profitMonth,
-      dto.netProfit,
-      user.id,
-      { allowFutureMonth: dto.allowFutureMonth ?? false },
-    );
+    return this.adminService.generateBatch(dto.profitMonth, dto.netProfit, user.id);
   }
 
   @Get('payouts')
@@ -95,19 +87,19 @@ export class AdminController {
 
   @Patch('payouts/:payoutId/confirm')
   processPayoutConfirm(@Param('payoutId') payoutId: string, @Body() dto: ProcessPayoutActionDto) {
-    return this.adminService.processPayoutAction(payoutId, dto.action, dto.transactionId, dto.failureReason, dto.allowEarly);
+    return this.adminService.processPayoutAction(payoutId, dto.action, dto.transactionId, dto.failureReason);
   }
 
   /** Marca apenas a parte de BÔNUS do lote como paga. */
   @Patch('payouts/:payoutId/pay-bonus')
-  payBonus(@Param('payoutId') payoutId: string, @Body() dto: PayInstallmentDto) {
-    return this.adminService.processPayoutAction(payoutId, 'pay-bonus', undefined, undefined, dto?.allowEarly);
+  payBonus(@Param('payoutId') payoutId: string) {
+    return this.adminService.processPayoutAction(payoutId, 'pay-bonus');
   }
 
   /** Marca apenas a parte de DIVIDENDOS do lote como paga. */
   @Patch('payouts/:payoutId/pay-dividend')
-  payDividend(@Param('payoutId') payoutId: string, @Body() dto: PayInstallmentDto) {
-    return this.adminService.processPayoutAction(payoutId, 'pay-dividend', undefined, undefined, dto?.allowEarly);
+  payDividend(@Param('payoutId') payoutId: string) {
+    return this.adminService.processPayoutAction(payoutId, 'pay-dividend');
   }
 
   @Post('payouts/bulk-action')

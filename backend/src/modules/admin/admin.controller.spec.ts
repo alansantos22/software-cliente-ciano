@@ -51,19 +51,14 @@ describe('AdminController', () => {
     expect(admin.updatePriceEngine).toHaveBeenCalledWith(true);
   });
 
-  it('calculateDistribution maps allowFutureMonth to testMode', async () => {
-    await controller.calculateDistribution({ profitMonth: '2025-03', netProfit: 1000, allowFutureMonth: true } as any);
-    expect(admin.calculateDistribution).toHaveBeenCalledWith('2025-03', 1000, { testMode: true });
-  });
-
-  it('calculateDistribution defaults testMode to false', async () => {
+  it('calculateDistribution forwards profitMonth and netProfit', async () => {
     await controller.calculateDistribution({ profitMonth: '2025-03', netProfit: 1000 } as any);
-    expect(admin.calculateDistribution).toHaveBeenCalledWith('2025-03', 1000, { testMode: false });
+    expect(admin.calculateDistribution).toHaveBeenCalledWith('2025-03', 1000);
   });
 
-  it('generateBatch forwards the admin id and options', async () => {
-    await controller.generateBatch(user, { profitMonth: '2025-03', netProfit: 1000, allowFutureMonth: true } as any);
-    expect(admin.generateBatch).toHaveBeenCalledWith('2025-03', 1000, 'admin-1', { allowFutureMonth: true });
+  it('generateBatch forwards the admin id', async () => {
+    await controller.generateBatch(user, { profitMonth: '2025-03', netProfit: 1000 } as any);
+    expect(admin.generateBatch).toHaveBeenCalledWith('2025-03', 1000, 'admin-1');
   });
 
   it('getPayouts forwards status and month query params', async () => {
@@ -81,16 +76,16 @@ describe('AdminController', () => {
   });
 
   it('processPayoutConfirm forwards DTO fields', async () => {
-    await controller.processPayoutConfirm('p1', { action: 'completed', transactionId: 't', failureReason: 'r', allowEarly: true } as any);
-    expect(admin.processPayoutAction).toHaveBeenCalledWith('p1', 'completed', 't', 'r', true);
+    await controller.processPayoutConfirm('p1', { action: 'completed', transactionId: 't', failureReason: 'r' } as any);
+    expect(admin.processPayoutAction).toHaveBeenCalledWith('p1', 'completed', 't', 'r');
   });
 
   it('payBonus / payDividend use the right actions', async () => {
-    await controller.payBonus('p1', { allowEarly: true } as any);
-    expect(admin.processPayoutAction).toHaveBeenCalledWith('p1', 'pay-bonus', undefined, undefined, true);
+    await controller.payBonus('p1');
+    expect(admin.processPayoutAction).toHaveBeenCalledWith('p1', 'pay-bonus');
 
-    await controller.payDividend('p1', { allowEarly: false } as any);
-    expect(admin.processPayoutAction).toHaveBeenCalledWith('p1', 'pay-dividend', undefined, undefined, false);
+    await controller.payDividend('p1');
+    expect(admin.processPayoutAction).toHaveBeenCalledWith('p1', 'pay-dividend');
   });
 
   it('bulkPayoutAction forwards ids/action/transactionId', async () => {

@@ -294,7 +294,7 @@ describe('AdminService', () => {
       );
     });
 
-    it('should allow early dividend payment when allowEarly is set', async () => {
+    it('should reject early dividend payment (no bypass available)', async () => {
       const payout: any = {
         id: 'p1',
         referenceMonth: '2999-10',
@@ -305,11 +305,9 @@ describe('AdminService', () => {
       };
       payoutRepo.findOne.mockResolvedValue(payout);
 
-      const result = await service.processPayoutAction('p1', 'pay-dividend', undefined, undefined, true);
-
-      expect(result!.dividendPaidAt).toBeInstanceOf(Date);
-      // no bonus due → finalize completes the payout
-      expect(result!.status).toBe(PayoutStatus.COMPLETED);
+      await expect(service.processPayoutAction('p1', 'pay-dividend')).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('should pay bonus for a past-due month and persist the payout', async () => {
@@ -525,9 +523,9 @@ describe('AdminService', () => {
       expect(u2.quotaAmount).toBe(50);
     });
 
-    it('should recapture the snapshot in test mode', async () => {
-      await service.calculateDistribution('2025-03', 1000, { testMode: true });
-      expect(snapshotService.captureMonth).toHaveBeenCalledWith('2025-03', { force: true });
+    it('should never recapture the snapshot (it is immutable)', async () => {
+      await service.calculateDistribution('2025-03', 1000);
+      expect(snapshotService.captureMonth).not.toHaveBeenCalled();
     });
 
     it('should drop payees with zero total amount', async () => {

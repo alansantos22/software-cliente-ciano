@@ -29,25 +29,11 @@
           </div>
         </template>
 
-        <!-- Modo de testes — destrava meses não fechados -->
-        <div class="trigger-card__test-mode">
-          <label class="test-mode-toggle">
-            <input type="checkbox" v-model="testMode" />
-            <span class="test-mode-toggle__slider"></span>
-            <span class="test-mode-toggle__label">
-              <font-awesome-icon icon="flask" />
-              Modo de testes — permite gerar lote de meses ainda não fechados
-            </span>
-          </label>
-        </div>
-
         <!-- Alerta: mês ainda não fechou (mês corrente ou futuro) -->
-        <DsAlert v-if="isMonthInFuture && !isMonthAlreadyProcessed" :type="testMode ? 'info' : 'warning'" class="trigger-card__lock-alert">
+        <DsAlert v-if="isMonthInFuture && !isMonthAlreadyProcessed" type="warning" class="trigger-card__lock-alert">
           <font-awesome-icon icon="triangle-exclamation" />
           <strong>{{ formatMonthLabel(profitMonth) }}</strong> ainda não fechou — o lucro do
-          mês ainda está em movimento.
-          <template v-if="!testMode">Selecione um mês anterior para gerar o lote.</template>
-          <template v-else>Modo de testes ativo: o lote será gerado mesmo assim.</template>
+          mês ainda está em movimento. Selecione um mês anterior para gerar o lote.
         </DsAlert>
 
         <!-- Alerta: mês já processado -->
@@ -59,7 +45,7 @@
               processada. Apenas operações de pagamento na lista abaixo estão liberadas.
             </div>
             <DsButton variant="ghost" size="sm" @click="cancelBatch">
-              <font-awesome-icon icon="ban" /> Cancelar lote (testes)
+              <font-awesome-icon icon="ban" /> Cancelar lote
             </DsButton>
           </div>
         </DsAlert>
@@ -524,14 +510,6 @@
     ══════════════════════════════════════════════════════════ -->
     <DsModal v-model="showPayConfirm" title="Confirmar pagamento">
       <div v-if="payConfirmRow" class="payout-details">
-        <DsAlert v-if="payConfirmEarly" type="warning" style="margin-bottom: 1rem;">
-          <strong>Pagamento adiantado.</strong>
-          Este pagamento só vence em
-          <strong>{{ formatMonthLabel(payConfirmRow.dueMonth) }}</strong>
-          e hoje é <strong>{{ formatMonthLabel(currentMonthYM) }}</strong>.
-          Você está pagando antes do previsto (Modo de testes).
-        </DsAlert>
-
         <div class="detail-row">
           <span>Cotista:</span>
           <strong>{{ payConfirmRow.userName }}</strong>
@@ -567,10 +545,10 @@
       <template #footer>
         <DsButton variant="ghost" @click="showPayConfirm = false">Cancelar</DsButton>
         <DsButton
-          :variant="payConfirmEarly ? 'danger' : 'primary'"
+          variant="primary"
           @click="confirmPayDue()"
         >
-          {{ payConfirmEarly ? 'Pagar mesmo assim' : 'Confirmar pagamento' }}
+          Confirmar pagamento
         </DsButton>
       </template>
     </DsModal>
@@ -579,7 +557,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import * as XLSX from 'xlsx';
 import {
   DsCard,
@@ -653,22 +631,11 @@ const dividendPaymentMonth = computed(() => addMonths(profitMonth.value, 2));
 /** Mês corrente em YYYY-MM — usado para bloquear processamento de mês não fechado. */
 const currentMonthYM = computed(() => new Date().toISOString().slice(0, 7));
 
-/**
- * Modo de testes: quando ligado, o seletor de mês aceita o mês corrente e
- * futuros, e o backend recebe `allowFutureMonth: true` para gerar o lote
- * mesmo assim. Persistido em localStorage para não atrapalhar o uso normal
- * em sessões seguintes — o admin liga só quando vai testar.
- */
-const testMode = ref<boolean>(localStorage.getItem('payouts:testMode') === '1');
-watch(testMode, (on: boolean) => {
-  localStorage.setItem('payouts:testMode', on ? '1' : '0');
-});
-
-/** Cheque puro: o mês selecionado é corrente ou futuro (ignora `testMode`). */
+/** Cheque puro: o mês selecionado é corrente ou futuro. */
 const isMonthInFuture = computed(() => profitMonth.value >= currentMonthYM.value);
 
-/** Bloqueio efetivo: o mês está fechado OU o modo de testes destrava. */
-const isMonthNotClosed = computed(() => isMonthInFuture.value && !testMode.value);
+/** Bloqueio: só é possível gerar lote de um mês já fechado (anterior ao atual). */
+const isMonthNotClosed = computed(() => isMonthInFuture.value);
 
 // ─── Etapa 2: Distribuição ────────────────────────────────────
 const showDistribution = ref(false);
@@ -865,7 +832,6 @@ async function calculateDistribution() {
     const res = await adminService.calculateDistribution({
       profitMonth: profitMonth.value,
       netProfit: netProfit.value,
-      allowFutureMonth: testMode.value,
     });
     if (res.data) {
       // Map backend field names to table column keys
@@ -924,7 +890,6 @@ async function generatePayoutsFromProfit() {
     const res = await adminService.generateBatch({
       profitMonth: profitMonth.value,
       netProfit: netProfit.value,
-      allowFutureMonth: testMode.value,
     });
     if (res.data) {
       // generateBatch returns batch metadata; reload full payout list
@@ -1062,23 +1027,19 @@ const dueRows = computed<DueRow[]>(() => {
   return [...byUser.values()];
 });
 
-/** Pode pagar agora? O mês de vencimento já chegou OU modo de testes. */
+/** Pode pagar agora? Somente quando o mês de vencimento já chegou. */
 function isDueRowPayable(row: Record<string, unknown>): boolean {
   const due = String(row.dueMonth ?? '');
-  return testMode.value || !due || currentMonthYM.value >= due;
+  return !due || currentMonthYM.value >= due;
 }
 
 // ─── Modal de confirmação de pagamento ───────────────────────────
 const showPayConfirm  = ref(false);
 const payConfirmRow   = ref<DueRow | null>(null);
-const payConfirmEarly = ref(false);
 
 function payDueRow(row: Record<string, unknown>) {
-  const r = row as DueRow;
-  payConfirmRow.value   = r;
-  // "Adiantado" = o mês de vencimento ainda não chegou (só possível em testes).
-  payConfirmEarly.value = !!r.dueMonth && currentMonthYM.value < r.dueMonth;
-  showPayConfirm.value  = true;
+  payConfirmRow.value  = row as DueRow;
+  showPayConfirm.value = true;
 }
 
 /**
@@ -1090,12 +1051,11 @@ function payDueRow(row: Record<string, unknown>) {
 async function confirmPayDue() {
   const row = payConfirmRow.value;
   if (!row) return;
-  const early = payConfirmEarly.value;
   try {
     for (const inst of row.installments) {
       if (inst.paid) continue;
-      if (inst.kind === 'bonus') await adminService.payBonus(inst.payoutId, early);
-      else await adminService.payDividend(inst.payoutId, early);
+      if (inst.kind === 'bonus') await adminService.payBonus(inst.payoutId);
+      else await adminService.payDividend(inst.payoutId);
     }
     await loadPayouts();
   } catch { /* fail silently */ }
@@ -1186,66 +1146,6 @@ onMounted(async () => {
 
 }
 
-
-// ─── Modo de testes (toggle) ──────────────────────────────────
-.trigger-card__test-mode {
-  margin-bottom: $spacing-3;
-  padding: $spacing-2 $spacing-3;
-  border-radius: $radius-md;
-  background: rgba(217, 119, 6, 0.06);
-  border: 1px dashed rgba(217, 119, 6, 0.35);
-}
-
-.test-mode-toggle {
-  display: inline-flex;
-  align-items: center;
-  gap: $spacing-2;
-  cursor: pointer;
-  user-select: none;
-
-  input[type='checkbox'] {
-    position: absolute;
-    opacity: 0;
-    pointer-events: none;
-  }
-
-  &__slider {
-    position: relative;
-    width: 36px;
-    height: 20px;
-    border-radius: 999px;
-    background: var(--neutral-300, #d1d5db);
-    transition: background 0.15s;
-    flex-shrink: 0;
-
-    &::after {
-      content: '';
-      position: absolute;
-      top: 2px;
-      left: 2px;
-      width: 16px;
-      height: 16px;
-      border-radius: 50%;
-      background: #fff;
-      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
-      transition: transform 0.15s;
-    }
-  }
-
-  input:checked + &__slider {
-    background: #d97706;
-    &::after { transform: translateX(16px); }
-  }
-
-  &__label {
-    font-size: 0.8125rem;
-    color: #92400e;
-    font-weight: 500;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-  }
-}
 
 // ─── Etapa 1: Trigger Card ────────────────────────────────────
 .trigger-card {
