@@ -21,6 +21,7 @@ import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { UserRole } from '../../shared/interfaces/enums';
 import { generateRandomCode } from '../../shared/utils/helpers';
+import { ADMIN_REFERRAL_CODE } from '../../shared/utils/constants';
 import { EmailService } from '../../shared/email/email.service';
 
 @Injectable()
@@ -79,6 +80,8 @@ export class AuthService {
       if (!sponsor) {
         throw new BadRequestException('Código de indicação inválido');
       }
+    } else {
+      sponsor = await this.findDefaultSponsor();
     }
 
     const referralCode = `CIANO-${generateRandomCode(6)}`;
@@ -110,6 +113,31 @@ export class AuthService {
       ...tokens,
       user: this.sanitizeUser(user),
     };
+  }
+
+  /**
+   * Patrocinador usado quando o cadastro vem sem código de indicação: a conta
+   * admin. Sem isso o usuário nasce órfão (`sponsor_id NULL`) e fica fora do
+   * cálculo de bônus, da árvore de rede e da progressão de títulos.
+   */
+  private async findDefaultSponsor(): Promise<User | null> {
+    const seeded = await this.userRepo.findOne({
+      where: { referralCode: ADMIN_REFERRAL_CODE, deletedAt: IsNull() },
+    });
+    if (seeded) return seeded;
+
+    const admin = await this.userRepo.findOne({
+      where: { role: UserRole.ADMIN, deletedAt: IsNull() },
+      order: { createdAt: 'ASC' },
+    });
+
+    if (!admin) {
+      this.logger.warn(
+        'Nenhuma conta admin encontrada para ser patrocinador padrão — usuário será criado sem patrocinador.',
+      );
+    }
+
+    return admin;
   }
 
   async refresh(dto: RefreshTokenDto) {

@@ -12,13 +12,18 @@ export class UpdateGlobalConfigDto {
   @IsOptional() @IsEnum(ClosingDayMode) closingDayMode?: ClosingDayMode;
   @IsOptional() @IsInt() @Min(1) @Max(31) closingDay?: number;
   @IsOptional() @IsInt() @Min(1) @Max(28) paymentDay?: number;
+  @IsOptional() @IsNumber() @Min(0) @Max(100) profitPayoutPercentage?: number;
 }
 
+// Os nomes precisam bater com as colunas de MonthlyFinancialConfig: o service
+// faz Object.assign na entidade e o pipe global usa forbidNonWhitelisted, então
+// qualquer divergência rejeita a request inteira com 400.
 export class UpdateMonthlyConfigDto {
-  @IsOptional() @IsNumber() @Min(0) @Max(100) firstPurchaseBonus?: number;
-  @IsOptional() @IsNumber() @Min(0) @Max(100) repurchaseBonusL1?: number;
-  @IsOptional() @IsNumber() @Min(0) @Max(100) repurchaseBonusL2to6?: number;
-  @IsOptional() @IsNumber() @Min(0) @Max(100) teamBonus?: number;
+  @IsOptional() @IsNumber() @Min(0) @Max(100) firstPurchaseBonusPercent?: number;
+  @IsOptional() @IsNumber() @Min(0) @Max(100) firstPurchaseBonusNoQuotaPercent?: number;
+  @IsOptional() @IsNumber() @Min(0) @Max(100) repurchaseBonusL1Percent?: number;
+  @IsOptional() @IsNumber() @Min(0) @Max(100) repurchaseBonusL2to6Percent?: number;
+  @IsOptional() @IsNumber() @Min(0) @Max(100) teamBonusPercent?: number;
   @IsOptional() @IsNumber() @Min(0) @Max(100) dividendPoolPercent?: number;
 }
 

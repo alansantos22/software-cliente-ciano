@@ -15,6 +15,7 @@ import {
   TitleReqType,
   TitleReqLevel,
 } from '../../shared/interfaces/enums';
+import { ADMIN_REFERRAL_CODE } from '../../shared/utils/constants';
 
 @Injectable()
 export class SeedService implements OnModuleInit {
@@ -83,7 +84,7 @@ export class SeedService implements OnModuleInit {
       state: 'SP',
       pixKey: email,
       role: UserRole.ADMIN,
-      referralCode: 'CIANO-ADMIN',
+      referralCode: ADMIN_REFERRAL_CODE,
       isActive: true,
     });
 

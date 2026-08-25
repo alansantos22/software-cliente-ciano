@@ -25,19 +25,32 @@ export const useQuotaPresentationStore = defineStore('quotaPresentation', () => 
     }
   }
 
+  function applyList(list: HeroMetric[]) {
+    list.forEach((m, i) => {
+      if (heroMetrics[i]) {
+        heroMetrics[i].value = m?.value ?? heroMetrics[i].value;
+        heroMetrics[i].label = m?.label ?? heroMetrics[i].label;
+      }
+    });
+  }
+
   /** Load metrics from the public endpoint — safe for all users */
   async function loadMetrics() {
     if (isLoaded.value) return;
     try {
       const res = await quotasService.getPresentation();
       const pm = res.data?.presentationMetrics;
-      if (pm && Array.isArray(pm)) {
-        pm.forEach((m: HeroMetric, i: number) => {
-          if (heroMetrics[i]) {
-            heroMetrics[i].value = m.value ?? heroMetrics[i].value;
-            heroMetrics[i].label = m.label ?? heroMetrics[i].label;
-          }
-        });
+      // Formato atual: objeto com `heroMetrics` ao lado de chaves de config.
+      const nested = pm && !Array.isArray(pm) && typeof pm === 'object'
+        ? (pm as Record<string, unknown>).heroMetrics
+        : null;
+
+      if (Array.isArray(nested)) {
+        applyList(nested as HeroMetric[]);
+        isLoaded.value = true;
+      } else if (pm && Array.isArray(pm)) {
+        // Legacy format: array puro
+        applyList(pm as HeroMetric[]);
         isLoaded.value = true;
       } else if (pm && typeof pm === 'object') {
         // Legacy format: object with named keys
