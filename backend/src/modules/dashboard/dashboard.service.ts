@@ -10,6 +10,7 @@ import { GlobalFinancialSettings } from '../admin/entities/global-financial-sett
 import { TransactionType, TransactionStatus, PayoutStatus, BonusType, EarningStatus } from '../../shared/interfaces/enums';
 import { getCurrentPeriod } from '../../shared/utils/helpers';
 import { TitleCalculatorService } from '../../core/title/title-calculator.service';
+import { EarningsService } from '../earnings/earnings.service';
 
 @Injectable()
 export class DashboardService {
@@ -21,6 +22,7 @@ export class DashboardService {
     @InjectRepository(PayoutRequest) private readonly payoutRepo: Repository<PayoutRequest>,
     @InjectRepository(GlobalFinancialSettings) private readonly settingsRepo: Repository<GlobalFinancialSettings>,
     private readonly titleCalc: TitleCalculatorService,
+    private readonly earningsService: EarningsService,
   ) {}
 
   async getKpis(userId: string) {
@@ -301,12 +303,14 @@ export class DashboardService {
     };
   }
 
+  /**
+   * Últimos 10 ganhos do usuário, com a mesma regra de datas do histórico:
+   * ganhos de lote (dividendos/equipe/liderança) só aparecem depois de pagos
+   * e na data do PIX — ver `EarningsService.getOwnEarningRows`.
+   */
   async getRecentActivity(userId: string) {
-    return this.earningRepo.find({
-      where: { userId },
-      order: { createdAt: 'DESC' },
-      take: 10,
-    });
+    const rows = await this.earningsService.getOwnEarningRows(userId);
+    return rows.slice(0, 10);
   }
 
   async getNotifications(userId: string) {

@@ -838,6 +838,7 @@ export class AdminService {
       config = this.monthlyConfigRepo.create({
         month,
         firstPurchaseBonusPercent: 10,
+        firstPurchaseBonusNoQuotaPercent: 5,
         repurchaseBonusL1Percent: 5,
         repurchaseBonusL2to6Percent: 2,
         teamBonusPercent: 2,
@@ -872,8 +873,29 @@ export class AdminService {
     return settings?.presentationMetrics || {};
   }
 
+  /**
+   * Grava os cards de "Números em Destaque". A mesma coluna JSON também guarda
+   * chaves de configuração (ex.: `estimatedYieldPerQuota`), então o array de
+   * métricas é aninhado em `heroMetrics` e as demais chaves são preservadas —
+   * salvar a apresentação não pode zerar o rendimento estimado.
+   */
   async updatePresentationMetrics(metrics: Record<string, any>) {
-    await this.settingsRepo.update(1, { presentationMetrics: metrics });
+    const settings = await this.settingsRepo.findOne({ where: { id: 1 } });
+    const current = settings?.presentationMetrics;
+
+    const preserved =
+      current && !Array.isArray(current) && typeof current === 'object'
+        ? { ...(current as Record<string, unknown>) }
+        : {};
+    delete preserved.heroMetrics;
+
+    const heroMetrics: unknown = Array.isArray(metrics)
+      ? metrics
+      : (metrics as Record<string, unknown>)?.heroMetrics;
+
+    const next: Record<string, any> = { ...preserved, heroMetrics };
+
+    await this.settingsRepo.update(1, { presentationMetrics: next });
     return { message: 'Métricas atualizadas' };
   }
 

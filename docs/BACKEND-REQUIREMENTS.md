@@ -1073,11 +1073,15 @@ Cada movimentação é registrada na tabela `quota_transactions`:
 
 - **Quando:** Indicado faz a PRIMEIRA compra de cotas
 - **Quem recebe:** Patrocinador direto (sponsorId)
-- **Percentual:** 10% do valor total da compra
+- **Percentual:** 10% do valor total da compra se o patrocinador POSSUI cotas;
+  5% se ele não tem cota nenhuma (incentivo para que compre)
 - **Regra especial:** O patrocinador recebe MESMO se estiver inativo
+- **Configurável:** ambos os percentuais vêm de `monthly_financial_configs`
+  (`first_purchase_bonus_percent` e `first_purchase_bonus_no_quota_percent`),
+  editáveis em Configurações Financeiras → Motor de Comissões
 
 ```
-bonusAmount = purchaseValue * 0.10
+bonusAmount = purchaseValue * (sponsor.quotaBalance > 0 ? 0.10 : 0.05)
 ```
 
 ### 7.2 — Bônus de Recompra (Unilevel)
@@ -1689,7 +1693,8 @@ Todas as demais rotas exigem JWT válido.
 
 | Bônus | Percentual |
 |-------|-----------|
-| Primeira compra | 10% |
+| Primeira compra (patrocinador com cotas) | 10% |
+| Primeira compra (patrocinador sem cotas) | 5% |
 | Recompra nível 1 | 5% |
 | Recompra níveis 2-6 | 2% |
 | Equipe | 2% |

@@ -1020,9 +1020,27 @@ server {
         proxy_read_timeout 60s;
     }
 
+    # Assets com hash no nome (immutable) — cacheia "para sempre".
+    # Rede de segurança: se um asset faltar, responde 404 honesto em vez do
+    # index.html (HTML disfarçado de .js quebra com erro de MIME confuso).
+    # No fluxo normal isso NUNCA dispara — o index.html abaixo é no-cache, então
+    # o browser sempre tem o mapa atual e só pede assets que existem.
+    location /assets/ {
+        try_files \$uri =404;
+        access_log off;
+        add_header Cache-Control "public, max-age=31536000, immutable";
+    }
+
     # Frontend (SPA)
     location / {
         try_files \$uri \$uri/ /index.html;
+    }
+
+    # O index.html é o "mapa" que aponta para os assets com hash — NUNCA pode
+    # ser cacheado, senão o browser pede assets de um build antigo (já apagado)
+    # e recebe HTML no lugar do .js ("Failed to load module script").
+    location = /index.html {
+        add_header Cache-Control "no-cache, no-store, must-revalidate";
     }
 
     client_max_body_size 10M;

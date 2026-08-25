@@ -200,7 +200,10 @@ Pendências fora do backend / acompanhamento:
 - [x] Tela do usuário "a receber": dashboard já mostra o agregado ("Previsão a Receber");
       adicionada a lista detalhada de lotes na tela de Ganhos (`EarningsView`) +
       `payouts.service.ts` no frontend.
-- [ ] Atualizar o descritivo: regra de 10%/5% no bônus de primeira compra.
+- [x] Atualizar o descritivo: regra de 10%/5% no bônus de primeira compra
+      (`BACKEND-REQUIREMENTS.md` §7.1 e §16.2, `casos-de-teste-usabilidade.md`
+      TC-EARN-005/005b). Os dois percentuais passaram a ser configuráveis em
+      `monthly_financial_configs`.
 - [ ] Reescrever ou remover `earnings.service.spec.ts` (teste obsoleto, pré-existente).
 - [ ] Avaliar remoção do controller user-driven `/payouts/*` (não consumido; modelo é
       admin-driven).

@@ -8,6 +8,7 @@ import { QuotaTransaction } from '../quotas/entities/quota-transaction.entity';
 import { PayoutRequest } from '../payouts/entities/payout-request.entity';
 import { GlobalFinancialSettings } from '../admin/entities/global-financial-settings.entity';
 import { TitleCalculatorService } from '../../core/title/title-calculator.service';
+import { EarningsService } from '../earnings/earnings.service';
 import { UserTitle } from '../../shared/interfaces/enums';
 
 /** Query builder that returns a fixed getRawOne / getRawMany / getMany. */
@@ -35,6 +36,7 @@ describe('DashboardService', () => {
   let payoutRepo: any;
   let settingsRepo: any;
   let titleCalc: any;
+  let earningsService: any;
 
   beforeEach(async () => {
     userRepo = {
@@ -51,6 +53,7 @@ describe('DashboardService', () => {
     payoutRepo = { find: jest.fn().mockResolvedValue([]) };
     settingsRepo = { findOne: jest.fn().mockResolvedValue(null) };
     titleCalc = { recalculateTitle: jest.fn().mockResolvedValue(UserTitle.BRONZE) };
+    earningsService = { getOwnEarningRows: jest.fn().mockResolvedValue([]) };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -62,6 +65,7 @@ describe('DashboardService', () => {
         { provide: getRepositoryToken(PayoutRequest), useValue: payoutRepo },
         { provide: getRepositoryToken(GlobalFinancialSettings), useValue: settingsRepo },
         { provide: TitleCalculatorService, useValue: titleCalc },
+        { provide: EarningsService, useValue: earningsService },
       ],
     }).compile();
 
@@ -223,18 +227,14 @@ describe('DashboardService', () => {
   });
 
   describe('getRecentActivity', () => {
-    it('should return the latest 10 earnings for the user', async () => {
-      const rows = [{ id: 'e1' }];
-      earningRepo.find.mockResolvedValue(rows);
+    it('should return the latest 10 history rows resolved by EarningsService', async () => {
+      const rows = Array.from({ length: 12 }, (_, i) => ({ id: `e${i}` }));
+      earningsService.getOwnEarningRows.mockResolvedValue(rows);
 
       const result = await service.getRecentActivity('u1');
 
-      expect(result).toBe(rows);
-      expect(earningRepo.find).toHaveBeenCalledWith({
-        where: { userId: 'u1' },
-        order: { createdAt: 'DESC' },
-        take: 10,
-      });
+      expect(earningsService.getOwnEarningRows).toHaveBeenCalledWith('u1');
+      expect(result).toEqual(rows.slice(0, 10));
     });
   });
 

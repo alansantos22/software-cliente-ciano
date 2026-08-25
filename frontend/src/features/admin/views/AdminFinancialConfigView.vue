@@ -28,6 +28,10 @@
       Configurações salvas com sucesso! As alterações entrarão em vigor no próximo ciclo.
     </DsAlert>
 
+    <DsAlert v-if="saveErrors.length" type="error" dismissible class="governance-panel__alert" @dismiss="saveErrors = []">
+      Não foi possível salvar {{ saveErrors.join(', ') }}. As alterações desses itens não foram gravadas — tente novamente.
+    </DsAlert>
+
     <!-- Body: Sidebar + Content -->
     <div class="governance-panel__body">
 
@@ -245,11 +249,23 @@
                 <div class="config-item">
                   <div class="config-item__label-row">
                     <label>Bônus Primeira Compra</label>
-                    <DsTooltip content="Percentual pago ao indicador quando o indicado realiza sua primeira compra de cotas." position="right">
+                    <DsTooltip content="Percentual pago ao indicador quando o indicado realiza sua primeira compra de cotas. Vale para indicadores que possuem cotas." position="right">
                       <span class="info-icon">ⓘ</span>
                     </DsTooltip>
                   </div>
                   <DsInput v-model.number="config.firstPurchaseBonus" type="number" min="0" max="100" step="0.5">
+                    <template #suffix>%</template>
+                  </DsInput>
+                </div>
+
+                <div class="config-item">
+                  <div class="config-item__label-row">
+                    <label>Bônus Primeira Compra (sem cotas)</label>
+                    <DsTooltip content="Percentual reduzido pago ao indicador que não possui cota nenhuma. Serve de incentivo para que ele compre cotas e passe a receber o percentual cheio." position="right">
+                      <span class="info-icon">ⓘ</span>
+                    </DsTooltip>
+                  </div>
+                  <DsInput v-model.number="config.firstPurchaseBonusNoQuota" type="number" min="0" max="100" step="0.5">
                     <template #suffix>%</template>
                   </DsInput>
                 </div>
@@ -570,6 +586,7 @@ interface DiffEntry {
 // State
 const isSaving         = ref(false);
 const saveSuccess      = ref(false);
+const saveErrors       = ref<string[]>([]);
 const activeTab        = ref<TabId>('global');
 const showConfirmModal = ref(false);
 
@@ -587,6 +604,7 @@ const tabs = [
 // Config
 const config = reactive({
   firstPurchaseBonus:   10,
+  firstPurchaseBonusNoQuota: 5,
   repurchaseBonusL1:    5,
   repurchaseBonusL2to6: 2,
   teamBonus:            2,
@@ -643,6 +661,7 @@ const fieldRegistry: Record<string, { label: string; format: FieldFormat; tab: T
   closingDayMode:          { label: 'Modo de Fechamento',          format: 'text',     tab: 'global' },
   paymentDay:              { label: 'Dia de Pagamento',            format: 'day',      tab: 'global' },
   firstPurchaseBonus:      { label: 'Bônus Primeira Compra',       format: 'percent',  tab: 'commissions' },
+  firstPurchaseBonusNoQuota: { label: 'Bônus Primeira Compra (sem cotas)', format: 'percent', tab: 'commissions' },
   repurchaseBonusL1:       { label: 'Bônus Recompra Nível 1',      format: 'percent',  tab: 'commissions' },
   repurchaseBonusL2to6:    { label: 'Bônus Recompra Níveis 2-6',   format: 'percent',  tab: 'commissions' },
   teamBonus:               { label: 'Bônus de Equipe',             format: 'percent',  tab: 'commissions' },
@@ -742,6 +761,7 @@ function openSaveModal() {
 async function confirmSave() {
   if (pendingDiff.value.length === 0) { showConfirmModal.value = false; return; }
   isSaving.value = true;
+  saveErrors.value = [];
   try {
     await adminService.updateFinancialConfig({
       minQuotas: config.minQuotas,
@@ -752,20 +772,21 @@ async function confirmSave() {
       paymentDay: config.paymentDay,
       profitPayoutPercentage: config.dividendPool,
     });
-  } catch { /* keep local state on error */ }
+  } catch { saveErrors.value.push('as configurações globais'); }
 
   // Save commissions to current month config
   try {
     const now = new Date();
     const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
     await adminService.updateMonthlyConfig(currentMonth, {
-      firstPurchaseBonusPercent:      config.firstPurchaseBonus,
+      firstPurchaseBonusPercent:        config.firstPurchaseBonus,
+      firstPurchaseBonusNoQuotaPercent: config.firstPurchaseBonusNoQuota,
       repurchaseBonusL1Percent:       config.repurchaseBonusL1,
       repurchaseBonusL2to6Percent:    config.repurchaseBonusL2to6,
       teamBonusPercent:               config.teamBonus,
       dividendPoolPercent:            config.dividendPool,
     });
-  } catch { /* non-critical */ }
+  } catch { saveErrors.value.push('as comissões do mês'); }
 
   // Save career plan
   try {
@@ -786,23 +807,34 @@ async function confirmSave() {
         networkLevelsDepth:  level.networkLevelsDepth,
       });
     }
-  } catch { /* non-critical */ }
+  } catch { saveErrors.value.push('o plano de carreira'); }
 
   // Save presentation metrics
   try {
     await presentationStore.saveMetrics();
-  } catch { /* non-critical */ }
+  } catch { saveErrors.value.push('os números em destaque'); }
+
   isSaving.value = false;
+  showConfirmModal.value = false;
+
+  // Só marca como salvo o que de fato foi gravado — do contrário a tela mostra
+  // "sucesso" e o admin descobre no reload que nada persistiu.
+  if (saveErrors.value.length > 0) {
+    saveSuccess.value = false;
+    return;
+  }
+
   savedConfig = JSON.parse(JSON.stringify(config));
   savedMetrics = presentationStore.heroMetrics.map(m => ({ ...m }));
   const now = new Date();
   auditInfo.date = `${now.toLocaleDateString('pt-BR')} às ${now.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}`;
-  showConfirmModal.value = false; saveSuccess.value = true;
+  saveSuccess.value = true;
 }
 
 function resetDefaults() {
   if (!confirm('Tem certeza que deseja restaurar as configurações padrão?')) return;
-  config.firstPurchaseBonus=10; config.repurchaseBonusL1=5; config.repurchaseBonusL2to6=2;
+  config.firstPurchaseBonus=10; config.firstPurchaseBonusNoQuota=5;
+  config.repurchaseBonusL1=5; config.repurchaseBonusL2to6=2;
   config.teamBonus=2; config.dividendPool=20; config.leadershipBonusOuro=1;
   config.leadershipBonusDiamante=2; config.closingDay=25; config.closingDayMode='fixed';
   config.paymentDay=5; config.quotaValue=2500; config.minQuotas=1;
@@ -837,11 +869,14 @@ onMounted(async () => {
     const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
     const monthRes = await adminService.getMonthlyConfig(currentMonth);
     if (monthRes.data) {
-      if (monthRes.data.firstPurchaseBonusPercent !== undefined) config.firstPurchaseBonus   = monthRes.data.firstPurchaseBonusPercent;
-      if (monthRes.data.repurchaseBonusL1Percent  !== undefined) config.repurchaseBonusL1   = monthRes.data.repurchaseBonusL1Percent;
-      if (monthRes.data.repurchaseBonusL2to6Percent !== undefined) config.repurchaseBonusL2to6 = monthRes.data.repurchaseBonusL2to6Percent;
-      if (monthRes.data.teamBonusPercent          !== undefined) config.teamBonus           = monthRes.data.teamBonusPercent;
-      if (monthRes.data.dividendPoolPercent        !== undefined) config.dividendPool        = monthRes.data.dividendPoolPercent;
+      if (monthRes.data.firstPurchaseBonusPercent !== undefined) config.firstPurchaseBonus   = Number(monthRes.data.firstPurchaseBonusPercent);
+      if (monthRes.data.firstPurchaseBonusNoQuotaPercent !== undefined) config.firstPurchaseBonusNoQuota = Number(monthRes.data.firstPurchaseBonusNoQuotaPercent);
+      // Colunas decimal chegam como string do MySQL — sem Number() o diff de
+      // alterações compara "5.00" com 5 e acusa mudança que não existe.
+      if (monthRes.data.repurchaseBonusL1Percent  !== undefined) config.repurchaseBonusL1   = Number(monthRes.data.repurchaseBonusL1Percent);
+      if (monthRes.data.repurchaseBonusL2to6Percent !== undefined) config.repurchaseBonusL2to6 = Number(monthRes.data.repurchaseBonusL2to6Percent);
+      if (monthRes.data.teamBonusPercent          !== undefined) config.teamBonus           = Number(monthRes.data.teamBonusPercent);
+      if (monthRes.data.dividendPoolPercent        !== undefined) config.dividendPool        = Number(monthRes.data.dividendPoolPercent);
     }
   } catch { /* use defaults */ }
 

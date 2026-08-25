@@ -394,11 +394,18 @@
 - **Resultado esperado:** Total geral, pendente, mês atual e mês anterior exibidos corretamente
 
 ### TC-EARN-005 — Bônus de primeira compra gerado
-- **Pré-condição:** Usuário com patrocinador
+- **Pré-condição:** Usuário com patrocinador que POSSUI cotas
 - **Passos:**
   1. Realizar primeira compra de cotas
   2. Verificar ganhos do patrocinador
 - **Resultado esperado:** Bônus de 10% registrado para o patrocinador em `FIRST_PURCHASE`
+
+### TC-EARN-005b — Bônus de primeira compra com patrocinador sem cotas
+- **Pré-condição:** Usuário cujo patrocinador tem `quotaBalance = 0`
+- **Passos:**
+  1. Realizar primeira compra de cotas
+  2. Verificar ganhos do patrocinador
+- **Resultado esperado:** Bônus de 5% (percentual reduzido) em `FIRST_PURCHASE`
 
 ### TC-EARN-006 — Bônus de recompra gerado nos níveis corretos
 - **Passos:**

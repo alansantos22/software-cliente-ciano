@@ -311,6 +311,10 @@ const splitAlertText = computed(() => {
 });
 
 onMounted(async () => {
+  // Sem isso as métricas do hero ficam presas nos defaults do store e o que o
+  // admin salvou em "Editar Informações" nunca aparece após um reload.
+  const metricsLoaded = presentationStore.loadMetrics();
+
   try {
     const res = await quotasService.getConfig();
     if (res.data?.currentPrice)            quotaPrice.value           = res.data.currentPrice;
@@ -319,6 +323,8 @@ onMounted(async () => {
     if (res.data?.nextEventLabel)          nextEventLabel.value       = res.data.nextEventLabel;
     if (res.data?.totalQuotasSold)         totalQuotasSold.value      = res.data.totalQuotasSold;
   } catch { /* use defaults */ }
+
+  await metricsLoaded;
 });
 
 // ─── Helpers ───────────────────────────────────────────────

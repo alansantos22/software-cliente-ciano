@@ -207,6 +207,53 @@ describe('AuthService', () => {
 
       expect(userRepo.increment).toHaveBeenCalledWith({ id: sponsor.id }, 'directCount', 1);
     });
+
+    it('should fall back to the seeded admin as sponsor when no referral code is given', async () => {
+      const admin = { ...mockUser, id: 'admin-id', role: UserRole.ADMIN, referralCode: 'CIANO-ADMIN' };
+      userRepo.findOne
+        .mockResolvedValueOnce(null)  // email ok
+        .mockResolvedValueOnce(null)  // cpf ok
+        .mockResolvedValueOnce(admin); // admin found by CIANO-ADMIN
+      refreshRepo.create.mockReturnValue({ token: 'rt', expiresAt: new Date(Date.now() + 86400000) });
+      refreshRepo.save.mockResolvedValue({});
+
+      await service.register(dto);
+
+      expect(userRepo.create).toHaveBeenCalledWith(
+        expect.objectContaining({ sponsorId: admin.id }),
+      );
+      expect(userRepo.increment).toHaveBeenCalledWith({ id: admin.id }, 'directCount', 1);
+    });
+
+    it('should fall back to the oldest admin when the seeded referral code is missing', async () => {
+      const admin = { ...mockUser, id: 'admin-id-2', role: UserRole.ADMIN, referralCode: 'CIANO-OTHER' };
+      userRepo.findOne
+        .mockResolvedValueOnce(null)  // email ok
+        .mockResolvedValueOnce(null)  // cpf ok
+        .mockResolvedValueOnce(null)  // no CIANO-ADMIN
+        .mockResolvedValueOnce(admin); // oldest admin by role
+      refreshRepo.create.mockReturnValue({ token: 'rt', expiresAt: new Date(Date.now() + 86400000) });
+      refreshRepo.save.mockResolvedValue({});
+
+      await service.register(dto);
+
+      expect(userRepo.create).toHaveBeenCalledWith(
+        expect.objectContaining({ sponsorId: admin.id }),
+      );
+    });
+
+    it('should still register when no admin exists at all', async () => {
+      userRepo.findOne.mockResolvedValue(null); // nada encontrado, inclusive admin
+      refreshRepo.create.mockReturnValue({ token: 'rt', expiresAt: new Date(Date.now() + 86400000) });
+      refreshRepo.save.mockResolvedValue({});
+
+      await service.register(dto);
+
+      expect(userRepo.create).toHaveBeenCalledWith(
+        expect.objectContaining({ sponsorId: null }),
+      );
+      expect(userRepo.increment).not.toHaveBeenCalled();
+    });
   });
 
   // ─── refresh ─────────────────────────────────────────────────────────────────

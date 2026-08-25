@@ -150,6 +150,60 @@ describe('BonusCalculatorService', () => {
 
       expect(earningRepo.save).not.toHaveBeenCalled();
     });
+
+    it('should apply the reduced rate when the sponsor has no quotas', async () => {
+      const buyer = makeUser({ id: 'buyer-1', sponsorId: 'sponsor-1' });
+      const sponsor = makeUser({ id: 'sponsor-1', quotaBalance: 0 });
+      userRepo.findOne.mockResolvedValue(sponsor);
+
+      let createdEarning: Partial<Earning> | null = null;
+      earningRepo.create.mockImplementation((data: Partial<Earning>) => {
+        createdEarning = data;
+        return data;
+      });
+
+      await service.calculateFirstPurchaseBonus(buyer, 2000, new Date());
+
+      expect(createdEarning).toMatchObject({ amount: 100 }); // 5% de 2000
+    });
+
+    it('should use the percentages configured for the month', async () => {
+      const buyer = makeUser({ id: 'buyer-1', sponsorId: 'sponsor-1' });
+      const sponsor = makeUser({ id: 'sponsor-1' });
+      userRepo.findOne.mockResolvedValue(sponsor);
+      // Decimal do MySQL volta como string — o motor precisa converter.
+      monthConfigRepo.findOne.mockResolvedValue({
+        firstPurchaseBonusPercent: '15.00',
+        firstPurchaseBonusNoQuotaPercent: '7.00',
+      });
+
+      let createdEarning: Partial<Earning> | null = null;
+      earningRepo.create.mockImplementation((data: Partial<Earning>) => {
+        createdEarning = data;
+        return data;
+      });
+
+      await service.calculateFirstPurchaseBonus(buyer, 2000, new Date());
+
+      expect(createdEarning).toMatchObject({ amount: 300 }); // 15% de 2000
+    });
+
+    it('should honour a configured rate of zero instead of falling back', async () => {
+      const buyer = makeUser({ id: 'buyer-1', sponsorId: 'sponsor-1' });
+      const sponsor = makeUser({ id: 'sponsor-1' });
+      userRepo.findOne.mockResolvedValue(sponsor);
+      monthConfigRepo.findOne.mockResolvedValue({ firstPurchaseBonusPercent: 0 });
+
+      let createdEarning: Partial<Earning> | null = null;
+      earningRepo.create.mockImplementation((data: Partial<Earning>) => {
+        createdEarning = data;
+        return data;
+      });
+
+      await service.calculateFirstPurchaseBonus(buyer, 2000, new Date());
+
+      expect(createdEarning).toMatchObject({ amount: 0 });
+    });
   });
 
   // ─── calculateRepurchaseBonus ────────────────────────────────────────────────
@@ -178,6 +232,34 @@ describe('BonusCalculatorService', () => {
 
       expect(amounts[0]).toBe(50);  // 5% of 1000 for level 1
       expect(amounts[1]).toBe(20);  // 2% of 1000 for level 2
+    });
+
+    it('should use the repurchase percentages configured for the month', async () => {
+      const buyer = makeUser({ id: 'buyer-1', sponsorId: 'level1-id' });
+      const level1 = makeUser({ id: 'level1-id', sponsorId: 'level2-id', title: UserTitle.BRONZE });
+      const level2 = makeUser({ id: 'level2-id', sponsorId: null, title: UserTitle.SILVER });
+
+      userRepo.findOne
+        .mockResolvedValueOnce(level1)
+        .mockResolvedValueOnce(level2);
+      titleReqRepo.findOne
+        .mockResolvedValueOnce({ title: UserTitle.BRONZE, repurchaseLevels: 1 })
+        .mockResolvedValueOnce({ title: UserTitle.SILVER, repurchaseLevels: 2 });
+      monthConfigRepo.findOne.mockResolvedValue({
+        repurchaseBonusL1Percent: '8.00',
+        repurchaseBonusL2to6Percent: '3.00',
+      });
+
+      const amounts: number[] = [];
+      earningRepo.create.mockImplementation((data: Partial<Earning>) => {
+        amounts.push(data.amount as number);
+        return data;
+      });
+
+      await service.calculateRepurchaseBonus(buyer, 1000, new Date());
+
+      expect(amounts[0]).toBe(80); // 8% de 1000
+      expect(amounts[1]).toBe(30); // 3% de 1000
     });
 
     it('should skip inactive upline users', async () => {

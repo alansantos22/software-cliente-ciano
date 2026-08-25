@@ -104,7 +104,7 @@ describe('EarningsService', () => {
       });
     });
 
-    it('should hide post-batch types (DIVIDEND/TEAM/LEADERSHIP) until processed', async () => {
+    it('should hide batch types (DIVIDEND/TEAM/LEADERSHIP) until paid', async () => {
       earningRepo.find.mockResolvedValue([
         {
           id: 2,
@@ -116,7 +116,8 @@ describe('EarningsService', () => {
           status: 'pending',
           cutoffEligible: true,
           createdAt: new Date('2025-03-10'),
-          processedAt: null, // not yet processed → hidden
+          processedAt: new Date('2025-04-15'), // lote gerado, mas PIX ainda não confirmado
+          paidAt: null,
           sourceUserName: null,
         },
       ]);
@@ -124,6 +125,113 @@ describe('EarningsService', () => {
       const result = await service.getEarnings('user-1', 1, 20);
 
       expect(result.total).toBe(0);
+    });
+
+    it('should show a paid dividend on the PIX date, not on the batch generation date', async () => {
+      // Competência jun/26: lote gerado 15/07, dividendos pagos 15/08.
+      earningRepo.find.mockResolvedValue([
+        {
+          id: 2,
+          bonusType: BonusType.DIVIDEND,
+          amount: 434.06,
+          description: 'Dividendos (21 cotas)',
+          level: 0,
+          referenceMonth: '2026-06',
+          status: 'paid',
+          cutoffEligible: true,
+          createdAt: new Date('2026-07-15T12:00:00'),
+          processedAt: new Date('2026-07-15T12:00:00'),
+          paidAt: new Date('2026-08-15T12:00:00'),
+          sourceUserName: null,
+        },
+      ]);
+
+      const all = await service.getEarnings('user-1', 1, 20);
+      expect(all.total).toBe(1);
+      expect(all.items[0]).toMatchObject({
+        id: 'e-2',
+        amount: 434.06,
+        createdAt: new Date('2026-08-15T12:00:00'),
+        displayMonth: '2026-08',
+      });
+
+      const july = await service.getEarnings('user-1', 1, 20, '2026-07');
+      expect(july.total).toBe(0);
+
+      const august = await service.getEarnings('user-1', 1, 20, '2026-08');
+      expect(august.total).toBe(1);
+    });
+
+    it('should fall back to the payout track date when the earning has no paidAt', async () => {
+      earningRepo.find.mockResolvedValue([
+        {
+          id: 3,
+          bonusType: BonusType.DIVIDEND,
+          amount: 100,
+          description: 'Dividendos (5 cotas)',
+          level: 0,
+          referenceMonth: '2026-06',
+          status: 'pending',
+          cutoffEligible: true,
+          createdAt: new Date('2026-07-15T12:00:00'),
+          processedAt: new Date('2026-07-15T12:00:00'),
+          paidAt: null,
+          sourceUserName: null,
+        },
+      ]);
+      payoutRepo.find.mockResolvedValue([
+        {
+          id: 'p1',
+          referenceMonth: '2026-06',
+          status: 'processing',
+          quotaAmount: 100,
+          networkAmount: 0,
+          bonusPaidAt: null,
+          dividendPaidAt: new Date('2026-08-15T12:00:00'),
+          completedAt: null,
+        },
+      ]);
+
+      const result = await service.getEarnings('user-1', 1, 20);
+
+      // Só a linha do ganho — o payout já está representado por ela.
+      expect(result.total).toBe(1);
+      expect(result.items[0]).toMatchObject({
+        id: 'e-3',
+        createdAt: new Date('2026-08-15T12:00:00'),
+        displayMonth: '2026-08',
+      });
+    });
+
+    it('should emit one "Pagamento recebido" row per paid track when no earnings cover the batch', async () => {
+      payoutRepo.find.mockResolvedValue([
+        {
+          id: 'p1',
+          referenceMonth: '2026-06',
+          status: 'completed',
+          quotaAmount: 100,
+          networkAmount: 50,
+          bonusPaidAt: new Date('2026-07-15T12:00:00'),
+          dividendPaidAt: new Date('2026-08-15T12:00:00'),
+          completedAt: new Date('2026-08-15T12:00:00'),
+        },
+      ]);
+
+      const result = await service.getEarnings('user-1', 1, 20);
+
+      expect(result.total).toBe(2);
+      expect(result.items[0]).toMatchObject({
+        id: 'payout-p1-dividend',
+        bonusType: BonusType.DIVIDEND,
+        amount: 100,
+        displayMonth: '2026-08',
+      });
+      expect(result.items[1]).toMatchObject({
+        id: 'payout-p1-bonus',
+        bonusType: BonusType.TEAM,
+        amount: 50,
+        displayMonth: '2026-07',
+      });
     });
 
     it('should render own purchases as negative amounts', async () => {

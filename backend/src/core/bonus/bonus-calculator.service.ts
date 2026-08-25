@@ -17,6 +17,15 @@ function previousMonth(referenceMonth: string): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
 }
 
+/** Percentuais de bônus vigentes num mês de competência. */
+interface BonusRates {
+  firstPurchase: number;
+  firstPurchaseNoQuota: number;
+  repurchaseL1: number;
+  repurchaseL2to6: number;
+  team: number;
+}
+
 /**
  * Motor de bônus.
  *
@@ -24,6 +33,9 @@ function previousMonth(referenceMonth: string): string {
  *   1. FIRST_PURCHASE / REPURCHASE — gerados ao longo do mês (evento de compra).
  *   2. DIVIDEND                    — gerado quando o admin informa o lucro líquido.
  *   3. TEAM + LEADERSHIP           — gerados por último, em travessia leaf-up.
+ *
+ * Todos os percentuais vêm do `MonthlyFinancialConfig` do mês (tela de
+ * configurações financeiras do admin); os valores abaixo são os padrões.
  *
  * Cascata: o bônus de equipe é 2% de TUDO que a rede VAI RECEBER no mesmo mês
  * em que esse bônus é pago (compra, recompra, dividendos E os próprios bônus de
@@ -37,8 +49,18 @@ function previousMonth(referenceMonth: string): string {
 export class BonusCalculatorService {
   private readonly logger = new Logger(BonusCalculatorService.name);
 
-  /** Percentual fixo do bônus de equipe (todos os títulos). */
-  private static readonly TEAM_BONUS_RATE = 0.02;
+  /**
+   * Percentuais usados quando o mês ainda não tem `MonthlyFinancialConfig`
+   * (ex.: primeira compra do mês antes de o admin abrir a configuração).
+   */
+  private static readonly DEFAULT_RATES: BonusRates = {
+    firstPurchase: 10,
+    firstPurchaseNoQuota: 5,
+    repurchaseL1: 5,
+    repurchaseL2to6: 2,
+    team: 2,
+  };
+
   /** Profundidade fixa do bônus de liderança (níveis de qualificados). */
   private static readonly LEADERSHIP_DEPTH = 5;
 
@@ -49,6 +71,33 @@ export class BonusCalculatorService {
     @InjectRepository(MonthlyFinancialConfig) private readonly monthConfigRepo: Repository<MonthlyFinancialConfig>,
     private readonly snapshotService: SnapshotService,
   ) {}
+
+  /**
+   * Percentuais configurados pelo admin para o mês. Só LÊ — se o mês ainda não
+   * tem configuração, usa os padrões (não cria a linha, para não gravar nada
+   * durante um evento de compra). Colunas decimal voltam como string do MySQL,
+   * daí o `Number`; `0` é um valor legítimo, então o fallback checa nulo em vez
+   * de usar `||`.
+   */
+  private async getRates(referenceMonth: string): Promise<BonusRates> {
+    const defaults = BonusCalculatorService.DEFAULT_RATES;
+    const config = await this.monthConfigRepo.findOne({ where: { month: referenceMonth } });
+    if (!config) return defaults;
+
+    const pick = (value: unknown, fallback: number): number => {
+      if (value === null || value === undefined) return fallback;
+      const num = Number(value);
+      return Number.isFinite(num) ? num : fallback;
+    };
+
+    return {
+      firstPurchase: pick(config.firstPurchaseBonusPercent, defaults.firstPurchase),
+      firstPurchaseNoQuota: pick(config.firstPurchaseBonusNoQuotaPercent, defaults.firstPurchaseNoQuota),
+      repurchaseL1: pick(config.repurchaseBonusL1Percent, defaults.repurchaseL1),
+      repurchaseL2to6: pick(config.repurchaseBonusL2to6Percent, defaults.repurchaseL2to6),
+      team: pick(config.teamBonusPercent, defaults.team),
+    };
+  }
 
   private isActive(user: User): boolean {
     if (!user.lastPurchaseDate) return false;
@@ -101,9 +150,10 @@ export class BonusCalculatorService {
     if (!sponsor) return;
 
     const month = getCurrentPeriod(purchaseDate);
-    // Regra (pós-documento): 10% se o patrocinador tem cotas, 5% se não tem —
-    // incentiva o patrocinador a comprar cotas para ganhar mais.
-    const bonusPercent = sponsor.quotaBalance > 0 ? 10 : 5;
+    // Regra (pós-documento): taxa cheia se o patrocinador tem cotas, reduzida se
+    // não tem — incentiva o patrocinador a comprar cotas para ganhar mais.
+    const rates = await this.getRates(month);
+    const bonusPercent = sponsor.quotaBalance > 0 ? rates.firstPurchase : rates.firstPurchaseNoQuota;
     const amount = purchaseValue * (bonusPercent / 100);
 
     const earning = this.earningRepo.create({
@@ -130,6 +180,7 @@ export class BonusCalculatorService {
     purchaseDate: Date,
   ): Promise<void> {
     const month = getCurrentPeriod(purchaseDate);
+    const rates = await this.getRates(month);
     let currentUser = buyer;
 
     for (let level = 1; level <= 6; level++) {
@@ -151,7 +202,7 @@ export class BonusCalculatorService {
         continue;
       }
 
-      const percent = level === 1 ? 5 : 2;
+      const percent = level === 1 ? rates.repurchaseL1 : rates.repurchaseL2to6;
       const amount = purchaseValue * (percent / 100);
 
       const earning = this.earningRepo.create({
@@ -242,7 +293,8 @@ export class BonusCalculatorService {
    * Lê do SNAPSHOT do mês de referência (título, níveis de bônus, posição na
    * rede e status ativo) — não o estado atual — garantindo determinismo.
    *
-   * Regra de cascata: equipe = 2% de TUDO que os downlines vão receber no mês,
+   * Regra de cascata: equipe = `teamBonusPercent` (padrão 2%) de TUDO que os
+   * downlines vão receber no mês,
    * inclusive os bônus de equipe/liderança deles. Para fechar a cascata sem
    * recursão frágil, processa-se a árvore das folhas para a raiz (ordem de
    * altura crescente): ao calcular um nó, todos os seus descendentes já têm
@@ -262,6 +314,7 @@ export class BonusCalculatorService {
 
     this.logger.log(`📊👑 Calculating team + leadership bonuses for ${referenceMonth}`);
 
+    const rates = await this.getRates(referenceMonth);
     const snapshots = await this.ensureSnapshot(referenceMonth);
     const snapById = new Map(snapshots.map((s) => [s.userId, s]));
 
@@ -303,7 +356,7 @@ export class BonusCalculatorService {
         const downlineEarnings = await this.sumEarnings(downlineIds, referenceMonth);
 
         if (downlineEarnings > 0) {
-          const amount = downlineEarnings * BonusCalculatorService.TEAM_BONUS_RATE;
+          const amount = downlineEarnings * (rates.team / 100);
           await this.saveBatchBonus(
             snap.userId,
             BonusType.TEAM,
@@ -368,6 +421,7 @@ export class BonusCalculatorService {
     const team = new Map<string, number>();
     const leadership = new Map<string, number>();
 
+    const rates = await this.getRates(referenceMonth);
     const snapshots = await this.ensureSnapshot(referenceMonth);
     if (snapshots.length === 0) return { dividends, team, leadership };
 
@@ -462,7 +516,7 @@ export class BonusCalculatorService {
         const ids = this.collectDownlineIds(snap.userId, snap.teamLevels, childrenOf);
         const base = sumFor(ids);
         if (base > 0) {
-          team.set(snap.userId, base * BonusCalculatorService.TEAM_BONUS_RATE);
+          team.set(snap.userId, base * (rates.team / 100));
         }
       }
 

@@ -17,8 +17,13 @@ export class MonthlyFinancialConfig {
   @Column({ type: 'decimal', precision: 15, scale: 2, default: 2500, name: 'quota_price' })
   quotaPrice: number;
 
+  /** Bônus de indicação quando o patrocinador TEM cotas. */
   @Column({ type: 'decimal', precision: 5, scale: 2, default: 10, name: 'first_purchase_bonus_percent' })
   firstPurchaseBonusPercent: number;
+
+  /** Bônus de indicação reduzido, aplicado quando o patrocinador não tem cota nenhuma. */
+  @Column({ type: 'decimal', precision: 5, scale: 2, default: 5, name: 'first_purchase_bonus_no_quota_percent' })
+  firstPurchaseBonusNoQuotaPercent: number;
 
   @Column({ type: 'decimal', precision: 5, scale: 2, default: 5, name: 'repurchase_bonus_l1_percent' })
   repurchaseBonusL1Percent: number;
