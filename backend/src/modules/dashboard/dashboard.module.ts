@@ -9,11 +9,13 @@ import { QuotaTransaction } from '../quotas/entities/quota-transaction.entity';
 import { PayoutRequest } from '../payouts/entities/payout-request.entity';
 import { GlobalFinancialSettings } from '../admin/entities/global-financial-settings.entity';
 import { TitleModule } from '../../core/title/title.module';
+import { EarningsModule } from '../earnings/earnings.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([User, QuotaSystemState, Earning, QuotaTransaction, PayoutRequest, GlobalFinancialSettings]),
     TitleModule,
+    EarningsModule,
   ],
   controllers: [DashboardController],
   providers: [DashboardService],

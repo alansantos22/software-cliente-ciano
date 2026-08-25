@@ -15,6 +15,11 @@ import { getCurrentPeriod } from '../../shared/utils/helpers';
  * `level`:
  *   0     → movimentação do próprio usuário (compra/ganho).
  *   1..6  → compra realizada por um membro da rede no nível indicado.
+ *
+ * `createdAt` é a DATA EXIBIDA — para ganhos de lote (dividendos, equipe,
+ * liderança) é a data em que o PIX foi confirmado, não a data em que o
+ * registro foi criado. `displayMonth` é o YYYY-MM dessa data, usado no
+ * filtro de mês.
  */
 export interface EarningHistoryRow {
   id: string;
@@ -24,14 +29,34 @@ export interface EarningHistoryRow {
   description: string;
   level: number;
   referenceMonth: string;
+  displayMonth: string;
   status: string;
   cutoffEligible: boolean;
   createdAt: Date;
   sourceUserName: string | null;
 }
 
+/** Trilho de pagamento de um ganho: dividendos (ref+2) ou bônus de rede (ref+1). */
+type PayoutTrack = 'bonus' | 'dividend';
+
 @Injectable()
 export class EarningsService {
+  /**
+   * Tipos calculados durante o batch (Etapa 2 do admin). Só entram no
+   * histórico depois de PAGOS, na data em que o admin confirmou o PIX —
+   * antes disso o valor já aparece em "Previsão a receber".
+   *
+   * Motivo (bug reportado 2026-08): o lote da competência M é gerado em M+1,
+   * mas os dividendos só são pagos em M+2. Exibir a linha na data de geração
+   * mostrava um valor que o cotista ainda não tinha recebido ao lado da data
+   * em que ele recebeu o pagamento da competência anterior.
+   */
+  private static readonly BATCH_TYPES = new Set<BonusType>([
+    BonusType.DIVIDEND,
+    BonusType.TEAM,
+    BonusType.LEADERSHIP,
+  ]);
+
   constructor(
     @InjectRepository(Earning) private readonly earningRepo: Repository<Earning>,
     @InjectRepository(MonthlyEarningSummary) private readonly summaryRepo: Repository<MonthlyEarningSummary>,
@@ -39,6 +64,126 @@ export class EarningsService {
     @InjectRepository(User) private readonly userRepo: Repository<User>,
     @InjectRepository(PayoutRequest) private readonly payoutRepo: Repository<PayoutRequest>,
   ) {}
+
+  private static monthOf(date: Date): string {
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+  }
+
+  private static trackOf(bonusType: BonusType): PayoutTrack {
+    return bonusType === BonusType.DIVIDEND ? 'dividend' : 'bonus';
+  }
+
+  /**
+   * Data em que o trilho de um lote foi pago. Lotes legados (anteriores aos
+   * dois trilhos) só têm `completedAt`, que vale para ambos.
+   */
+  private static trackPaidAt(payout: PayoutRequest, track: PayoutTrack): Date | null {
+    const trackDate = track === 'dividend' ? payout.dividendPaidAt : payout.bonusPaidAt;
+    const raw = trackDate ?? (payout.status === PayoutStatus.COMPLETED ? payout.completedAt : null);
+    return raw ? new Date(raw) : null;
+  }
+
+  /**
+   * Data de pagamento efetivo de um ganho de lote. Preferência:
+   *   1. `earning.paidAt` (gravado por `markEarningsPaid` ao confirmar o PIX);
+   *   2. data do trilho no PayoutRequest da mesma competência (ganhos pagos
+   *      antes de `paid_at` passar a ser preenchido).
+   * `null` → ainda não foi pago → não aparece no histórico.
+   */
+  private static paidDateOf(earning: Earning, payout: PayoutRequest | undefined): Date | null {
+    if (earning.paidAt) return new Date(earning.paidAt);
+    if (!payout) return null;
+    return EarningsService.trackPaidAt(payout, EarningsService.trackOf(earning.bonusType));
+  }
+
+  /**
+   * Ganhos do próprio usuário como linhas do histórico, já com a data de
+   * exibição resolvida (ver `EarningHistoryRow.createdAt`). Ganhos de lote
+   * ainda não pagos ficam de fora. Sem filtro de mês — quem consome filtra
+   * por `displayMonth`.
+   *
+   * Além dos ganhos, devolve uma linha "Pagamento recebido" para cada trilho
+   * pago de um lote que NÃO tenha nenhum ganho correspondente na mesma
+   * competência (lotes antigos, gerados antes de os dividendos serem
+   * persistidos como `earnings`). Quando os ganhos existem, eles já somam o
+   * valor do PIX — repetir a linha faria o cotista achar que recebeu duas
+   * vezes.
+   */
+  async getOwnEarningRows(userId: string): Promise<EarningHistoryRow[]> {
+    const [earnings, payouts] = await Promise.all([
+      this.earningRepo.find({ where: { userId }, order: { createdAt: 'DESC' } }),
+      this.payoutRepo.find({ where: { userId } }),
+    ]);
+    const payoutByMonth = new Map(payouts.map((p) => [p.referenceMonth, p]));
+
+    const rows: EarningHistoryRow[] = [];
+    // `${referenceMonth}:${track}` dos ganhos exibidos — usado para não
+    // duplicar com a linha de resumo do payout.
+    const covered = new Set<string>();
+
+    for (const e of earnings) {
+      const isBatch = EarningsService.BATCH_TYPES.has(e.bonusType);
+      let displayDate: Date;
+      let displayMonth: string;
+
+      if (isBatch) {
+        const paidAt = EarningsService.paidDateOf(e, payoutByMonth.get(e.referenceMonth));
+        if (!paidAt) continue;
+        displayDate = paidAt;
+        displayMonth = EarningsService.monthOf(paidAt);
+      } else {
+        // Bônus imediatos (compra/recompra): o evento é a compra do indicado.
+        displayDate = e.createdAt;
+        displayMonth = e.referenceMonth;
+      }
+
+      covered.add(`${e.referenceMonth}:${EarningsService.trackOf(e.bonusType)}`);
+      rows.push({
+        id: `e-${e.id}`,
+        source: 'earning',
+        bonusType: e.bonusType,
+        amount: Number(e.amount),
+        description: e.description,
+        level: e.level || 0,
+        referenceMonth: e.referenceMonth,
+        displayMonth,
+        status: String(e.status),
+        cutoffEligible: e.cutoffEligible,
+        createdAt: displayDate,
+        sourceUserName: e.sourceUserName,
+      });
+    }
+
+    for (const p of payouts) {
+      const tracks: Array<{ track: PayoutTrack; amount: number; bonusType: BonusType; label: string }> = [
+        { track: 'bonus', amount: Number(p.networkAmount || 0), bonusType: BonusType.TEAM, label: 'bônus de rede' },
+        { track: 'dividend', amount: Number(p.quotaAmount || 0), bonusType: BonusType.DIVIDEND, label: 'dividendos' },
+      ];
+      for (const t of tracks) {
+        if (t.amount <= 0) continue;
+        if (covered.has(`${p.referenceMonth}:${t.track}`)) continue;
+        const paidAt = EarningsService.trackPaidAt(p, t.track);
+        if (!paidAt) continue;
+        rows.push({
+          id: `payout-${p.id}-${t.track}`,
+          source: 'earning',
+          bonusType: t.bonusType,
+          amount: t.amount,
+          description: `Pagamento recebido — ${t.label} (competência ${p.referenceMonth})`,
+          level: 0,
+          referenceMonth: p.referenceMonth,
+          displayMonth: EarningsService.monthOf(paidAt),
+          status: 'completed',
+          cutoffEligible: true,
+          createdAt: paidAt,
+          sourceUserName: null,
+        });
+      }
+    }
+
+    rows.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+    return rows;
+  }
 
   /**
    * Devolve o histórico unificado do usuário:
@@ -48,7 +193,7 @@ export class EarningsService {
    *   • compras dos downlines até 6 níveis — level 1..6
    *
    * Filtros opcionais:
-   *   • month  → restringe ao mês YYYY-MM (referenceMonth)
+   *   • month  → restringe ao mês YYYY-MM (data exibida — ver `displayMonth`)
    *   • level  → 0 (somente próprio), 1..6 (somente aquele nível da rede)
    */
   async getEarnings(
@@ -58,54 +203,9 @@ export class EarningsService {
     month?: string,
     level?: number,
   ) {
-    // Tipos calculados durante o batch (Etapa 2 do admin). Para estes
-    // a refer\u00eancia temporal exibida ao usu\u00e1rio passa a ser `processed_at`
-    // (quando o admin gerou o lote), n\u00e3o `reference_month`.
-    const POST_BATCH_TYPES = new Set<BonusType>([
-      BonusType.DIVIDEND,
-      BonusType.TEAM,
-      BonusType.LEADERSHIP,
-    ]);
-
-    // \u2500\u2500 1) Earnings do pr\u00f3prio usu\u00e1rio (sem filtro de m\u00eas no banco \u2014\n    // a filtragem ser\u00e1 feita em c\u00f3digo, pois cada tipo usa um campo\n    // diferente como refer\u00eancia temporal).
-    const ownEarningsRows = await this.earningRepo.find({
-      where: { userId },
-      order: { createdAt: 'DESC' },
-    });
-
-    const earningRows: EarningHistoryRow[] = ownEarningsRows
-      // P\u00f3s-batch: s\u00f3 aparecem ap\u00f3s o admin processar.
-      .filter((e) => !POST_BATCH_TYPES.has(e.bonusType) || e.processedAt !== null)
-      // Filtro por m\u00eas \u2014 cada tipo na sua refer\u00eancia.
-      .filter((e) => {
-        if (!month) return true;
-        if (POST_BATCH_TYPES.has(e.bonusType)) {
-          if (!e.processedAt) return false;
-          const d = new Date(e.processedAt);
-          const ym = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-          return ym === month;
-        }
-        return e.referenceMonth === month;
-      })
-      .map((e) => {
-        // Para tipos p\u00f3s-batch a "data" exibida \u00e9 a do processamento.
-        const displayDate = POST_BATCH_TYPES.has(e.bonusType) && e.processedAt
-          ? new Date(e.processedAt)
-          : e.createdAt;
-        return {
-          id: `e-${e.id}`,
-          source: 'earning' as const,
-          bonusType: e.bonusType,
-          amount: Number(e.amount),
-          description: e.description,
-          level: e.level || 0,
-          referenceMonth: e.referenceMonth,
-          status: String(e.status),
-          cutoffEligible: e.cutoffEligible,
-          createdAt: displayDate,
-          sourceUserName: e.sourceUserName,
-        };
-      });
+    // ── 1) Ganhos do próprio usuário ──
+    const earningRows = (await this.getOwnEarningRows(userId))
+      .filter((r) => !month || r.displayMonth === month);
 
     // ── 2) Compras do próprio usuário (level 0) ──
     const ownPurchases = await this.txnRepo.find({
@@ -127,6 +227,7 @@ export class EarningsService {
       description: t.description || `Compra de ${t.quotasAffected} cota(s)`,
       level: 0,
       referenceMonth: t.referenceMonth,
+      displayMonth: t.referenceMonth,
       status: String(t.status),
       cutoffEligible: true,
       createdAt: t.createdAt,
@@ -134,7 +235,7 @@ export class EarningsService {
     }));
 
     // ── 3) Compras dos downlines (até 6 níveis) ──
-    let downlineRows: EarningHistoryRow[] = [];
+    const downlineRows: EarningHistoryRow[] = [];
     const downlineByLevel = await this.getDownlineIdsByLevel(userId, 6);
     for (let lvl = 1; lvl <= 6; lvl++) {
       const ids = downlineByLevel[lvl];
@@ -160,6 +261,7 @@ export class EarningsService {
           description: `Compra na rede (nível ${lvl}): ${(t.user as any)?.name ?? '—'} — ${t.quotasAffected} cota(s)`,
           level: lvl,
           referenceMonth: t.referenceMonth,
+          displayMonth: t.referenceMonth,
           status: String(t.status),
           cutoffEligible: true,
           createdAt: t.createdAt,
@@ -168,32 +270,8 @@ export class EarningsService {
       }
     }
 
-    // ── 4) Pagamentos concluídos (mostrar no mês em que foram pagos) ──────────
-    const completedPayouts = await this.payoutRepo.find({
-      where: {
-        userId,
-        status: PayoutStatus.COMPLETED,
-        ...(month ? { paymentMonth: month } : {}),
-      },
-      order: { completedAt: 'DESC' },
-    });
-
-    const payoutHistoryRows: EarningHistoryRow[] = completedPayouts.map((p) => ({
-      id: `payout-${p.id}`,
-      source: 'earning' as const,
-      bonusType: BonusType.DIVIDEND,
-      amount: Number(p.amount),
-      description: `Pagamento recebido — dividendos + rede (${p.paymentMonth})`,
-      level: 0,
-      referenceMonth: p.paymentMonth,
-      status: 'completed',
-      cutoffEligible: true,
-      createdAt: p.completedAt ?? p.generatedAt,
-      sourceUserName: null,
-    }));
-
-    // ── 5) Filtro por nível ──
-    const all = [...earningRows, ...purchaseRows, ...downlineRows, ...payoutHistoryRows];
+    // ── 4) Filtro por nível ──
+    const all = [...earningRows, ...purchaseRows, ...downlineRows];
     const filtered = (level === undefined || level === null || (level as any) === '')
       ? all
       : all.filter((r) => r.level === Number(level) || r.id.startsWith('payout-'));
@@ -243,8 +321,8 @@ export class EarningsService {
     const lastMonth = this.getPreviousMonth(currentMonth);
 
     // Lifetime ("Ganhos da vida") = soma dos pagamentos COMPLETADOS.
-    // J\u00e1 inclui dividendos + ganhos de rede + breakdown completo,
-    // pois cada payout cont\u00e9m amount = quotaAmount + networkAmount.
+    // Já inclui dividendos + ganhos de rede + breakdown completo,
+    // pois cada payout contém amount = quotaAmount + networkAmount.
     const totalEarnedRow = await this.payoutRepo
       .createQueryBuilder('p')
       .select('SUM(p.amount)', 'total')
