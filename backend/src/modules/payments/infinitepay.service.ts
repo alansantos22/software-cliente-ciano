@@ -87,7 +87,7 @@ export class InfinitePayService {
       },
     ];
 
-    const phone = this.onlyDigits(params.customer.phone ?? '');
+    const phone = this.toE164Phone(params.customer.phone);
 
     const body: InfinitePayCreateCheckoutRequest = {
       handle: this.handle,
@@ -224,5 +224,20 @@ export class InfinitePayService {
 
   private onlyDigits(value: string): string {
     return (value || '').replace(/\D/g, '');
+  }
+
+  /**
+   * Converte o telefone cadastrado para o formato E.164 exigido pela
+   * InfinitePay (`+5511999887766`). Aceita entrada mascarada, com ou sem o
+   * DDI 55 e com zero à esquerda no DDD. Retorna `undefined` quando o número
+   * não tem DDD + 8/9 dígitos — nesse caso o campo é omitido, pois é apenas
+   * pré-preenchimento e um valor inválido faz a InfinitePay rejeitar o checkout.
+   */
+  private toE164Phone(value?: string | null): string | undefined {
+    let digits = this.onlyDigits(value ?? '');
+    if (digits.startsWith('55') && digits.length >= 12) digits = digits.slice(2);
+    if (digits.startsWith('0') && digits.length >= 11) digits = digits.slice(1);
+    if (digits.length !== 10 && digits.length !== 11) return undefined;
+    return `+55${digits}`;
   }
 }
