@@ -35,7 +35,7 @@ export interface InfinitePayCreateCheckoutRequest {
   customer?: {
     name?: string;
     email?: string;
-    /** Telefone somente dígitos — a InfinitePay nomeia este campo `phone_number`. */
+    /** Telefone em E.164 (`+5511999887766`) — a InfinitePay rejeita outros formatos. */
     phone_number?: string;
   };
 }

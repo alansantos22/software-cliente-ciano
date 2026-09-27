@@ -65,9 +65,34 @@ describe('InfinitePayService', () => {
       // order_nsu propagado e handle do lojista enviado.
       expect(body.order_nsu).toBe('txn-1');
       expect(body.handle).toBe('ciano');
-      // Telefone apenas dígitos, no campo que a InfinitePay espera.
-      expect(body.customer.phone_number).toBe('11999998888');
+      // Telefone em E.164 (+55 + DDD + número), único formato aceito pela InfinitePay.
+      expect(body.customer.phone_number).toBe('+5511999998888');
     });
+
+    it.each([
+      ['(11) 99999-8888', '+5511999998888'],
+      ['+55 11 99999-8888', '+5511999998888'],
+      ['5511999998888', '+5511999998888'],
+      ['011999998888', '+5511999998888'],
+      ['(11) 3333-4444', '+551133334444'],
+    ])('normalizes phone %s to %s', async (phone, expected) => {
+      http.post.mockReturnValue(of({ data: { invoice_slug: 'INV_1', url: 'https://x' } }));
+
+      await service.createCheckout({ ...params, customer: { ...params.customer, phone } });
+
+      expect(http.post.mock.calls[0][1].customer.phone_number).toBe(expected);
+    });
+
+    it.each(['', '999', '12345678', undefined])(
+      'omits phone_number when phone is invalid (%s)',
+      async (phone) => {
+        http.post.mockReturnValue(of({ data: { invoice_slug: 'INV_1', url: 'https://x' } }));
+
+        await service.createCheckout({ ...params, customer: { ...params.customer, phone } });
+
+        expect(http.post.mock.calls[0][1].customer.phone_number).toBeUndefined();
+      },
+    );
 
     it('throws when the response has no payment url', async () => {
       http.post.mockReturnValue(of({ data: { invoice_slug: 'INV_1' } }));
