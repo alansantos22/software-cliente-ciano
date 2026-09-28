@@ -106,14 +106,22 @@ export class InfinitePayService {
     };
 
     try {
-      const response = await firstValueFrom(
-        // ⚠️ CONFIRMAR path do endpoint de criação.
-        this.http.post<InfinitePayCreateCheckoutResponse>(`${this.baseUrl}/links`, body, {
-          headers: this.buildHeaders(),
-        }),
-      );
+      let data: InfinitePayCreateCheckoutResponse;
+      try {
+        data = await this.postCheckout(body);
+      } catch (err: any) {
+        // O telefone é só pré-preenchimento: se a InfinitePay recusar o número,
+        // a compra segue sem ele (o cliente digita na página de pagamento).
+        if (!phone || !this.isPhoneRejection(err?.response?.data)) throw err;
+        this.logger.warn(
+          `InfinitePay recusou o telefone ${this.maskPhone(phone)} (order_nsu ${params.referenceId}); ` +
+            'refazendo o checkout sem phone_number.',
+        );
+        const customer = { ...body.customer };
+        delete customer.phone_number;
+        data = await this.postCheckout({ ...body, customer });
+      }
 
-      const data = response.data;
       const paymentUrl = data.url ?? data.checkout_url ?? data.payment_url;
       const checkoutId = data.invoice_slug ?? data.slug;
 
@@ -131,6 +139,21 @@ export class InfinitePayService {
       this.logger.error(`Falha ao criar checkout InfinitePay: ${JSON.stringify(detail)}`);
       throw new InternalServerErrorException('Não foi possível iniciar o pagamento. Tente novamente.');
     }
+  }
+
+  private async postCheckout(body: InfinitePayCreateCheckoutRequest): Promise<InfinitePayCreateCheckoutResponse> {
+    const response = await firstValueFrom(
+      // ⚠️ CONFIRMAR path do endpoint de criação.
+      this.http.post<InfinitePayCreateCheckoutResponse>(`${this.baseUrl}/links`, body, {
+        headers: this.buildHeaders(),
+      }),
+    );
+    return response.data;
+  }
+
+  /** O erro de validação da InfinitePay aponta o campo: `errors.customer.phone_number`. */
+  private isPhoneRejection(detail: any): boolean {
+    return Boolean(detail?.errors?.customer?.phone_number);
   }
 
   /**
@@ -229,8 +252,10 @@ export class InfinitePayService {
   /**
    * Converte o telefone cadastrado para o formato E.164 exigido pela
    * InfinitePay (`+5511999887766`). Aceita entrada mascarada, com ou sem o
-   * DDI 55 e com zero à esquerda no DDD. Retorna `undefined` quando o número
-   * não tem DDD + 8/9 dígitos — nesse caso o campo é omitido, pois é apenas
+   * DDI 55 e com zero à esquerda no DDD. Celular antigo de 8 dígitos (começa
+   * com 6-9) ganha o 9 da frente. Retorna `undefined` quando o número não é um
+   * telefone brasileiro válido (DDD inexistente, celular de 9 dígitos sem o 9,
+   * tamanho errado) — nesse caso o campo é omitido, pois é apenas
    * pré-preenchimento e um valor inválido faz a InfinitePay rejeitar o checkout.
    */
   private toE164Phone(value?: string | null): string | undefined {
@@ -238,6 +263,33 @@ export class InfinitePayService {
     if (digits.startsWith('55') && digits.length >= 12) digits = digits.slice(2);
     if (digits.startsWith('0') && digits.length >= 11) digits = digits.slice(1);
     if (digits.length !== 10 && digits.length !== 11) return undefined;
-    return `+55${digits}`;
+
+    const ddd = digits.slice(0, 2);
+    let local = digits.slice(2);
+    if (!VALID_DDDS.has(ddd)) return undefined;
+    if (local.length === 8 && /^[6-9]/.test(local)) local = `9${local}`;
+    // 9 dígitos: celular, sempre começa com 9. 8 dígitos: fixo, começa com 2-5.
+    const valid = local.length === 9 ? local.startsWith('9') : /^[2-5]/.test(local);
+    if (!valid) return undefined;
+    return `+55${ddd}${local}`;
+  }
+
+  /** Para log: DDD e os dois últimos dígitos (`+55 11 *******88`). */
+  private maskPhone(e164: string): string {
+    const local = e164.slice(5);
+    return `+55 ${e164.slice(3, 5)} ${'*'.repeat(Math.max(local.length - 2, 0))}${local.slice(-2)}`;
   }
 }
+
+/** DDDs em uso no Brasil (Anatel). */
+const VALID_DDDS = new Set([
+  '11', '12', '13', '14', '15', '16', '17', '18', '19',
+  '21', '22', '24', '27', '28',
+  '31', '32', '33', '34', '35', '37', '38',
+  '41', '42', '43', '44', '45', '46', '47', '48', '49',
+  '51', '53', '54', '55',
+  '61', '62', '63', '64', '65', '66', '67', '68', '69',
+  '71', '73', '74', '75', '77', '79',
+  '81', '82', '83', '84', '85', '86', '87', '88', '89',
+  '91', '92', '93', '94', '95', '96', '97', '98', '99',
+]);
