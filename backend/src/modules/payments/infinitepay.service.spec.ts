@@ -75,6 +75,8 @@ describe('InfinitePayService', () => {
       ['5511999998888', '+5511999998888'],
       ['011999998888', '+5511999998888'],
       ['(11) 3333-4444', '+551133334444'],
+      // celular antigo sem o 9 da frente ganha o 9
+      ['(21) 8765-4321', '+5521987654321'],
     ])('normalizes phone %s to %s', async (phone, expected) => {
       http.post.mockReturnValue(of({ data: { invoice_slug: 'INV_1', url: 'https://x' } }));
 
@@ -83,7 +85,16 @@ describe('InfinitePayService', () => {
       expect(http.post.mock.calls[0][1].customer.phone_number).toBe(expected);
     });
 
-    it.each(['', '999', '12345678', undefined])(
+    it.each([
+      '',
+      '999',
+      '12345678',
+      undefined,
+      '(10) 99999-8888', // DDD inexistente
+      '(20) 99999-8888', // DDD inexistente
+      '(11) 89999-8888', // 9 dígitos sem o 9 de celular
+      '(11) 1333-4444', // fixo começando com 1
+    ])(
       'omits phone_number when phone is invalid (%s)',
       async (phone) => {
         http.post.mockReturnValue(of({ data: { invoice_slug: 'INV_1', url: 'https://x' } }));
@@ -98,6 +109,44 @@ describe('InfinitePayService', () => {
       http.post.mockReturnValue(of({ data: { invoice_slug: 'INV_1' } }));
 
       await expect(service.createCheckout(params)).rejects.toThrow(InternalServerErrorException);
+    });
+
+    it('refaz o checkout sem phone_number quando a InfinitePay recusa o telefone', async () => {
+      const phoneError = {
+        response: {
+          data: {
+            success: false,
+            message: 'Invalid checkout link params',
+            errors: { customer: { phone_number: ['not a valid phone number'] } },
+          },
+        },
+      };
+      http.post
+        .mockReturnValueOnce(throwError(() => phoneError))
+        .mockReturnValueOnce(of({ data: { invoice_slug: 'INV_2', url: 'https://checkout.infinitepay.io/INV_2' } }));
+      const warn = jest.spyOn((service as any).logger, 'warn').mockImplementation(() => undefined);
+
+      const result = await service.createCheckout(params);
+
+      expect(result).toEqual({ checkoutId: 'INV_2', paymentUrl: 'https://checkout.infinitepay.io/INV_2' });
+      expect(http.post).toHaveBeenCalledTimes(2);
+      expect(http.post.mock.calls[0][1].customer.phone_number).toBe('+5511999998888');
+      const retryBody = http.post.mock.calls[1][1];
+      expect(retryBody.customer).toEqual({ name: 'João', email: 'joao@x.com' });
+      expect(retryBody.order_nsu).toBe('txn-1');
+      // o log leva o telefone mascarado, nunca o número inteiro
+      const logged = String(warn.mock.calls[0][0]);
+      expect(logged).toContain('+55 11 *******88');
+      expect(logged).not.toContain('999998888');
+    });
+
+    it('não refaz quando o erro não é do telefone', async () => {
+      http.post.mockReturnValue(
+        throwError(() => ({ response: { data: { errors: { items: ['invalid'] } } } })),
+      );
+
+      await expect(service.createCheckout(params)).rejects.toThrow(InternalServerErrorException);
+      expect(http.post).toHaveBeenCalledTimes(1);
     });
 
     it('wraps HTTP errors in InternalServerErrorException', async () => {
